@@ -1,0 +1,19 @@
+Package: bayesFPCA
+Type: Package
+Title: Bayesian Functional Principal Component Analysis Suite 
+Version: 0.1.0
+Authors@R: c(
+    person("Tui", "Nolan",
+	   email = "tui.nolan@mrc-bsu.cam.ac.uk",
+           role = c("aut", "cre")),
+    person("Helene", "Ruffieux",
+           email = "helene.ruffieux@mrc-bsu.cam.ac.uk",
+           role = c("aut", "cre")))
+Description: Suite of functions to perform functional principal component
+    analysis (FPCA) in the Bayesian setting using variational message
+    passing inference.
+Depends:
+    R (>= 4.0.0)
+License: GPL (>= 3) | file LICENSE
+Encoding: UTF-8
+LazyData: true
