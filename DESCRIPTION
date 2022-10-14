@@ -17,4 +17,13 @@ Depends:
 License: GPL (>= 3) | file LICENSE
 Encoding: UTF-8
 LazyData: true
+Imports:
+    ellipse,
+    lattice,
+    magic,
+    MASS,
+    matrixcalc,
+    pracma,
+    rstan,
+    splines
 RoxygenNote: 7.2.1
