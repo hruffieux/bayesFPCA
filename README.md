@@ -22,13 +22,20 @@ component analysis (FPCA) in the Bayesian setting. It implements
 variational message passing inference for univariate and multivariate
 FPCA, as well as functional linear regression.
 
+## Warning
+
+**This is a development branch**, it is not guaranteed to be stable at
+any given time and features are subject to change. Please use the
+[stable version](https://github.com/hruffieux/bayesFPCA), unless you
+want to test and report issues.
+
 ## Installation
 
 Then, to install the package in R, run the following command:
 
 ``` r
 if(!require(remotes)) install.packages("remotes")
-remotes::install_github("hruffieux/bayesFPCA")
+remotes::install_github("hruffieux/bayesFPCA", ref = "devel")
 ```
 
 ## License and authors
