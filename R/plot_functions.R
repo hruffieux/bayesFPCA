@@ -1,434 +1,310 @@
-plot_fpca_data <- function(N_sample, time_obs, Y, plot_dim, data_col) {
+#' @export
+display_eigenfunctions <- function(p, L, time_g, mu_g, Psi_g,
+                                   mu_hat, list_Psi_hat,
+                                   mu_hat_add = NULL, list_Psi_hat_add = NULL,
+                                   mu_hat_ci = NULL, list_Psi_hat_ci = NULL,
+                                   lwd = 2, data_col = "black",
+                                   vec_col_add = NULL, vec_lwd = NULL) { # perso
 
-  Y_sample <- Y[N_sample]
-  time_obs_sample <- time_obs[N_sample]
-  T_sample <- sapply(Y_sample, length)
-  length_N <- length(N_sample)
+  ylim <- c(min(c(unlist(mu_g),
+                  as.vector(unlist(mu_hat)),
+                  as.vector(unlist(mu_hat_add)),
+                  as.vector(unlist(mu_hat_ci)),
+                  unlist(Psi_g),
+                  as.vector(unlist(list_Psi_hat)),
+                  as.vector(unlist(list_Psi_hat_add)),
+                  as.vector(unlist(list_Psi_hat_ci)))),
+            max(c(unlist(mu_g),
+                  as.vector(unlist(mu_hat)),
+                  as.vector(unlist(mu_hat_add)),
+                  as.vector(unlist(mu_hat_ci)),
+                  unlist(Psi_g),
+                  as.vector(unlist(list_Psi_hat)),
+                  as.vector(unlist(list_Psi_hat_add)),
+                  as.vector(unlist(list_Psi_hat_ci)))))
 
-  Y_vec <- Reduce(c, Y_sample)
-  time_vec <- Reduce(c, time_obs_sample)
+  p_sample <- sort(p_sample)
 
-  curve_labels <- vector("list", length=length_N)
-  curve_id <- rep(NA, length_N)
-  for(i in 1:length_N) {
+  par(mfrow = c(1+L, length(p_sample))) #, mar = c(5.1, 4.1, 4.1, 2.1))
 
-    N_i <- N_sample[i]
-    curve_id[i] <- parse(text=paste("y[", N_i, "] (t)", sep=""))
-    curve_val <- eval(bquote(expression(y[.(N_i)] (t))))
-    curve_labels[[i]] <- rep(curve_val, T_sample[i])
-  }
-  curve_labels <- do.call(c, curve_labels)
-  curve_labels <- factor(curve_labels, levels=curve_id)
-
-  strip.math <- function(
-    which.given, which.panel, var.name, factor.levels, ...
-  ) {
-
-    fl <- curve_id
-
-    strip.default(which.given,which.panel,var.name,fl,...)
-  }
-
-  raw_data_plots <- xyplot(
-    Y_vec ~ time_vec | curve_labels, groups=curve_labels,
-    data=data.frame(
-      time_vec=time_vec, Y_vec=Y_vec,
-      curve_labels=curve_labels
-    ),
-    layout=plot_dim, main="",
-    strip=strip.math,
-    par.strip.text=list(cex=0.8),
-    par.settings = list(layout.heights = list(strip = 1)),
-    xlab="time",
-    ylab="response curves",
-    as.table=TRUE,
-    panel=function(x, y, subscripts, groups) {
-
-      iPan <- panel.number()
-      i <- rep(N_sample, each=1)[iPan]
-      panel.grid()
-      panel.superpose(
-        x[order(x)], y[order(x)], subscripts, groups,
-        type="p", col=data_col, pch=16, cex=0.4
-      )
+  for (j in p_sample) {
+    par(mar = c(1,4.5,4,1))
+    if (is.list(mu_hat)) {
+      mu_hat_j <- lapply(mu_hat, function(ll) ll[,j])
+    } else {
+      mu_hat_j <- mu_hat[,j]
     }
-  )
 
-  print(raw_data_plots)
+    if (!is.null(mu_hat_add)) {
+      if (is.list(mu_hat_add)) {
+        mu_hat_add_j <- lapply(mu_hat_add, function(ll) ll[,j])
+      } else {
+        mu_hat_add_j <- mu_hat_add[,j]
+      }
+    } else {
+      mu_hat_add_j <- NULL
+    }
+
+    if (!is.null(mu_hat_ci)) {
+      mu_hat_ci_j <- mu_hat_ci[[j]]
+    } else {
+      mu_hat_ci_j <- NULL
+    }
+    display_function(time_g,
+                     mu_g[[j]], mu_hat_j, mu_hat_add_j,
+                     mu_hat_ci_j,
+                     fct_name = ifelse(j == p_sample[1], parse(text=paste0("mu", "(t)")), ""),#expression(mu (t)), ""),
+                     main = paste0("Variable ", j, "\n "),
+                     ylim= ylim,
+                     add_fct_lwd = vec_lwd,
+                     add_fct_cols = vec_col_add,
+                     col_fct = data_col)
+    #               , add_fct_types = c("Simulated", "VB"))
+
+  }
+
+  for (l in 1:L) {
+    if (l == L){
+      par(mar = c(4,4.5,1,1))
+    } else {
+      par(mar = c(2.5,4.5,2.5,1))
+    }
+    for (j in p_sample) {
+
+      if (is.list(mu_hat)) { # keep is.list(mu_hat) as list_Psi_hat will be a list in both cases
+        list_Psi_hat_l_j <- lapply(list_Psi_hat, function(ll) ll[[l]][,j])
+      } else {
+        list_Psi_hat_l_j <- list_Psi_hat[[l]][,j]
+      }
+
+      if (!is.null(list_Psi_hat_add)) {
+        if (is.list(mu_hat_add)) {
+          list_Psi_hat_add_l_j <- lapply(list_Psi_hat_add, function(ll) ll[[l]][,j])
+        } else {
+          list_Psi_hat_add_l_j <- list_Psi_hat_add[[l]][,j]
+        }
+      } else {
+        list_Psi_hat_add_l_j <- NULL
+      }
+
+      if (!is.null(list_Psi_hat_ci)) {
+        list_Psi_hat_ci_l_j <- list_Psi_hat_ci[[l]][[j]]
+      } else {
+        list_Psi_hat_ci_l_j <- NULL
+      }
+
+      display_function(time_g, Psi_g[[j]][,l], list_Psi_hat_l_j, list_Psi_hat_add_l_j,
+                       list_Psi_hat_ci_l_j,
+                       fct_name = ifelse(j == p_sample[1],
+                                         parse(text=paste0("psi[", l, "](t)")), ""),
+                       ylim =  ylim,
+                       add_fct_lwd = vec_lwd,
+                       add_fct_cols = vec_col_add,
+                       col_fct = data_col)
+    }
+  }
+
 }
 
-plot_gauss_mfpca_data <- function(N_sample, time_obs, Y, plot_dim, data_col) {
+display_function <- function(time_g, fct, add_fct1 = NULL, add_fct2 = NULL,
+                             add_fct_ci = NULL,
+                             fct_name = NULL,
+                             main = NULL,
+                             add_fct_types = NULL,
+                             add_fct_lwd = NULL,
+                             add_fct_cols = NULL,
+                             col_fct = "red",
+                             ylim = NULL) {
 
-  p <- length(Y[[1]])
-  n <- Reduce(rbind, lapply(Y, function(x) sapply(x, length)))
+  if (is.null(ylim)) {
+    ylim <- c(min(c(fct, unlist(add_fct1), unlist(add_fct2))),
+              max(c(fct, unlist(add_fct1), unlist(add_fct2))))
+  }
+
+  if (is.null(add_fct_lwd)) {
+    add_fct_lwd <- rep(2, 2)
+  }
+
+  plot(time_g, fct, type = "l", xlab = "time", ylab = fct_name, main = main,
+       col = col_fct, lwd = 2,
+       ylim = ylim)
+
+  if (!is.null(add_fct1)) {
+    add_fct_cols[1] <- ifelse(is.null(add_fct_cols[1]), "grey40", add_fct_cols[1])
+    if (is.list(add_fct1)) {
+      for (j in seq_along(add_fct1)) {
+        lines(time_g, add_fct1[[j]], col = add_fct_cols[1], lwd = add_fct_lwd[1])
+      }
+      lines(time_g, fct, col = col_fct, lwd = add_fct_lwd[1])
+    } else {
+      lines(time_g, add_fct1, col = add_fct_cols[1], lwd = add_fct_lwd[1])
+    }
+  }
+
+  if (!is.null(add_fct2)) {
+    add_fct_cols[2] <- ifelse(is.null(add_fct_cols[2]) | is.na(add_fct_cols[2]), "blue", add_fct_cols[2])
+
+    if (is.list(add_fct2)) {
+      for (j in seq_along(add_fct2)) {
+        lines(time_g, add_fct2[[j]], col = add_fct_cols[2], lwd = add_fct_lwd[2])
+      }
+      if (!is.list(add_fct1)) {
+        lines(time_g, add_fct1, col = add_fct_cols[1], lwd = add_fct_lwd[1])
+      }
+      lines(time_g, fct, col = col_fct, lwd = add_fct_lwd[1])
+    } else {
+      lines(time_g, add_fct2, col = add_fct_cols[2], lwd = add_fct_lwd[2])
+    }
+  }
+
+  if (!is.null(add_fct_ci)) {
+    lines(time_g, add_fct_ci[,1], col = add_fct_cols[1], lwd = add_fct_lwd[1], lty = 2)
+    lines(time_g, add_fct_ci[,2], col = add_fct_cols[1], lwd = add_fct_lwd[1], lty = 2)
+  }
+
+  if (!is.null(add_fct_types)) {
+    legend("topleft", legend = add_fct_types, col = c(col_fct, add_fct_cols),
+           bty = "n", lwd = c(add_fct_lwd[1], add_fct_lwd))
+  }
+}
+
+#' @export
+display_fit <- function(N_sample, time_obs, time_g, Y, Y_hat, Y_low, Y_upp, offset = 0.1) {
+
+  N_sample <- sort(N_sample)
+
+  if (is.null(Y_hat)) {
+    list_ylim <- c(min(unlist(Y[N_sample]))-offset,
+                               max(unlist(Y[N_sample]))+offset)
+  } else {
+    list_ylim <- c(min(unlist(Y[N_sample]),
+                                   unlist(Y_low[N_sample]))-offset,
+                        max(unlist(Y[N_sample]),
+                            unlist(Y_upp[N_sample]))+offset)
+  }
+
+  par(mfrow = c(length(N_sample), 1))
+  for (i in N_sample) {
+    if (i == N_sample[length(N_sample)]) {
+      par(mar = c(4,4.5,1,1))
+    } else if (i == N_sample[1]){
+      par(mar = c(1,4.5,4,1))
+    } else {
+      par(mar = c(2.5,4.5,2.5,1))
+    }
+
+    plot(time_obs[[i]], Y[[i]],
+         main = "",
+         xlab = ifelse(i == N_sample[length(N_sample)], "time", ""),
+         ylab = parse(text=paste0("Y[", i, "]")),
+         pch = 20, col = "grey55",
+         xlim = c(0, 1),
+         ylim = list_ylim)
+    # c(min(Y[[i]], Y_low[[i]]))-offset,
+    #          max(Y[[i]], Y_upp[[i]]))+offset))
+    if (!is.null(Y_hat)) {
+      lwd <- 1.2
+      lines(time_g, Y_hat[[i]], col="black", lwd = lwd)
+      lines(time_g, Y_low[[i]], col="black",lwd = lwd,lty = 2)
+      lines(time_g, Y_upp[[i]], col="black",lwd = lwd,lty = 2)
+    }
+
+  }
+
+}
+
+
+#' @export
+display_fit_list <- function(p_sample, N_sample, time_obs, time_g, Y,
+                             Y_hat, Y_low, Y_upp,
+                             Y_hat_add = NULL, Y_low_add = NULL, Y_upp_add = NULL, offset = 0.1,
+                             col_data = "black", col = "blue", col_add = "red", lwd = 1.2, lwd_add = 1.2) {
+
+  p_sample <- sort(p_sample)
+  N_sample <- sort(N_sample)
+
+  list_ylim <- list()
+  for (j in p_sample) {
+    if (is.null(Y_hat)) {
+      list_ylim <- append(list_ylim,
+                          list(c(min(unlist(sapply(Y[N_sample], function(Y_i)Y_i[[j]])))-offset,
+                                 max(unlist(sapply(Y[N_sample], function(Y_i)Y_i[[j]])))+offset)))
+    } else {
+      vec_lim <- c(min(unlist(sapply(Y[N_sample], function(Y_i)Y_i[[j]])),
+                       unlist(sapply(Y_low[N_sample], function(Y_i)Y_i[[j]]))),
+                   max(unlist(sapply(Y[N_sample], function(Y_i)Y_i[[j]])),
+                       unlist(sapply(Y_upp[N_sample], function(Y_i)Y_i[[j]]))))
+
+      if (!is.null(Y_hat_add)) {
+        vec_lim <- c(min(vec_lim[1], unlist(sapply(Y_low_add[N_sample], function(Y_i)Y_i[[j]]))),
+                     max(vec_lim[2], unlist(sapply(Y_upp_add[N_sample], function(Y_i)Y_i[[j]]))))
+      }
+      list_ylim <- append(list_ylim,
+                          list(c(vec_lim[1]-offset, vec_lim[2]+offset)))
+    }
+  }
+
+  par(mfrow = c(length(N_sample), length(p_sample)))
+  for (i in N_sample) {
+    if (i == N_sample[length(N_sample)]) {
+      par(mar = c(4,4.5,1.5,1))
+    } else if (i == N_sample[1]){
+      par(mar = c(1.5,4.5,4,1))
+    } else {
+      par(mar = c(2.6,4.5,2.6,1))
+    }
+    jj <- 1
+    for (j in p_sample) {
+      plot(time_obs[[i]][[j]], Y[[i]][[j]],
+           main = ifelse(i == N_sample[1], paste0("Variable ", j, "\n"), ""),
+           xlab = ifelse(i == N_sample[length(N_sample)], "time", ""),
+           ylab = ifelse(j == p_sample[1], parse(text=paste0("Y[", i, "]")), ""),
+           pch = 20, col = col_data,
+           xlim = c(0, 1),
+           ylim = list_ylim[[jj]])
+      # c(min(Y[[i]][[j]], Y_low[[i]][[j]]))-offset,
+      #          max(Y[[i]][[j]], Y_upp[[i]][[j]]))+offset))
+      if (!is.null(Y_hat)) {
+        lines(time_g, Y_hat[[i]][[j]], col=col, lwd = lwd)
+        lines(time_g, Y_low[[i]][[j]], col=col,lwd = lwd,lty = 2)
+        lines(time_g, Y_upp[[i]][[j]], col=col,lwd = lwd,lty = 2)
+      }
+
+      if (!is.null(Y_hat_add)) {
+        lines(time_g, Y_hat_add[[i]][[j]], col=col_add, lwd = lwd_add)
+        lines(time_g, Y_low_add[[i]][[j]], col=col_add,lwd = lwd_add,lty = 2)
+        lines(time_g, Y_upp_add[[i]][[j]], col=col_add,lwd = lwd_add,lty = 2)
+      }
+      jj <- jj +1
+    }
+
+  }
+
+}
+
+#' @export
+plot_scores <- function(N_sample, Zeta,
+                        Zeta_hat, zeta_ellipse,
+                        Zeta_hat_add = NULL, zeta_ellipse_add = NULL,
+                        vec_col = c("black", "blue"), data_col = "red", mfrow = NULL) {
+
   n_sample <- length(N_sample)
 
-  Y_vec <- unlist(Y[N_sample])
-  time_vec <- unlist(time_obs[N_sample])
+  par(mfrow = c(1, 1))
+  zeta_labels <- vector("list", length = n_sample)
+  zeta_id <- rep(NA, n_sample)
 
-  curve_labels_1 <- vector("list", length = n_sample)
+  if(is.null(mfrow)) {
+    mfrow <- c(floor(sqrt(n_sample)), ceiling(sqrt(n_sample)))
+  }
+
   for(i in 1:n_sample) {
 
     N_i <- N_sample[i]
-    curve_labels_1[[i]] <- rep.int(1:p, times = n[N_i, ])
-  }
-  curve_labels_1 <- Reduce(c, curve_labels_1)
-  curve_id_1 <- rep(NA, p)
-  for(j in 1:p) {
-
-    curve_id_1[j] <- parse(text = as.character(j))
-  }
-  curve_labels_1 <- factor(curve_labels_1, levels = curve_id_1)
-
-  curve_labels_2 <- vector("list", length = n_sample)
-  curve_id_2 <- rep(NA, n_sample)
-  for(i in 1:n_sample) {
-
-    N_i <- N_sample[i]
-    curve_id_2[i] <- parse(text=paste("Y [", N_i, "] (t)", sep=""))
-    curve_val <- eval(bquote(expression(Y[.(N_i)] (t))))
-    curve_labels_2[[i]] <- rep(curve_val, sum(n[N_i, ]))
-  }
-  curve_labels_2 <- do.call(c, curve_labels_2)
-  curve_labels_2 <- factor(curve_labels_2, levels = curve_id_2)
-
-  strip.math <- function(
-    which.given, which.panel, var.name, factor.levels, ...
-  ) {
-
-    if(which.given==1) {
-
-      fl <- curve_id_1
-
-      strip.default(which.given, which.panel, var.name, fl, ...)
-    }
-
-    if (which.given==2) {
-
-      fl <- curve_id_2
-
-      strip.default(which.given, which.panel, var.name, fl, ...)
-    }
-  }
-
-  raw_data_plots <- xyplot(
-    Y_vec ~ time_vec | curve_labels_1*curve_labels_2, groups = curve_labels_1,
-    data = data.frame(
-      time_vec = time_vec, Y_vec = Y_vec,
-      curve_labels_1 = curve_labels_1, curve_labels_2 = curve_labels_2
-    ), layout = c(p, n_sample), main = "",
-    strip=strip.math,
-    par.strip.text=list(cex=0.8),
-    par.settings = list(layout.heights = list(strip = 1)),
-    xlab = "time", ylab = "functional responses", as.table = TRUE,
-    panel=function(x,y,subscripts,groups) {
-
-      panel.grid()
-      panel.superpose(
-        x[order(x)], y[order(x)], subscripts, groups,
-        type="p", col = data_col, pch = 16, cex = 0.4
-      )
-    }
-  )
-
-  print(raw_data_plots)
-}
-
-plot_fpca_fits <- function(
-    N_sample, time_obs, Y,
-    time_g, Y_summary,
-    plot_dim, data_col, model_col,
-    ylab = NULL
-) {
-
-  Y_sample <- Y[N_sample]
-  time_obs_sample <- time_obs[N_sample]
-  T_sample <- sapply(Y_sample, length)
-  length_N <- length(N_sample)
-
-  Y_vec <- Reduce(c, Y_sample)
-  time_vec <- Reduce(c, time_obs_sample)
-
-  curve_labels <- vector("list", length=length_N)
-  curve_id <- rep(NA, length_N)
-  for(i in 1:length_N) {
-
-    N_i <- N_sample[i]
-    curve_id[i] <- parse(text=paste("y[", N_i, "] (t)", sep=""))
-    curve_val <- eval(bquote(expression(y[.(N_i)] (t))))
-    curve_labels[[i]] <- rep(curve_val, T_sample[i])
-  }
-  curve_labels <- do.call(c, curve_labels)
-  curve_labels <- factor(curve_labels, levels=curve_id)
-
-  strip.math <- function(
-    which.given, which.panel, var.name, factor.levels, ...
-  ) {
-
-    fl <- curve_id
-
-    strip.default(which.given,which.panel,var.name,fl,...)
-  }
-
-  fitted_data_plots <- xyplot(
-    Y_vec ~ time_vec | curve_labels, groups=curve_labels,
-    data=data.frame(
-      time_vec=time_vec, Y_vec=Y_vec,
-      curve_labels=curve_labels
-    ),
-    layout=plot_dim, main="",
-    strip=strip.math,
-    par.strip.text=list(cex=0.8),
-    par.settings = list(layout.heights = list(strip = 1)),
-    xlab="time",
-    ylab=ifelse(is.null(ylab), "response curves", ylab),
-    as.table=TRUE,
-    panel=function(x, y, subscripts, groups) {
-
-      iPan <- panel.number()
-      i <- rep(N_sample, each=1)[iPan]
-      panel.grid()
-      panel.superpose(
-        x[order(x)], y[order(x)], subscripts, groups,
-        type="p", col=data_col, pch=16, cex=0.4
-      )
-      panel.xyplot(
-        time_g, Y_summary[[i]][,2],
-        col=model_col, type="l", lwd=1
-      )
-      panel.xyplot(
-        time_g, Y_summary[[i]][,1],
-        col=model_col, type="l", lwd=1, lty=2
-      )
-      panel.xyplot(
-        time_g, Y_summary[[i]][,3],
-        col=model_col, type="l", lwd=1, lty=2
-      )
-    }
-  )
-
-  print(fitted_data_plots)
-}
-
-plot_fit_comparisons <- function(
-    N_sample, time_obs, time_g,
-    Y, Y_vmp_summary, Y_mcmc_summary,
-    plot_dim, vmp_col, mcmc_col, data_col
-) {
-
-  Y_sample <- Y[N_sample]
-  time_obs_sample <- time_obs[N_sample]
-  T_sample <- sapply(Y_sample, length)
-  length_N <- length(N_sample)
-
-  Y_vec <- Reduce(c, Y_sample)
-  time_vec <- Reduce(c, time_obs_sample)
-
-  curve_labels <- vector("list", length=length_N)
-  curve_id <- rep(NA, length_N)
-  for(i in 1:length_N) {
-
-    N_i <- N_sample[i]
-    curve_id[i] <- parse(text=paste("y[", N_i, "] (t)", sep=""))
-    curve_val <- eval(bquote(expression(y[.(N_i)] (t))))
-    curve_labels[[i]] <- rep(curve_val, T_sample[i])
-  }
-  curve_labels <- do.call(c, curve_labels)
-  curve_labels <- factor(curve_labels, levels=curve_id)
-
-  strip.math <- function(
-    which.given, which.panel, var.name, factor.levels, ...
-  ) {
-
-    fl <- curve_id
-
-    strip.default(which.given,which.panel,var.name,fl,...)
-  }
-
-  fit_comparisons <- xyplot(
-    Y_vec ~ time_vec | curve_labels, groups=curve_labels,
-    data=data.frame(
-      time_vec=time_vec, Y_vec=Y_vec,
-      curve_labels=curve_labels
-    ),
-    layout=plot_dim, main="",
-    strip=strip.math,
-    par.strip.text=list(cex=0.8),
-    par.settings = list(layout.heights = list(strip = 1.2)),
-    xlab="time",
-    ylab="nonlinear curves",
-    as.table=TRUE,
-    panel=function(x, y, subscripts, groups) {
-
-      iPan <- panel.number()
-      i <- rep(N_sample, each=1)[iPan]
-      panel.grid()
-      panel.superpose(
-        x[order(x)], y[order(x)], subscripts, groups,
-        type="p", col=data_col, pch=16, cex=0.4
-      )
-      panel.xyplot(
-        time_g, Y_mcmc_summary[[i]][,1],
-        col=mcmc_col, type="l", lwd=mcmc_lwd, lty=2
-      )
-      panel.xyplot(
-        time_g, Y_mcmc_summary[[i]][,2],
-        col=mcmc_col, type="l", lwd=mcmc_lwd
-      )
-      panel.xyplot(
-        time_g, Y_mcmc_summary[[i]][,3],
-        col=mcmc_col, type="l", lwd=mcmc_lwd, lty=2
-      )
-      panel.xyplot(
-        time_g, Y_vmp_summary[[i]][,1],
-        col=vmp_col, type="l", lwd=vmp_lwd, lty=2
-      )
-      panel.xyplot(
-        time_g, Y_vmp_summary[[i]][,2],
-        col= vmp_col, type="l", lwd=vmp_lwd
-      )
-      panel.xyplot(
-        time_g, Y_vmp_summary[[i]][,3],
-        col= vmp_col, type="l", lwd=vmp_lwd, lty=2
-      )
-    }
-  )
-
-  print(fit_comparisons)
-}
-
-plot_mfpca_fit_comparisons <- function(
-    N_sample, time_obs, time_g,
-    Y, Y_vmp_summary, Y_alt_mod_summary,
-    plot_dim, vmp_col, alt_mod_col, data_col
-) {
-
-  p <- length(Y[[1]])
-  n <- Reduce(rbind, lapply(Y, function(x) sapply(x, length)))
-  n_sample <- length(N_sample)
-  Y_vec <- unlist(Y[N_sample])
-  time_vec <- unlist(time_obs[N_sample])
-
-  curve_labels_1 <- vector("list", length = n_sample)
-  for(i in 1:n_sample) {
-
-    N_i <- N_sample[i]
-    curve_labels_1[[i]] <- rep.int(1:p, times = n[N_i, ])
-  }
-  curve_labels_1 <- Reduce(c, curve_labels_1)
-  curve_id_1 <- rep(NA, p)
-  for(j in 1:p) {
-
-    curve_id_1[j] <- parse(text = as.character(j))
-  }
-  curve_labels_1 <- factor(curve_labels_1, levels = curve_id_1)
-
-  curve_labels_2 <- vector("list", length = n_sample)
-  curve_id_2 <- rep(NA, n_sample)
-  for(i in 1:n_sample) {
-
-    N_i <- N_sample[i]
-    curve_id_2[i] <- parse(text=paste("Y [", N_i, "] (t)", sep=""))
-    curve_val <- eval(bquote(expression(Y[.(N_i)] (t))))
-    curve_labels_2[[i]] <- rep(curve_val, sum(n[N_i, ]))
-  }
-  curve_labels_2 <- do.call(c, curve_labels_2)
-  curve_labels_2 <- factor(curve_labels_2, levels = curve_id_2)
-
-  strip.math <- function(
-    which.given, which.panel, var.name, factor.levels, ...
-  ) {
-
-    if(which.given==1) {
-
-      fl <- curve_id_1
-
-      strip.default(which.given, which.panel, var.name, fl, ...)
-    }
-
-    if (which.given==2) {
-
-      fl <- curve_id_2
-
-      strip.default(which.given, which.panel, var.name, fl, ...)
-    }
-  }
-
-  fitted_data_plots <- xyplot(
-    Y_vec ~ time_vec | curve_labels_1*curve_labels_2, groups = curve_labels_1,
-    data = data.frame(
-      time_vec = time_vec, Y_vec = Y_vec,
-      curve_labels_1 = curve_labels_1, curve_labels_2 = curve_labels_2
-    ), layout = c(p, n_sample), main = "",
-    strip=strip.math,
-    par.strip.text=list(cex=0.8),
-    par.settings = list(layout.heights = list(strip = 1)),
-    xlab = "time", ylab = "functional responses", as.table = TRUE,
-    panel=function(x,y,subscripts,groups) {
-
-      i_pan <- panel.number()
-      i <- rep(1:n_sample, each = p)[i_pan]
-      j <- rep(1:p, n_sample)[i_pan]
-      panel.grid()
-
-      panel.superpose(
-        x[order(x)], y[order(x)], subscripts, groups,
-        type="p", col = data_col, pch = 16, cex = 0.4
-      )
-
-      panel.xyplot(
-        time_g, Y_alt_mod_summary[[N_sample[i]]][[j]][, 1], col = alt_mod_col,
-        type = "l", lwd = 2, lty = 2
-      )
-
-      panel.xyplot(
-        time_g, Y_alt_mod_summary[[N_sample[i]]][[j]][, 2], col = alt_mod_col,
-        type = "l", lwd = 2
-      )
-
-      panel.xyplot(
-        time_g, Y_alt_mod_summary[[N_sample[i]]][[j]][, 3], col = alt_mod_col,
-        type = "l", lwd = 2, lty = 2
-      )
-
-      panel.xyplot(
-        time_g, Y_vmp_summary[[N_sample[i]]][[j]][, 1], col = vmp_col,
-        type = "l", lwd = 1, lty = 2
-      )
-
-      panel.xyplot(
-        time_g, Y_vmp_summary[[N_sample[i]]][[j]][, 2], col = vmp_col,
-        type = "l", lwd = 1
-      )
-
-      panel.xyplot(
-        time_g, Y_vmp_summary[[N_sample[i]]][[j]][, 3], col = vmp_col,
-        type = "l", lwd = 1, lty = 2
-      )
-    }
-  )
-
-  print(fitted_data_plots)
-}
-
-plot_fpca_scores <- function(N_sample, zeta_summary, zeta, plot_dim, data_col, model_col) {
-
-  length_N <- length(N_sample)
-
-  Zeta_hat <- matrix(NA, length_N, 2)
-  zeta_ellipse <- vector("list", length=length_N)
-  zeta_labels <- vector("list", length=length_N)
-  zeta_id <- rep(NA, length_N)
-  for(i in 1:length_N) {
-
-    N_i <- N_sample[i]
-
-    Zeta_hat[i,] <- zeta_summary[[N_i]][[1]]
-    zeta_ellipse[[i]] <- zeta_summary[[N_i]][[2]]
 
     zeta_id[i] <- parse(text=paste("zeta[", N_i, "]", sep=""))
     zeta_val <- eval(bquote(expression(zeta[.(N_i)])))
-    zeta_labels[[i]] <- rep(zeta_val, nrow(zeta_ellipse[[i]]))
+    zeta_labels[[i]] <- rep(zeta_val, nrow(zeta_ellipse[[N_i]]))
   }
   zeta_labels <- do.call(c, zeta_labels)
   zeta_labels <- factor(zeta_labels, levels=zeta_id)
@@ -442,535 +318,76 @@ plot_fpca_scores <- function(N_sample, zeta_summary, zeta, plot_dim, data_col, m
     strip.default(which.given,which.panel,var.name,fl,...)
   }
 
-  zeta_ellipse_mat <- Reduce(rbind, zeta_ellipse)
+  zeta_ellipse_mat <- Reduce(rbind, zeta_ellipse[N_sample])
   zeta_ellipse_x <- zeta_ellipse_mat[,1]
   zeta_ellipse_y <- zeta_ellipse_mat[,2]
 
+
+  if (!is.null(Zeta_hat_add)) {
+    zeta_ellipse_add_mat <- Reduce(rbind, zeta_ellipse_add[N_sample])
+    zeta_ellipse_add_x <- zeta_ellipse_add_mat[,1]
+    zeta_ellipse_add_y <- zeta_ellipse_add_mat[,2]
+  }
+
   score_plots <- xyplot(
-    zeta_ellipse_y ~ zeta_ellipse_x | zeta_labels, groups=zeta_labels,
+    zeta_ellipse_y ~ zeta_ellipse_x | zeta_labels, groups = zeta_labels,
     data=data.frame(
-      zeta_ellipse_x=zeta_ellipse_x, zeta_ellipse_y=zeta_ellipse_y,
-      zeta_labels=zeta_labels
+      zeta_ellipse_x = zeta_ellipse_x, zeta_ellipse_y = zeta_ellipse_y,
+      zeta_labels = zeta_labels
     ),
-    layout=plot_dim, main="",
+    layout=mfrow, main="",
     strip=strip.math,
+    xlim = 1.1*c(min(sapply(N_sample, function(ns) min(c(zeta_ellipse[[ns]][,1],
+                                                         Zeta[ns, 1],
+                                                         Zeta_hat[ns,1])))),
+                 max(sapply(N_sample, function(ns) max(c(zeta_ellipse[[ns]][,1],
+                                                         Zeta[ns, 1],
+                                                         Zeta_hat[ns,1]))))),
+    ylim = 1.1*c(min(sapply(N_sample, function(ns) min(c(zeta_ellipse[[ns]][,2],
+                                                         Zeta[ns, 2],
+                                                         Zeta_hat[ns,2])))),
+                 max(sapply(N_sample, function(ns) max(c(zeta_ellipse[[ns]][,2],
+                                                         Zeta[ns, 2],
+                                                         Zeta_hat[ns,2]))))),
     par.strip.text=list(cex=0.8),
-    par.settings = list(layout.heights = list(strip = 1)),
-    xlab="first basis function's score",
-    ylab="second basis function's score",
+    par.settings = list(layout.heights = list(strip = 1),
+                        strip.background=list(col="white")),
+    # key=list(space="top",
+    #          lines=list(col=c("grey55","blue"), lty=1, lwd=1),
+    #          text=list(c("Simulated scores", "Estimated scores"))),
+    xlab="Scores FPC 1",
+    ylab="Scores FPC 2",
     as.table=TRUE,
     panel=function(x, y, subscripts, groups) {
 
       iPan <- panel.number()
-      i <- rep(1:length_N, each=1)[iPan]
-      panel.grid()
+      i <- rep(1:n_sample, each=1)[iPan]
+      # panel.grid()
       panel.xyplot(
-        zeta_ellipse[[i]][,1], zeta_ellipse[[i]][,2],
-        col=model_col, type="l", lwd=1
+        zeta_ellipse[[N_sample[i]]][,1], zeta_ellipse[[N_sample[i]]][,2],
+        col=vec_col[1], type="l", lwd=1.5
       )
       panel.xyplot(
-        Zeta_hat[i,1], Zeta_hat[i,2],
-        col=model_col, type="p", pch=16, cex=0.4
+        Zeta_hat[N_sample[i],1], Zeta_hat[N_sample[i],2],
+        col= vec_col[1], type="p", pch=16, cex=0.7
       )
       panel.xyplot(
-        zeta[[N_sample[i]]][1], zeta[[N_sample[i]]][2],
-        col=data_col, type="p", pch=16, cex=0.4
+        Zeta[N_sample[i], 1], Zeta[N_sample[i], 2],
+        col=data_col, type="p", pch=16, cex=0.7
       )
+
+      if (!is.null(Zeta_hat_add)) {
+        panel.xyplot(
+          zeta_ellipse_add[[N_sample[i]]][,1], zeta_ellipse_add[[N_sample[i]]][,2],
+          col=vec_col[2], type="l", lwd=1.5
+        )
+        panel.xyplot(
+          Zeta_hat_add[N_sample[i],1], Zeta_hat_add[N_sample[i],2],
+          col= vec_col[2], type="p", pch=16, cex=0.7
+        )
+      }
     }
   )
 
   print(score_plots)
 }
-
-plot_score_comparisons <- function(
-    N_sample, zeta, zeta_vmp_summary, zeta_mcmc_summary,
-    data_col, vmp_col, mcmc_col, plot_dim,
-    vmp_lwd = 1, mcmc_lwd = 2
-) {
-
-  length_N <- length(N_sample)
-
-  zeta_labels <- vector("list", length=length_N)
-  zeta_id <- rep(NA, length_N)
-  Zeta_vmp_hat <- matrix(NA, length_N, 2)
-  Zeta_mcmc_hat <- matrix(NA, length_N, 2)
-  zeta_vmp_ellipse <- vector("list", length=length_N)
-  zeta_mcmc_ellipse <- vector("list", length=length_N)
-  for(i in 1:length_N) {
-
-    N_i <- N_sample[i]
-
-    Zeta_vmp_hat[i,] <- zeta_vmp_summary[[N_i]][[1]]
-    zeta_vmp_ellipse[[i]] <- zeta_vmp_summary[[N_i]][[2]]
-
-    Zeta_mcmc_hat[i,] <- zeta_mcmc_summary[[N_i]][[1]]
-    zeta_mcmc_ellipse[[i]] <- zeta_mcmc_summary[[N_i]][[2]]
-
-    zeta_id[i] <- parse(text=paste("zeta[", N_i, "]", sep=""))
-    zeta_val <- eval(bquote(expression(zeta[.(N_i)])))
-    zeta_labels[[i]] <- rep(zeta_val, nrow(zeta_mcmc_ellipse[[i]]))
-  }
-  zeta_labels <- do.call(c, zeta_labels)
-  zeta_labels <- factor(zeta_labels, levels=zeta_id)
-
-  strip.math <- function(
-    which.given, which.panel, var.name, factor.levels, ...
-  ) {
-
-    fl <- zeta_id
-
-    strip.default(which.given,which.panel,var.name,fl,...)
-  }
-
-  zeta_mcmc_ellipse_mat <- Reduce(rbind, zeta_mcmc_ellipse)
-  zeta_mcmc_ellipse_x <- zeta_mcmc_ellipse_mat[,1]
-  zeta_mcmc_ellipse_y <- zeta_mcmc_ellipse_mat[,2]
-
-  score_comparisons <- xyplot(
-    zeta_mcmc_ellipse_y ~ zeta_mcmc_ellipse_x | zeta_labels, groups=zeta_labels,
-    data=data.frame(
-      zeta_mcmc_ellipse_x=zeta_mcmc_ellipse_x, zeta_mcmc_ellipse_y=zeta_mcmc_ellipse_y,
-      zeta_labels=zeta_labels
-    ),
-    layout=plot_dim, main="",
-    strip=strip.math,
-    par.strip.text=list(cex=0.8),
-    par.settings = list(layout.heights = list(strip = 1)),
-    xlab="first basis function's score",
-    ylab="second basis function's score",
-    as.table=TRUE,
-    panel=function(x, y, subscripts, groups) {
-
-      iPan <- panel.number()
-      i <- rep(1:length_N, each=1)[iPan]
-      panel.grid()
-      panel.xyplot(
-        zeta_mcmc_ellipse[[i]][,1], zeta_mcmc_ellipse[[i]][,2],
-        col=mcmc_col, type="l", lwd=mcmc_lwd
-      )
-      panel.xyplot(
-        Zeta_mcmc_hat[i,1], Zeta_mcmc_hat[i,2],
-        col=mcmc_col, type="p", pch=16, cex=0.6
-      )
-      panel.xyplot(
-        zeta_vmp_ellipse[[i]][,1], zeta_vmp_ellipse[[i]][,2],
-        col=vmp_col, type="l", lwd=vmp_lwd
-      )
-      panel.xyplot(
-        Zeta_vmp_hat[i,1], Zeta_vmp_hat[i,2],
-        col=vmp_col, type="p", pch=16, cex=0.6
-      )
-      panel.xyplot(
-        zeta[[N_sample[i]]][1], zeta[[N_sample[i]]][2],
-        col=data_col, type="p", pch=16, cex=0.6
-      )
-    }
-  )
-
-  print(score_comparisons)
-}
-
-plot_fpca_global_curves <- function(
-    gbl_estimates, L_true, time_g, mu_g, Psi_g,
-    model_col, data_col, plot_gbl_dim, ylab_add = ""
-) {
-
-  n_g <- length(time_g)
-
-  if (!is.null(mu_g)) {
-    nb_col <- L_true+1
-  } else { # if mu_g = NULL, mean function not displayed
-    nb_col <- L_true
-  }
-
-  gbl_estimates <- gbl_estimates[,1:nb_col]
-
-  time_g_gbl <- rep(time_g, nb_col)
-  if (!is.null(mu_g)) {
-    gbl_g_vec <- c(mu_g, as.vector(Psi_g[,1:L_true]))
-  } else {
-    gbl_g_vec <- as.vector(Psi_g[,1:L_true])
-  }
-
-  gbl_labels <- vector("list", length= nb_col)
-  gbl_id <- rep(NA,  nb_col)
-
-  if (!is.null(mu_g)) {
-    gbl_id[1] <- expression(mu (t))
-    gbl_labels[[1]] <- rep(gbl_id[1], n_g)
-  }
-
-  for(l in 1:L_true) {
-
-    if (!is.null(mu_g)) {
-      ll <- l+1
-    } else {
-      ll <- l
-    }
-
-    gbl_id[ll] <- parse(text=paste("psi[", l, "] (t)", sep=""))
-    bf_val <- eval(bquote(expression(psi[.(l)] (t))))
-    gbl_labels[[ll]] <- rep(bf_val, n_g)
-  }
-
-  gbl_labels <- do.call(c, gbl_labels)
-  gbl_labels <- factor(gbl_labels, levels=gbl_id)
-
-  strip.math <- function(
-    which.given, which.panel, var.name, factor.levels, ...
-  ) {
-
-    fl <- gbl_id
-
-    strip.default(which.given,which.panel,var.name,fl,...)
-  }
-
-  gbl_plots <- xyplot(
-    gbl_g_vec ~ time_g_gbl | gbl_labels, groups=gbl_labels,
-    data=data.frame(
-      time_g_gbl=time_g_gbl, gbl_g_vec=gbl_g_vec,
-      gbl_labels=gbl_labels
-    ),
-    layout=plot_gbl_dim, main="",
-    strip=strip.math,
-    par.strip.text=list(cex=0.8),
-    par.settings = list(layout.heights = list(strip = 1)),
-    xlab="time",
-    ylab=paste(ifelse(!is.null(mu_g), "mean and basis functions", "basis functions"),
-               ylab_add),
-    as.table=TRUE,
-    panel=function(x, y, subscripts, groups) {
-
-      lPan <- panel.number()
-      l <- rep(1:nb_col, each=1)[lPan]
-      panel.grid()
-      panel.superpose(
-        x[order(x)], y[order(x)], subscripts, groups,
-        type="l", col=data_col, lwd=2
-      )
-      panel.xyplot(
-        time_g, gbl_estimates[,l],
-        col=model_col, type="l", lwd=1
-      )
-    }
-  )
-
-  print(gbl_plots)
-}
-
-plot_mfpca_global_curves <- function(
-    vmp_gbl_est, alt_mod_gbl_est, time_g, mu_g, Psi_g,
-    vmp_col, alt_mod_col, data_col
-) {
-
-  n_g <- length(time_g)
-  p <- ncol(vmp_gbl_est[[1]])
-  L <- length(vmp_gbl_est) - 1
-
-  time_g_gbl <- rep(time_g, p*(L + 1))
-  gbl_g_vec <- Reduce(c, lapply(mapply(cbind, mu_g, Psi_g, SIMPLIFY = FALSE), as.vector))
-
-  curve_labels_1 <- rep(rep(1:p, each = n_g), L + 1)
-  curve_id_1 <- rep(NA, p)
-  for(j in 1:p) {
-
-    curve_id_1[j] <- parse(text = as.character(j))
-  }
-  curve_labels_1 <- factor(curve_labels_1, levels=curve_id_1)
-
-  curve_labels_2 <- vector("list", length = L + 1)
-  curve_id_2 <- rep(NA, L + 1)
-  curve_id_2[1] <- expression(mu (t))
-  curve_labels_2[[1]] <- rep(curve_id_2[1], n_g*p)
-  for(l in 1:L) {
-
-    curve_id_2[l+1] <- parse(text=paste("psi[", l, "] (t)", sep=""))
-    curve_val <- eval(bquote(expression(psi[.(l)] (t))))
-    curve_labels_2[[l + 1]] <- rep(curve_val, n_g*p)
-  }
-  curve_labels_2 <- do.call(c, curve_labels_2)
-  curve_labels_2 <- factor(curve_labels_2, levels=curve_id_2)
-
-  strip.math <- function(
-    which.given, which.panel, var.name, factor.levels, ...
-  ) {
-
-    if(which.given==1) {
-
-      fl <- curve_id_1
-
-      strip.default(which.given, which.panel, var.name, fl, ...)
-    }
-
-    if (which.given==2) {
-
-      fl <- curve_id_2
-
-      strip.default(which.given, which.panel, var.name, fl, ...)
-    }
-  }
-
-  fitted_gbl_plots <- xyplot(
-    gbl_g_vec ~ time_g_gbl | curve_labels_2*curve_labels_1, groups = curve_labels_2,
-    data = data.frame(
-      time_g_gbl = time_g_gbl, gbl_g_vec = gbl_g_vec,
-      curve_labels_2 = curve_labels_2, curve_labels_1 = curve_labels_1
-    ), layout = c(p, L + 1), main = "",
-    strip=strip.math,
-    par.strip.text=list(cex=0.8),
-    par.settings = list(layout.heights = list(strip = 1)),
-    xlab = "time", ylab = "mean and eigenfunctions", as.table = TRUE,
-    panel=function(x,y,subscripts,groups) {
-
-      l_pan <- panel.number()
-      l <- rep(1:(L+1), each = p)[l_pan]
-      j <- rep(1:p, L + 1)[l_pan]
-      panel.grid()
-
-      panel.superpose(
-        x[order(x)], y[order(x)], subscripts, groups,
-        type="l", col = data_col, pch = 16, cex = 0.4
-      )
-
-      panel.xyplot(
-        time_g, alt_mod_gbl_est[[l]][,j], col = alt_mod_col,
-        type = "l", lwd = 2
-      )
-
-      panel.xyplot(
-        time_g, vmp_gbl_est[[l]][, j], col = vmp_col,
-        type = "l", lwd = 1
-      )
-    }
-  )
-
-  print(fitted_gbl_plots)
-}
-
-
-panel_plots <- function(vmp_files, mcmc_files, mu_func, Psi_func, plot_dim,
-                        plot_height, plot_width, logistic_mod=FALSE) {
-
-  # Set the number of basis functions:
-
-  L <- length(Psi_func)
-
-  # Read the files:
-
-  mu_vmp_res <- read.table(vmp_files[1], header=TRUE)
-  mu_vmp_res <- as.matrix(mu_vmp_res)
-
-  mu_mcmc_res <- read.table(mcmc_files[1], header=TRUE)
-  mu_mcmc_res <- as.matrix(mu_mcmc_res)
-
-  # Determine necessary parameters:
-
-  n_sims <- nrow(mu_vmp_res)
-  n_g <- ncol(mu_vmp_res)
-  time_g <- seq(0, 1, length.out = n_g)
-
-  # Summarise the results:
-
-  mu_mcmc_summary <- matrix(NA, n_g, 3)
-  mu_mcmc_summary[,1] <- apply(mu_mcmc_res, 2, quantile, 0.025)
-  mu_mcmc_summary[,2] <- apply(mu_mcmc_res, 2, mean)
-  mu_mcmc_summary[,3] <- apply(mu_mcmc_res, 2, quantile, 0.975)
-
-  psi_vmp_res <- vector("list", length=L)
-  psi_mcmc_summary <- vector("list", length=L)
-  for(l in 1:L) {
-
-    psi_vmp_res[[l]] <- read.table(vmp_files[l+1], header=TRUE)
-    psi_vmp_res[[l]] <- as.matrix(psi_vmp_res[[l]])
-
-    psi_mcmc_res <- read.table(mcmc_files[l+1], header=TRUE)
-    psi_mcmc_res <- as.matrix(psi_mcmc_res)
-
-    psi_mcmc_summary[[l]] <- matrix(NA, n_g, 3)
-    psi_mcmc_summary[[l]][,1] <- apply(psi_mcmc_res, 2, quantile, 0.025)
-    psi_mcmc_summary[[l]][,2] <- apply(psi_mcmc_res, 2, mean)
-    psi_mcmc_summary[[l]][,3] <- apply(psi_mcmc_res, 2, quantile, 0.975)
-  }
-
-  vmp_res <- vector("list", length=L+1)
-  vmp_res[[1]] <- mu_vmp_res
-  mcmc_res <- vector("list", length=L+1)
-  mcmc_res[[1]] <- mu_mcmc_summary
-  for(l in 1:L) {
-
-    vmp_res[[l+1]] <- psi_vmp_res[[l]]
-    mcmc_res[[l+1]] <- psi_mcmc_summary[[l]]
-  }
-
-  # Establish the grid-based functions:
-
-  mu_g <- mu_func(time_g)
-  Psi_g <- matrix(NA, nrow=n_g, ncol=L)
-  for(l in 1:L) {
-
-    Psi_g[,l] <- Psi_func[[l]](time_g)
-  }
-
-  # Plot the results:
-
-  time_g_gbl <- rep(time_g, L + 1)
-  gbl_g_vec <- c(mu_g, as.vector(Psi_g))
-  gbl_labels <- vector("list", length=(L+1))
-  gbl_id <- rep(NA, L + 1)
-
-  gbl_id[1] <- expression(mu (t))
-  gbl_labels[[1]] <- rep(gbl_id[1], n_g)
-
-  for(l in 1:L) {
-
-    gbl_id[l+1] <- parse(text=paste("psi[", l, "] (t)", sep=""))
-    bf_val <- eval(bquote(expression(psi[.(l)] (t))))
-    gbl_labels[[l+1]] <- rep(bf_val, n_g)
-  }
-
-  gbl_labels <- do.call(c, gbl_labels)
-  gbl_labels <- factor(gbl_labels, levels=gbl_id)
-
-  strip.math <- function(
-    which.given, which.panel, var.name, factor.levels, ...
-  ) {
-
-    fl <- gbl_id
-
-    strip.default(which.given,which.panel,var.name,fl,...)
-  }
-
-  gbl_plots <- xyplot(
-    gbl_g_vec ~ time_g_gbl | gbl_labels, groups=gbl_labels,
-    data=data.frame(
-      time_g_gbl=time_g_gbl, gbl_g_vec=gbl_g_vec,
-      gbl_labels=gbl_labels
-    ),
-    layout= plot_dim, main="",
-    strip=strip.math,
-    par.strip.text=list(cex=0.8),
-    par.settings = list(layout.heights = list(strip = 1.2)),
-    xlab="time",
-    ylab="mean and basis functions",
-    as.table=TRUE,
-    panel=function(x, y, subscripts, groups) {
-
-      lPan <- panel.number()
-      l <- rep(1:(L+1), each=1)[lPan]
-      panel.grid()
-
-      for(i in 1:n_sims) {
-
-        panel.xyplot(
-          time_g, vmp_res[[l]][i,],
-          col="red", type="l", lwd=1
-        )
-      }
-
-      panel.xyplot(
-        time_g, mcmc_res[[l]][,2],
-        col="deepskyblue2", type="l", lwd=1
-      )
-
-      panel.xyplot(
-        time_g, mcmc_res[[l]][,1],
-        col="deepskyblue2", type="l", lty=2, lwd=1
-      )
-
-      panel.xyplot(
-        time_g, mcmc_res[[l]][,3],
-        col="deepskyblue2", type="l", lty=2, lwd=1
-      )
-
-      panel.superpose(
-        x[order(x)], y[order(x)], subscripts, groups,
-        type="l", col="black", lwd=1
-      )
-    }
-  )
-
-  print(gbl_plots)
-
-}
-
-
-
-box_plot_fpca_sims <- function(file_name, plot_width, plot_height, log_acc=FALSE) {
-
-  # Read the file:
-
-  results <- read.table(file_name, header=TRUE)
-
-  # Gather necessary parameters:
-
-  L <- ncol(results) - 3
-  N_vals <- unique(results$"N")
-  n_sims <- max(results$"sim")
-
-  # Extract accuracy scores:
-
-  acc_vec <- as.vector(as.matrix(results[,-c(1, 2)]))
-
-  if(log_acc) {
-
-    acc_vec <- log(acc_vec)
-    y_lab <- "log ISE"
-  } else {
-
-    y_lab <- "ISE"
-  }
-
-  # Label the curves:
-
-  gbl_labels <- vector("list", length=(L+1))
-  gbl_id <- rep(NA, L + 1)
-
-  gbl_id[1] <- expression(mu (t))
-  gbl_labels[[1]] <- rep(gbl_id[1], length(N_vals)*n_sims)
-
-  for(l in 1:L) {
-
-    gbl_id[l+1] <- parse(text=paste("psi[", l, "] (t)", sep=""))
-    bf_val <- eval(bquote(expression(psi[.(l)] (t))))
-    gbl_labels[[l+1]] <- rep(bf_val, length(N_vals)*n_sims)
-  }
-
-  gbl_labels <- do.call(c, gbl_labels)
-  gbl_labels <- factor(gbl_labels, levels=gbl_id)
-
-  N_labels <- rep(N_vals, each=n_sims)
-  N_labels <- rep(N_labels, L + 1)
-  N_labels <- factor(N_labels)
-
-  strip.math <- function(
-    which.given, which.panel, var.name, factor.levels, ...
-  ) {
-
-    fl <- gbl_id
-
-    strip.default(which.given,which.panel,var.name,fl,...)
-  }
-
-  box_plots <- bwplot(
-    acc_vec ~ N_labels | gbl_labels,
-    data = data.frame(acc_vec=acc_vec, N_labels=N_labels, gbl_labels=gbl_labels),
-    layout=c(3,1),
-    xlab="number of response curves", ylab=y_lab,
-    strip=strip.math,
-    par.settings = list(layout.heights = list(strip = 1.2)),
-    as.table=TRUE,
-    panel=function(...) {
-
-      panel.abline(h=0, col="red", lty = 2)
-      panel.abline(h=-2, col="red", lty = 2)
-      panel.abline(h=-4, col="red", lty = 2)
-      panel.abline(h=-6, col="red", lty = 2)
-      panel.abline(h=-8, col="red", lty = 2)
-      panel.bwplot(...)
-    }
-  )
-
-  print(box_plots)
-
-}
-

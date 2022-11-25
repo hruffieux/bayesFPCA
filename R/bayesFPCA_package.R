@@ -10,12 +10,13 @@
 #' @importFrom ellipse ellipse
 #' @import lattice
 # #' @importFrom lattice bwplot, panel.abline, panel.bwplot, strip.default, xyplot
+#' @importFrom graphics legend lines par
 #' @importFrom magic adiag
 #' @importFrom MASS mvrnorm
 #' @importFrom matrixcalc duplication.matrix
 #' @importFrom pracma blkdiag
 #' @importFrom splines spline.des
-#' @importFrom stats cov qnorm quantile rbinom rnorm runif
+#' @importFrom stats cov qnorm quantile rbinom rnorm runif setNames
 #' @importFrom rstan extract
 #' @importFrom utils read.table
 NULL

@@ -1,7 +1,50 @@
+#' @export
+run_vmp_fpca <- function(n_vmp, N, p, L, C, Y, sigma_zeta, mu_beta,
+                         Sigma_beta, A, time_g, C_g,
+                         tol, plot_elbo = FALSE, format_univ = FALSE,
+                         Psi_g = NULL) {
+
+  if (format_univ & p == 1) {
+
+    eta_vec <- vmp_gauss_fpca(n_vmp, N, L, C, Y, sigma_zeta, mu_beta,
+                              Sigma_beta, A, time_g, C_g, tol, plot_elbo)
+
+    # Orthogonalisation:
+
+    eta_in <- list(
+      eta_vec$"p(nu|Sigma_nu)->nu", eta_vec$"p(Y|nu,zeta,sigsq_eps)->nu",
+      eta_vec$"p(zeta)->zeta", eta_vec$"p(Y|nu,zeta,sigsq_eps)->zeta"
+    )
+
+    fpc_rotation(L, eta_in, time_g, C_g, Psi_g)
+
+  } else {
+
+    if (p > 1) {
+      stopifnot(!format_univ) # multivariate format required as p > 1
+    }
+
+    eta_vec <- vmp_gauss_mfpca(n_vmp, N, p, L, C, Y, sigma_zeta, mu_beta,
+                               Sigma_beta, A, time_g, C_g,
+                               tol, plot_elbo = plot_elbo)
+
+    # Orthogonalisation:
+
+    eta_in <- list(
+      eta_vec$"p(nu|Sigma_nu)->nu", eta_vec$"p(Y|nu,zeta,sigsq_eps)->nu",
+      eta_vec$"p(zeta)->zeta", eta_vec$"p(Y|nu,zeta,sigsq_eps)->zeta"
+    )
+
+    mfpc_rotation(L, eta_in, time_g, C_g, Psi_g)
+
+  }
+
+}
+
+
 vmp_gauss_fpca <- function(
 	n_vmp, N, L, C, Y, sigma_zeta, mu_beta,
-	Sigma_beta, A, time_g, C_g, Psi_g,
-	criterion, n_mc=100, plot_elbo=FALSE
+	Sigma_beta, A, time_g, C_g, tol, plot_elbo=FALSE
 ) {
 
 	# Establish necessary parameters:
@@ -526,20 +569,20 @@ vmp_gauss_fpca <- function(
 		if(iter > 1) {
 
 			elbo_old <- elbo_res[iter - 1]
-			criterion_1_satisfied <- (abs(elbo_new/elbo_old - 1) < criterion)
+			tol_1_satisfied <- (abs(elbo_new/elbo_old - 1) < tol)
 
 			if(iter > 2) {
 
 				elbo_old <- elbo_res[iter - 2]
-				criterion_2_satisfied <- (abs(elbo_new/elbo_old - 1) < criterion)
+				tol_2_satisfied <- (abs(elbo_new/elbo_old - 1) < tol)
 			} else {
 
-				criterion_2_satisfied <- FALSE
+				tol_2_satisfied <- FALSE
 			}
 
-			criterion_satisfied <- (criterion_1_satisfied || criterion_2_satisfied)
+			tol_satisfied <- (tol_1_satisfied || tol_2_satisfied)
 
-			if(criterion_satisfied) {
+			if(tol_satisfied) {
 
 				converged <- TRUE
 			}
@@ -551,11 +594,11 @@ vmp_gauss_fpca <- function(
 	return(eta_vec)
 }
 
-#' @export
+
 vmp_gauss_mfpca <- function(
-	n_vmp, N, p, L, C, Y, mu_beta,
+	n_vmp, N, p, L, C, Y, sigma_zeta, mu_beta,
 	Sigma_beta, A, time_g, C_g,
-	criterion, plot_elbo = FALSE
+	tol, plot_elbo = FALSE
 ) {
 
 	# Establish necessary parameters:
@@ -780,7 +823,7 @@ vmp_gauss_mfpca <- function(
 			G$"p(Y|nu,zeta,sigsq_eps)->sigsq_eps"
 		)
 
-		mfpc_lik_fragment <- mfpc_lik_frag(eta_in, G_in, C, Y, L)
+		mfpc_lik_fragment <- mfpc_lik_frag(n, eta_in, G_in, C, Y, L)
 
 		eta_vec$"p(Y|nu,zeta,sigsq_eps)->nu" <- mfpc_lik_fragment$"eta"[[1]]
 		eta_vec$"p(Y|nu,zeta,sigsq_eps)->zeta" <- mfpc_lik_fragment$"eta"[[2]]
@@ -1111,27 +1154,27 @@ vmp_gauss_mfpca <- function(
 		elbo_res <- c(elbo_res, elbo_new)
 
 		if(plot_elbo) {
-
+      par(mfrow = c(1, 1))
 			plot(1:iter, elbo_res, pch=16, cex=0.4, xlab = "iterations", ylab = "ELBO")
 		}
 
 		if(iter > 1) {
 
 			elbo_old <- elbo_res[iter - 1]
-			criterion_1_satisfied <- (abs(elbo_new/elbo_old - 1) < criterion)
+			tol_1_satisfied <- (abs(elbo_new/elbo_old - 1) < tol)
 
 			if(iter > 2) {
 
 				elbo_old <- elbo_res[iter - 2]
-				criterion_2_satisfied <- (abs(elbo_new/elbo_old - 1) < criterion)
+				tol_2_satisfied <- (abs(elbo_new/elbo_old - 1) < tol)
 			} else {
 
-				criterion_2_satisfied <- FALSE
+				tol_2_satisfied <- FALSE
 			}
 
-			criterion_satisfied <- (criterion_1_satisfied || criterion_2_satisfied)
+			tol_satisfied <- (tol_1_satisfied || tol_2_satisfied)
 
-			if(criterion_satisfied) {
+			if(tol_satisfied) {
 
 				converged <- TRUE
 			}
@@ -1143,463 +1186,352 @@ vmp_gauss_mfpca <- function(
 	return(eta_vec)
 }
 
-# logistic_fpca <- function(
-# 	n_vmp, N, L, C, Y, sigma_zeta, mu_beta,
-# 	Sigma_beta, A, time_g, C_g, Psi_g,
-# 	criterion, n_mc=100, plot_elbo=FALSE
-# ) {
-#
-# 	# Establish necessary parameters:
-#
-# 	Sigma_zeta <- sigma_zeta^2*diag(L)
-# 	T_vec <- sapply(Y, length)
-# 	K <- dim(C[[1]])[2] - 2
-# 	d <- (K+2)*(L+1)
-#
-# 	# Initialise VMP simulation:
-#
-# 	mu_q_zeta <- vector("list", length=N)
-# 	Sigma_q_zeta <- vector("list", length=N)
-# 	for(i in 1:N) {
-#
-# 		mu_q_zeta[[i]] <- rnorm(L, 0, sigma_zeta)
-# 		Sigma_q_zeta[[i]] <- diag(L)
-# 	}
-#
-# 	eta_vec <- vector("list", length=24)
-# 	names(eta_vec) <- c(
-# 		"nu->p(Y|nu,zeta)", "p(Y|nu,zeta)->nu",
-# 		"zeta->p(Y|nu,zeta)", "p(Y|nu,zeta)->zeta",
-# 		"zeta->p(zeta)", "p(zeta)->zeta",
-# 		"nu->p(nu|Sigma_nu)", "p(nu|Sigma_nu)->nu",
-# 		"sigsq_m->p(nu|Sigma_nu)", "p(nu|Sigma_nu)->sigsq_m",
-# 		"sigsq_p->p(nu|Sigma_nu)", "p(nu|Sigma_nu)->sigsq_p",
-# 		"sigsq_m->p(sigsq_m|a_m)", "p(sigsq_m|a_m)->sigsq_m",
-# 		"sigsq_p->p(sigsq_p|a_p)", "p(sigsq_p|a_p)->sigsq_p",
-# 		"a_m->p(sigsq_m|a_m)", "p(sigsq_m|a_m)->a_m",
-# 		"a_p->p(sigsq_p|a_p)", "p(sigsq_p|a_p)->a_p",
-# 		"a_m->p(a_m)", "p(a_m)->a_m",
-# 		"a_p->p(a_p)", "p(a_p)->a_p"
-# 	)
-#
-# 	G <- vector("list", length=16)
-# 	names(G) <- c(
-# 		"sigsq_m->p(nu|Sigma_nu)", "p(nu|Sigma_nu)->sigsq_m",
-# 		"sigsq_p->p(nu|Sigma_nu)", "p(nu|Sigma_nu)->sigsq_p",
-# 		"sigsq_m->p(sigsq_m|a_m)", "p(sigsq_m|a_m)->sigsq_m",
-# 		"sigsq_p->p(sigsq_p|a_p)", "p(sigsq_p|a_p)->sigsq_p",
-# 		"a_m->p(sigsq_m|a_m)", "p(sigsq_m|a_m)->a_m",
-# 		"a_p->p(sigsq_p|a_p)", "p(sigsq_p|a_p)->a_p",
-# 		"a_m->p(a_m)", "p(a_m)->a_m",
-# 		"a_p->p(a_p)", "p(a_p)->a_p"
-# 	)
-#
-# 	eta_1_sum <- 0
-# 	eta_2_sum <- 0
-# 	xi <- vector("list", length=N)
-# 	for(i in 1:N) {
-#
-# 		xi[[i]] <- rep(1, T_vec[i])
-# 		A_xi <- -tanh(xi[[i]]/2)/(4*xi[[i]])
-#
-# 		mu_q_zeta_tilde <- c(1, mu_q_zeta[[i]])
-# 		Sigma_q_zeta_tilde <- blkdiag(matrix(0), Sigma_q_zeta[[i]])
-# 		M_q_zeta_zeta_T_tilde <- Sigma_q_zeta_tilde + tcrossprod(mu_q_zeta_tilde)
-#
-# 		sum_val <- cprod(kronecker(t(mu_q_zeta_tilde), C[[i]]), Y[[i]] - 0.5)
-# 		eta_1_sum <- eta_1_sum + sum_val
-#
-# 		M <- crossprod(C[[i]], diag(A_xi)%*%C[[i]])
-# 		sum_val <- as.vector(kronecker(M_q_zeta_zeta_T_tilde, M))
-# 		eta_2_sum <- eta_2_sum + sum_val
-# 	}
-# 	eta_1 <- eta_1_sum
-# 	eta_2 <- eta_2_sum
-# 	eta_vec$"p(Y|nu,zeta)->nu" <- c(eta_1, eta_2)
-#
-# 	D_L <- duplication.matrix(L)
-# 	eta_1 <- Reduce(cbind, mu_q_zeta)
-# 	eta_2 <- replicate(N, -0.5*cprod(D_L, as.vector(diag(L) - solve(Sigma_zeta))))
-# 	eta_vec$"p(Y|nu,zeta)->zeta" <- rbind(eta_1, eta_2)
-#
-# 	eta_vec$"p(zeta)->zeta" <- replicate(
-# 		N,
-# 		gauss_prior_frag(rep(0, L), Sigma_zeta, use_vech=TRUE)
-# 	)
-#
-# 	eta_1 <- rep(0, d)
-# 	eta_2 <- -0.5*as.vector(diag(d))
-# 	eta_vec$"p(nu|Sigma_nu)->nu" <- c(eta_1, eta_2)
-#
-# 	eta_vec$"p(nu|Sigma_nu)->sigsq_m" <- c(-K/2, -K/2)
-# 	G$"p(nu|Sigma_nu)->sigsq_m" <- "full"
-#
-# 	eta_vec$"p(nu|Sigma_nu)->sigsq_p" <- replicate(L, c(-K/2, -K/2))
-# 	G$"p(nu|Sigma_nu)->sigsq_p" <- rep("full", L)
-#
-# 	eta_vec$"p(sigsq_m|a_m)->sigsq_m" <- c(-3/2, -1/2)
-# 	G$"p(sigsq_m|a_m)->sigsq_m" <- "full"
-#
-# 	eta_vec$"p(sigsq_p|a_p)->sigsq_p" <- replicate(L, c(-3/2, -1/2))
-# 	G$"p(sigsq_p|a_p)->sigsq_p" <- rep("full", L)
-#
-# 	eta_vec$"p(sigsq_m|a_m)->a_m" <- c(-1/2, -1/2)
-# 	G$"p(sigsq_m|a_m)->a_m" <- "diag"
-#
-# 	eta_vec$"p(sigsq_p|a_p)->a_p" <- replicate(L, c(-1/2, -1/2))
-# 	G$"p(sigsq_p|a_p)->a_p" <- rep("diag", L)
-#
-# 	igw_prior_updates <- igw_prior_frag(list("diag", 1, 1/A^2))
-#
-# 	eta_vec$"p(a_m)->a_m" <- igw_prior_updates[[2]]
-# 	G$"p(a_m)->a_m" <- igw_prior_updates[[1]]
-#
-# 	eta_vec$"p(a_p)->a_p" <- replicate(L, igw_prior_updates[[2]])
-# 	G$"p(a_p)->a_p" <- rep(igw_prior_updates[[1]], L)
-#
-# 	elbo_res <- NULL
-# 	elbo_new <- -Inf
-# 	converged <- FALSE
-# 	iter <- 0
-#
-# 	while((!converged) & (iter < n_vmp)) {
-#
-# 		elbo_old <- elbo_new
-# 		iter <- iter + 1
-#
-# 		if(plot_elbo) {
-#
-# 			cat("starting iteration", iter, "of", n_vmp, "\n")
-# 		}
-#
-# 		eta_vec$"nu->p(Y|nu,zeta)" <- eta_vec$"p(nu|Sigma_nu)->nu"
-# 		eta_vec$"nu->p(nu|Sigma_nu)" <- eta_vec$"p(Y|nu,zeta)->nu"
-#
-# 		eta_vec$"zeta->p(Y|nu,zeta)" <- eta_vec$"p(zeta)->zeta"
-# 		eta_vec$"zeta->p(zeta)" <- eta_vec$"p(Y|nu,zeta)->zeta"
-#
-# 		eta_vec$"sigsq_m->p(nu|Sigma_nu)" <- eta_vec$"p(sigsq_m|a_m)->sigsq_m"
-# 		G$"sigsq_m->p(nu|Sigma_nu)" <- G$"p(sigsq_m|a_m)->sigsq_m"
-# 		eta_vec$"sigsq_m->p(sigsq_m|a_m)" <- eta_vec$"p(nu|Sigma_nu)->sigsq_m"
-# 		G$"sigsq_m->p(sigsq_m|a_m)" <- G$"p(nu|Sigma_nu)->sigsq_m"
-#
-# 		eta_vec$"sigsq_p->p(nu|Sigma_nu)" <- eta_vec$"p(sigsq_p|a_p)->sigsq_p"
-# 		G$"sigsq_p->p(nu|Sigma_nu)" <- G$"p(sigsq_p|a_p)->sigsq_p"
-# 		eta_vec$"sigsq_p->p(sigsq_p|a_p)" <- eta_vec$"p(nu|Sigma_nu)->sigsq_p"
-# 		G$"sigsq_p->p(sigsq_p|a_p)" <- G$"p(nu|Sigma_nu)->sigsq_p"
-#
-# 		eta_vec$"a_m->p(sigsq_m|a_m)" <- eta_vec$"p(a_m)->a_m"
-# 		G$"a_m->p(sigsq_m|a_m)" <- G$"p(a_m)->a_m"
-# 		eta_vec$"a_m->p(a_m)" <- eta_vec$"p(sigsq_m|a_m)->a_m"
-# 		G$"a_m->p(a_m)" <- G$"p(sigsq_m|a_m)->a_m"
-#
-# 		eta_vec$"a_p->p(sigsq_p|a_p)" <- eta_vec$"p(a_p)->a_p"
-# 		G$"a_p->p(sigsq_p|a_p)" <- G$"p(a_p)->a_p"
-# 		eta_vec$"a_p->p(a_p)" <- eta_vec$"p(sigsq_p|a_p)->a_p"
-# 		G$"a_p->p(a_p)" <- G$"p(sigsq_p|a_p)->a_p"
-#
-# 		# Update p(Y|nu,zeta) fragment:
-#
-# 		eta_in <- list(
-# 			eta_vec$"nu->p(Y|nu,zeta)",
-# 			eta_vec$"p(Y|nu,zeta)->nu",
-# 			eta_vec$"zeta->p(Y|nu,zeta)",
-# 			eta_vec$"p(Y|nu,zeta)->zeta"
-# 		)
-# 		logistic_fpc_lik_fragment <- logistic_fpc_lik_frag(eta_in, C, Y, L)
-#
-# 		eta_vec$"p(Y|nu,zeta)->nu" <- logistic_fpc_lik_fragment[[1]]
-# 		eta_vec$"p(Y|nu,zeta)->zeta" <- logistic_fpc_lik_fragment[[2]]
-#
-# 		# Update p(nu|Sigma_nu) fragment:
-#
-# 		eta_in <- list(
-# 			eta_vec$"nu->p(nu|Sigma_nu)", eta_vec$"p(nu|Sigma_nu)->nu",
-# 			eta_vec$"sigsq_m->p(nu|Sigma_nu)", eta_vec$"p(nu|Sigma_nu)->sigsq_m",
-# 			eta_vec$"sigsq_p->p(nu|Sigma_nu)", eta_vec$"p(nu|Sigma_nu)->sigsq_p"
-# 		)
-#
-# 		G_in <- list(
-# 			G$"sigsq_m->p(nu|Sigma_nu)", G$"p(nu|Sigma_nu)->sigsq_m",
-# 			G$"sigsq_p->p(nu|Sigma_nu)", G$"p(nu|Sigma_nu)->sigsq_p"
-# 		)
-#
-# 		fpc_gauss_pen_fragment <- fpc_gauss_pen_frag(
-# 			eta_in, G_in, L, mu_beta, Sigma_beta
-# 		)
-#
-# 		eta_vec$"p(nu|Sigma_nu)->nu" <- fpc_gauss_pen_fragment$"eta"[[1]]
-# 		eta_vec$"p(nu|Sigma_nu)->sigsq_m" <- fpc_gauss_pen_fragment$"eta"[[2]]
-# 		eta_vec$"p(nu|Sigma_nu)->sigsq_p" <- fpc_gauss_pen_fragment$"eta"[[3]]
-#
-# 		G$"p(nu|Sigma_nu)->sigsq_m" <- fpc_gauss_pen_fragment$"G"[[1]]
-# 		G$"p(nu|Sigma_nu)->sigsq_p" <- fpc_gauss_pen_fragment$"G"[[2]]
-#
-# 		# Update p(sigsq_m|a_m) fragment:
-#
-# 		eta_in <- list(
-# 			eta_vec$"sigsq_m->p(sigsq_m|a_m)",
-# 			eta_vec$"p(sigsq_m|a_m)->sigsq_m",
-# 			eta_vec$"a_m->p(sigsq_m|a_m)",
-# 			eta_vec$"p(sigsq_m|a_m)->a_m"
-# 		)
-#
-# 		iter_igw_fragment <- iter_igw_frag(
-# 			eta_in, G$"a_m->p(sigsq_m|a_m)",
-# 			1, G$"sigsq_m->p(sigsq_m|a_m)"
-# 		)
-#
-# 		eta_vec$"p(sigsq_m|a_m)->sigsq_m" <- iter_igw_fragment$"eta"[[1]]
-# 		eta_vec$"p(sigsq_m|a_m)->a_m" <- iter_igw_fragment$"eta"[[2]]
-#
-# 		G$"p(sigsq_m|a_m)->sigsq_m" <- iter_igw_fragment$"G"[[1]]
-# 		G$"p(sigsq_m|a_m)->a_m" <- iter_igw_fragment$"G"[[2]]
-#
-# 		# Update p(sigsq_p|a_p) fragment:
-#
-# 		for(l in 1:L) {
-#
-# 			eta_in <- list(
-# 				eta_vec$"sigsq_p->p(sigsq_p|a_p)"[,l],
-# 				eta_vec$"p(sigsq_p|a_p)->sigsq_p"[,l],
-# 				eta_vec$"a_p->p(sigsq_p|a_p)"[,l],
-# 				eta_vec$"p(sigsq_p|a_p)->a_p"[,l]
-# 			)
-#
-# 			iter_igw_fragment <- iter_igw_frag(
-# 				eta_in, G$"a_p->p(sigsq_p|a_p)"[l],
-# 				1, G$"sigsq_p->p(sigsq_p|a_p)"[l]
-# 			)
-#
-# 			eta_vec$"p(sigsq_p|a_p)->sigsq_p"[,l] <- iter_igw_fragment$"eta"[[1]]
-# 			eta_vec$"p(sigsq_p|a_p)->a_p"[,l] <- iter_igw_fragment$"eta"[[2]]
-#
-# 			G$"p(sigsq_p|a_p)->sigsq_p"[l] <- iter_igw_fragment$"G"[[1]]
-# 			G$"p(sigsq_p|a_p)->a_p"[l] <- iter_igw_fragment$"G"[[2]]
-# 		}
-#
-# 		# Compute the entropy:
-#
-# 		ent <- 0
-#
-# 		eta_nu <- list(
-# 			eta_vec$"p(Y|nu,zeta)->nu",
-# 			eta_vec$"p(nu|Sigma_nu)->nu"
-# 		)
-# 		ent_nu <- entropy_gauss(eta_nu, use_vech=FALSE)
-#
-# 		ent <- ent + ent_nu
-#
-# 		ent_zeta <- 0
-# 		for(i in 1:N) {
-#
-# 			eta_zeta <- list(
-# 				eta_vec$"p(Y|nu,zeta)->zeta"[,l],
-# 				eta_vec$"p(zeta)->zeta"[,l]
-# 			)
-# 			sum_val <- entropy_gauss(eta_zeta, use_vech=TRUE)
-# 			ent_zeta <- ent_zeta + sum_val
-# 		}
-#
-# 		ent <- ent + ent_zeta
-#
-# 		eta_sigsq_m <- list(
-# 			eta_vec$"p(nu|Sigma_nu)->sigsq_m",
-# 			eta_vec$"p(sigsq_m|a_m)->sigsq_m"
-# 		)
-# 		G_sigsq_m <- c(
-# 			G$"p(nu|Sigma_nu)->sigsq_m",
-# 			G$"p(sigsq_m|a_m)->sigsq_m"
-# 		)
-# 		ent_sigsq_m <- entropy_igw(eta_sigsq_m, G_sigsq_m)
-#
-# 		ent <- ent + ent_sigsq_m
-#
-# 		eta_a_m <- list(
-# 			eta_vec$"p(sigsq_m|a_m)->a_m",
-# 			eta_vec$"p(a_m)->a_m"
-# 		)
-# 		G_a_m <- c(
-# 			G$"p(sigsq_m|a_m)->a_m",
-# 			G$"p(a_m)->a_m"
-# 		)
-# 		ent_a_m <- entropy_igw(eta_a_m, G_a_m)
-#
-# 		ent <- ent + ent_a_m
-#
-# 		ent_sigsq_p <- 0
-# 		ent_a_p <- 0
-# 		for(l in 1:L) {
-#
-# 			eta_sigsq_p <- list(
-# 				eta_vec$"p(nu|Sigma_nu)->sigsq_p"[,l],
-# 				eta_vec$"p(sigsq_p|a_p)->sigsq_p"[,l]
-# 			)
-# 			G_sigsq_p <- list(
-# 				G$"p(nu|Sigma_nu)->sigsq_p"[l],
-# 				G$"p(sigsq_p|a_p)->sigsq_p"[l]
-# 			)
-# 			sum_val <- entropy_igw(eta_sigsq_p, G_sigsq_p)
-# 			ent_sigsq_p <- ent_sigsq_p + sum_val
-#
-# 			eta_a_p <- list(
-# 				eta_vec$"p(sigsq_p|a_p)->a_p"[,l],
-# 				eta_vec$"p(a_p)->a_p"[,l]
-# 			)
-# 			G_a_p <- c(
-# 				G$"p(sigsq_p|a_p)->a_p"[l],
-# 				G$"p(a_p)->a_p"[l]
-# 			)
-# 			sum_val <- entropy_igw(eta_a_p, G_a_p)
-# 			ent_a_p <- ent_a_p + sum_val
-# 		}
-#
-# 		ent <- ent + ent_sigsq_p + ent_a_p
-#
-# 		# Compute the cross-entropy:
-#
-# 		c_ent <- 0
-#
-# 		eta_in <- list(
-# 			eta_vec$"nu->p(Y|nu,zeta)",
-# 			eta_vec$"p(Y|nu,zeta)->nu",
-# 			eta_vec$"zeta->p(Y|nu,zeta)",
-# 			eta_vec$"p(Y|nu,zeta)->zeta"
-# 		)
-#
-# 		c_ent_p_Y <- cross_entropy_logistic_fpc_lik_frag(eta_in, C, Y, L)
-#
-# 		c_ent <- c_ent + c_ent_p_Y
-#
-# 		eta_in <- list(
-# 			eta_vec$"nu->p(nu|Sigma_nu)", eta_vec$"p(nu|Sigma_nu)->nu",
-# 			eta_vec$"sigsq_m->p(nu|Sigma_nu)", eta_vec$"p(nu|Sigma_nu)->sigsq_m",
-# 			eta_vec$"sigsq_p->p(nu|Sigma_nu)", eta_vec$"p(nu|Sigma_nu)->sigsq_p"
-# 		)
-# 		G_in <- list(
-# 			G$"sigsq_m->p(nu|Sigma_nu)", G$"p(nu|Sigma_nu)->sigsq_m",
-# 			G$"sigsq_p->p(nu|Sigma_nu)", G$"p(nu|Sigma_nu)->sigsq_p"
-# 		)
-# 		c_ent_p_nu <- cross_entropy_fpc_gauss_pen(eta_in, G_in, L, mu_beta, Sigma_beta)
-#
-# 		c_ent <- c_ent + c_ent_p_nu
-#
-# 		c_ent_p_zeta <- 0
-# 		for(i in 1:N) {
-#
-# 			eta_in <- list(
-# 				eta_vec$"zeta->p(zeta)"[,l],
-# 				eta_vec$"p(zeta)->zeta"[,l]
-# 			)
-# 			sum_val <- cross_entropy_gauss_prior(
-# 				eta_in, rep(0, L),
-# 				Sigma_zeta, use_vech=TRUE
-# 			)
-# 			c_ent_p_zeta <- c_ent_p_zeta + sum_val
-# 		}
-#
-# 		c_ent <- c_ent + c_ent_p_zeta
-#
-# 		eta_in <- list(
-# 			eta_vec$"sigsq_m->p(sigsq_m|a_m)",
-# 			eta_vec$"p(sigsq_m|a_m)->sigsq_m",
-# 			eta_vec$"a_m->p(sigsq_m|a_m)",
-# 			eta_vec$"p(sigsq_m|a_m)->a_m"
-# 		)
-# 		G_mess <- G$"sigsq_m->p(sigsq_m|a_m)"
-# 		G_hyper <- G$"a_m->p(sigsq_m|a_m)"
-# 		c_ent_p_sigsq_m <- cross_entropy_iter_igw(eta_in, G_mess, 1, G_hyper)
-#
-# 		c_ent <- c_ent + c_ent_p_sigsq_m
-#
-# 		eta_in <- list(
-# 			eta_vec$"a_m->p(a_m)",
-# 			eta_vec$"p(a_m)->a_m"
-# 		)
-# 		G_in <- c(
-# 			G$"a_m->p(a_m)",
-# 			G$"p(a_m)->a_m"
-# 		)
-# 		c_ent_p_a_m <- cross_entropy_igw_prior(eta_in, G_in, 1, 1/A^2)
-#
-# 		c_ent <- c_ent + c_ent_p_a_m
-#
-# 		c_ent_p_sigsq_p <- 0
-# 		c_ent_p_a_p <- 0
-# 		for(l in 1:L) {
-#
-# 			eta_in <- list(
-# 				eta_vec$"sigsq_p->p(sigsq_p|a_p)"[,l],
-# 				eta_vec$"p(sigsq_p|a_p)->sigsq_p"[,l],
-# 				eta_vec$"a_p->p(sigsq_p|a_p)"[,l],
-# 				eta_vec$"p(sigsq_p|a_p)->a_p"[,l]
-# 			)
-# 			G_mess <- G$"sigsq_p->p(sigsq_p|a_p)"[l]
-# 			G_hyper <- G$"a_p->p(sigsq_p|a_p)"[l]
-# 			sum_val <- cross_entropy_iter_igw(eta_in, G_mess, 1, G_hyper)
-# 			c_ent_p_sigsq_p <- c_ent_p_sigsq_p + sum_val
-#
-# 			eta_in <- list(
-# 				eta_vec$"a_p->p(a_p)"[,l],
-# 				eta_vec$"p(a_p)->a_p"[,l]
-# 			)
-# 			G_in <- c(
-# 				G$"a_p->p(a_p)"[l],
-# 				G$"p(a_p)->a_p"[l]
-# 			)
-# 			sum_val <- cross_entropy_igw_prior(eta_in, G_in, 1, 1/A^2)
-# 			c_ent_p_a_p <- c_ent_p_a_p + sum_val
-# 		}
-#
-# 		c_ent <- c_ent + c_ent_p_sigsq_p + c_ent_p_a_p
-#
-# 		# Compute the ELBO
-#
-# 		elbo_new <- ent - c_ent
-# 		elbo_res <- c(elbo_res, elbo_new)
-#
-# 		if(plot_elbo) {
-#
-# 			plot(1:iter, elbo_res, pch=16, cex=0.4, xlab="iterations", ylab="ELBO")
-# 		}
-#
-#
-# 		if(abs(elbo_new/elbo_old - 1) < criterion) {
-#
-# 			converged <- TRUE
-# 		}
-# 	}
-#
-# 	# Save the original q_nu:
-#
-# 	eta_nu <- list(eta_vec$"p(nu|Sigma_nu)->nu", eta_vec$"p(Y|nu,zeta)->nu")
-#
-# 	q_nu <- gauss_q(eta_nu, use_vech = FALSE)
-# 	mu_q_nu <- q_nu[[1]]
-# 	Sigma_q_nu <- q_nu[[2]]
-#
-# 	# Set up the orthogonal decomposition:
-#
-# 	eta_in <- list(
-# 		eta_vec$"p(nu|Sigma_nu)->nu", eta_vec$"p(Y|nu,zeta)->nu",
-# 		eta_vec$"p(zeta)->zeta", eta_vec$"p(Y|nu,zeta)->zeta"
-# 	)
-#
-# 	fpc_rotns <- fpc_rotation(eta_in, time_g, C_g, Psi_g)
-#
-# 	mu_q_nu_mu <- fpc_rotns$"mu"[[1]]
-# 	Sigma_q_nu_mu <- fpc_rotns$"mu"[[2]]
-# 	mu_q_mu <- fpc_rotns$"mu"[[3]]
-#
-# 	mu_q_nu_psi <- fpc_rotns$"psi"[[1]]
-# 	Sigma_q_nu_psi <- fpc_rotns$"psi"[[2]]
-# 	M_q_Psi_star <- fpc_rotns$"psi"[[3]]
-#
-# 	mu_q_zeta <- fpc_rotns$"zeta"[[1]]
-# 	Sigma_q_zeta <- fpc_rotns$"zeta"[[2]]
-# 	M_q_Zeta_star <- fpc_rotns$"zeta"[[3]]
-#
-# 	res <- list(mu_q_mu, M_q_Psi_star)
-# 	names(res) <- c("mu", "Psi")
-# 	return(res)
-# }
+
+# Mean-field version, ELBO not implemented, no tolerance tol
+#
+#' @export
+run_mfvb_fpca <- function(n_mfvb, N, n, n_g, p, d, K, L, C, Y, sigma_zeta,
+                          mu_beta, sigsq_beta, A, time_g, C_g, Psi_g = NULL) {
+
+  E_q_zeta <- vector("list", length = N)
+  Cov_q_zeta <- vector("list", length = N)
+  for(i in 1:N) {
+
+    E_q_zeta[[i]] <- rnorm(L, 0, sigma_zeta)
+    Cov_q_zeta[[i]] <- diag(L)
+  }
+
+  YTY <- matrix(NA, N, p)
+  CTY <- vector("list", length = N)
+  CTC <- vector("list", length = N)
+  for(i in 1:N) {
+
+    CTY[[i]] <- matrix(NA, K + 2, p)
+    CTC[[i]] <- vector("list", length = p)
+    for(j in 1:p) {
+
+      YTY[i, j] <- cprod(Y[[i]][[j]])
+      CTY[[i]][, j] <- cprod(Y[[i]][[j]], C[[i]][[j]])
+      CTC[[i]][[j]] <- crossprod(C[[i]][[j]])
+    }
+  }
+
+  # Set fixed parameters:
+
+  inds_mat <- matrix(1:d, K + 2, L + 1)
+
+  # Initialisation
+
+  E_q_recip_sigsq_eps <- rep(1, p)
+  E_q_recip_a_eps <- rep(1, p)
+
+  E_q_recip_sigsq_mu <- rep(1, p)
+  E_q_recip_a_mu <- rep(1, p)
+  E_q_recip_sigsq_psi <- matrix(1, nrow = p, ncol = L)
+  E_q_recip_a_psi <- matrix(1, nrow = p, ncol = L)
+
+  # Iterations:
+
+  for(iter in 1:n_mfvb) {
+
+    cat("starting iteration", iter, "of", n_mfvb, "\n")
+
+    # Update q(nu):
+
+    inv_fixed_var <- 1/sigsq_beta*diag(2)
+    Cov_q_nu <- vector("list", length = p)
+    E_q_nu <- vector("list", length = p)
+    for(j in 1:p) {
+
+      Cov_sum <- 0
+      E_sum <- 0
+      for(i in 1:N) {
+
+        E_q_zeta_tilde <- c(1, E_q_zeta[[i]])
+        Cov_q_zeta_tilde <- adiag(0, Cov_q_zeta[[i]])
+        E_q_tcross_zeta_tilde <- Cov_q_zeta_tilde + tcrossprod(E_q_zeta_tilde)
+
+        sum_val <- kronecker(E_q_tcross_zeta_tilde, CTC[[i]][[j]])
+        Cov_sum <- Cov_sum + sum_val
+
+        sum_val <- cprod(kronecker(t(E_q_zeta_tilde), C[[i]][[j]]), Y[[i]][[j]])
+        E_sum <- E_sum + sum_val
+      }
+
+      E_q_inv_Sigma_mu <- adiag(inv_fixed_var, E_q_recip_sigsq_mu[j]*diag(K))
+      E_q_inv_Sigma_psi <- vector("list", length = L)
+      for(l in 1:L) {
+
+        E_q_inv_Sigma_psi[[l]] <- adiag(inv_fixed_var, E_q_recip_sigsq_psi[j, l]*diag(K))
+      }
+
+      E_q_inv_Sigma_nu <- adiag(E_q_inv_Sigma_mu, Reduce(adiag, E_q_inv_Sigma_psi))
+
+      Cov_q_nu[[j]] <- solve(E_q_recip_sigsq_eps[j]*Cov_sum + E_q_inv_Sigma_nu)
+      E_q_nu[[j]] <- E_q_recip_sigsq_eps[j]*as.vector(Cov_q_nu[[j]] %*% E_sum)
+    }
+
+    inds_mat <- matrix(1:d, K + 2, L + 1)
+    mu_inds <- inds_mat[, 1]
+    psi_inds <- as.vector(inds_mat[, 1:L + 1])
+
+    E_q_V <- vector("list", length = p)
+    E_q_nu_mu <- vector("list", length = p)
+    E_q_V_psi <- vector("list", length = p)
+    E_q_nu_psi <- vector("list", length = p)
+    Cov_q_nu_mu <- vector("list", length = p)
+    Cov_q_nu_psi <- vector("list", length = p)
+    Cov_q_nu_mu_psi <- vector("list", length = p)
+    for(j in 1:p) {
+
+      E_q_V[[j]] <- matrix(E_q_nu[[j]], K + 2, L + 1)
+      E_q_nu_mu[[j]] <- E_q_V[[j]][, 1]
+      E_q_V_psi[[j]] <- E_q_V[[j]][, 1:L + 1]
+      E_q_nu_psi[[j]] <- as.vector(E_q_V_psi[[j]])
+
+      Cov_q_nu_mu[[j]] <- Cov_q_nu[[j]][mu_inds, mu_inds]
+      Cov_q_nu_psi[[j]] <- Cov_q_nu[[j]][psi_inds, psi_inds]
+      Cov_q_nu_mu_psi[[j]] <- Cov_q_nu[[j]][mu_inds, psi_inds]
+    }
+
+    # For i = 1, ..., N, update q(zeta[i]):
+
+    E_q_h_mu <- matrix(NA, N, p)
+    E_q_h_mu_psi <- vector("list", length = N)
+    E_q_H_psi <- vector("list", length = N)
+    E_q_zeta <- vector("list", length = N)
+    Cov_q_zeta <- vector("list", length = N)
+    E_q_tcross_zeta <- vector("list", length = N)
+    for(i in 1:N) {
+
+      E_q_h_mu_psi[[i]] <- matrix(NA, L, p)
+      E_q_H_psi[[i]] <- vector("list", length = p)
+      Cov_sum <- 0
+      E_sum <- 0
+      for(j in 1:p) {
+
+        E_q_h_mu[i, j] <- E_cprod(
+          E_q_nu_mu[[j]], Cov_q_nu_mu[[j]],
+          E_q_nu_mu[[j]], CTC[[i]][[j]]
+        )
+
+        E_q_h_mu_psi[[i]][, j] <- E_h(
+          L, E_q_nu_psi[[j]], Cov_q_nu_mu_psi[[j]],
+          E_q_nu_mu[[j]], CTC[[i]][[j]]
+        )
+
+        E_q_H_psi[[i]][[j]] <- E_H(
+          L, L, E_q_nu_psi[[j]], Cov_q_nu_psi[[j]],
+          E_q_nu_psi[[j]], CTC[[i]][[j]]
+        )
+
+        sum_val <- E_q_recip_sigsq_eps[j]*E_q_H_psi[[i]][[j]]
+        Cov_sum <- Cov_sum + sum_val
+
+        freq_scores <- cprod(E_q_V_psi[[j]], CTY[[i]][, j]) - E_q_h_mu_psi[[i]][, j]
+        sum_val <- E_q_recip_sigsq_eps[j]*freq_scores
+        E_sum <- E_sum + sum_val
+      }
+      Cov_q_zeta[[i]] <- solve(Cov_sum + diag(L))
+      E_q_zeta[[i]] <- as.vector(Cov_q_zeta[[i]] %*% E_sum)
+      E_q_tcross_zeta[[i]] <- Cov_q_zeta[[i]] + tcrossprod(E_q_zeta[[i]])
+    }
+
+    # For j = 1, ..., p, update q(sigsq_eps[j]):
+
+    E_q_recip_sigsq_eps <- rep(NA, p)
+    for(j in 1:p) {
+
+      kappa_q_sigsq_eps <- sum(n[, j]) + 1
+
+      lambda_sum <- 0
+      for(i in 1:N) {
+
+        summands <- rep(NA, 6)
+        summands[1] <- YTY[i, j]
+        summands[2] <- - 2*cprod(E_q_nu_mu[[j]], CTY[[i]][, j])
+        summands[3] <- -2*cprod(E_q_V_psi[[j]] %*% E_q_zeta[[i]], CTY[[i]][, j])
+        summands[4] <- E_q_h_mu[i, j]
+        summands[5] <- 2*cprod(E_q_zeta[[i]], E_q_h_mu_psi[[i]][, j])
+        summands[6] <- tr(E_q_tcross_zeta[[i]] %*% E_q_H_psi[[i]][[j]])
+        sum_val <- sum(summands)
+        lambda_sum <- lambda_sum + sum_val
+      }
+      lambda_q_sigsq_eps <- lambda_sum + E_q_recip_a_eps[j]
+
+      E_q_recip_sigsq_eps[j] <- kappa_q_sigsq_eps/lambda_q_sigsq_eps
+    }
+
+    # For j = 1, ..., p, update q(a_eps[j]):
+
+    E_q_recip_a_eps <- rep(NA, p)
+    for(j in 1:p) {
+
+      lambda_q_a_eps <- E_q_recip_sigsq_eps[j] + 1/A^2
+      E_q_recip_a_eps[j] <- 2/lambda_q_a_eps
+    }
+
+    # For j = 1, ..., p, update q(sigsq_mu[j]):
+
+    lambda_q_sigsq_mu <- rep(NA, p)
+    u_inds <- inds_mat[, 1][3:(K+2)]
+    for(j in 1:p) {
+
+      tr_term <- tr(Cov_q_nu[[j]][u_inds, u_inds])
+      cprod_term <- cprod(E_q_nu[[j]][u_inds])
+      lambda_q_sigsq_mu[j] <- tr_term + cprod_term + E_q_recip_a_mu[j]
+    }
+    E_q_recip_sigsq_mu <- (K+1)/lambda_q_sigsq_mu
+
+    # Update q(a_mu):
+
+    lambda_q_a_mu <- E_q_recip_sigsq_mu + 1/A^2
+    E_q_recip_a_mu <- 2/lambda_q_a_mu
+
+    # For j = 1, ..., p and l = 1, ..., L, update q(sigsq_psi[j, l]):
+
+    lambda_q_sigsq_psi <- matrix(NA, p, L)
+    for(l in 1:L) {
+
+      u_inds <- inds_mat[, l + 1][3:(K+2)]
+
+      for(j in 1:p) {
+
+        tr_term <- tr(Cov_q_nu[[j]][u_inds, u_inds])
+        cprod_term <- cprod(E_q_nu[[j]][u_inds])
+        lambda_q_sigsq_psi[j, l] <- tr_term + cprod_term + E_q_recip_a_psi[j, l]
+      }
+    }
+    E_q_recip_sigsq_psi <- (K+1)/lambda_q_sigsq_psi
+
+    # For j = 1, ..., p and l = 1, ..., L, update q(a_psi[j, l]):
+
+    lambda_q_a_psi <- E_q_recip_sigsq_psi + 1/A^2
+    E_q_recip_a_psi <- 2/lambda_q_a_psi
+  }
+
+  # Orthogonalisation:
+
+  E_q_Zeta <- Reduce(rbind, E_q_zeta)
+
+  E_q_mu <- vector("list", length = p)
+  E_q_Psi <- vector("list", length = p)
+  for(j in 1:p) {
+
+    gbl_post <- C_g %*% E_q_V[[j]]
+    E_q_mu[[j]] <- gbl_post[, 1]
+    E_q_Psi[[j]] <- gbl_post[, 1:L + 1]
+  }
+  E_q_mu <- Reduce(c, E_q_mu)
+  E_q_Psi <- Reduce(rbind, E_q_Psi)
+
+  svd_Psi <- svd(E_q_Psi)
+  U_psi <- svd_Psi$u
+  D_psi <- diag(svd_Psi$d)
+  V_psi <- svd_Psi$v
+
+  zeta_rotn <- t(E_q_Zeta %*% V_psi %*% D_psi)
+  C_zeta <- cov(t(zeta_rotn))
+  eigen_C <- eigen(C_zeta)
+  Q <- eigen_C$vectors
+  Lambda <- diag(eigen_C$values)
+
+  Psi_tilde <- U_psi %*% Q %*% sqrt(Lambda)
+  Zeta_tilde <- crossprod(zeta_rotn, Q %*% solve(sqrt(Lambda)))
+
+  mu_hat <- split(E_q_mu, rep(1:p, each = n_g))
+
+  Psi_hat <- matrix(NA, p*n_g, L)
+  Zeta_hat <- matrix(NA, N, L)
+  norm_vec <- rep(NA, L)
+  time_int_vec <- seq(0, p, length = n_g*p)
+  for(l in 1:L) {
+
+    norm_vec[l] <- sqrt(trapint(time_int_vec, Psi_tilde[, l]^2))
+    Psi_hat[, l] <- Psi_tilde[, l]/norm_vec[l]
+    Zeta_hat[, l] <- norm_vec[l]*Zeta_tilde[, l]
+
+    if (!is.null(Psi_g)) {
+      Psi_g_comb <- vector("list", length = p)
+      for(j in 1:p) {
+
+        Psi_g_comb[[j]] <- Psi_g[[j]][, l]
+      }
+      Psi_g_comb <- Reduce(c, Psi_g_comb)
+
+      inner_prod_sign <- sign(cprod(Psi_g_comb, Psi_hat[, l]))
+      if(inner_prod_sign == -1) {
+
+        Psi_hat[, l] <- -Psi_hat[, l]
+        Zeta_hat[, l] <- -Zeta_hat[, l]
+      }
+    }
+
+  }
+  Psi_hat <- lapply(split(Psi_hat, rep(1:p, each = n_g)), matrix, nrow = n_g, ncol = L)
+
+  Cov_zeta_hat <- vector("list", length = N)
+  rotn_mat <- V_psi %*% D_psi %*% Q %*% solve(sqrt(Lambda)) %*% diag(norm_vec)
+  for(i in 1:N) {
+
+    Cov_zeta_hat[[i]] <- crossprod(rotn_mat, Cov_q_zeta[[i]] %*% rotn_mat)
+  }
+
+  # Store the results:
+
+  zeta_summary <- list_zeta_ellipse <- vector("list", length=N)
+
+  for(i in 1:N) {
+
+    zeta_mean <- Zeta_hat[i,][1:2]
+
+    zeta_ellipse <- ellipse(
+      Cov_zeta_hat[[i]][1:2, 1:2],
+      centre=zeta_mean,
+      level=0.95
+    )
+
+    list_zeta_ellipse[[i]] <- zeta_ellipse
+
+    zeta_summary[[i]] <- list(zeta_mean, zeta_ellipse)
+    names(zeta_summary[[i]]) <- c("mean", "credible boundary")
+  }
+
+  gbl_hat <- vector("list", length = L + 1)
+  list_Psi_hat <- vector("list", length = L + 1)
+  gbl_hat[[1]] <- mu_hat <- as.matrix(Reduce(cbind, mu_hat)) # now deals with the case p = 1
+  for(l in 1:L) {
+
+    gbl_hat[[l+1]] <- list_Psi_hat[[l]] <- matrix(NA, n_g, p)
+    for(j in 1:p) {
+
+      gbl_hat[[l+1]][, j] <- list_Psi_hat[[l]][,j] <- Psi_hat[[j]][, l]
+    }
+  }
+
+  Y_summary <- Y_hat <- Y_low <- Y_upp <- vector("list", length = N)
+  for(i in 1:N) {
+
+    Y_summary[[i]] <- Y_hat[[i]] <- Y_low[[i]] <- Y_upp[[i]] <- vector("list", length = p)
+    for(j in 1:p) {
+
+      Y_hat_ij <- mu_hat[[j]] + Psi_hat[[j]] %*% Zeta_hat[i, ]
+      sd_vec_ij <- sqrt(diag(tcrossprod(Psi_hat[[j]] %*% Cov_zeta_hat[[i]], Psi_hat[[j]])))
+
+      Y_summary[[i]][[j]] <- matrix(NA, n_g, 3)
+
+      Y_summary[[i]][[j]][, 1] <- Y_hat_ij + qnorm(0.025)*sd_vec_ij
+      Y_summary[[i]][[j]][, 2] <- Y_hat_ij
+      Y_summary[[i]][[j]][, 3] <- Y_hat_ij + qnorm(0.975)*sd_vec_ij
+      Y_hat[[i]][[j]] <- Y_hat_ij
+      Y_low[[i]][[j]] <- Y_hat_ij + qnorm(0.025)*sd_vec_ij
+      Y_upp[[i]][[j]] <- Y_hat_ij + qnorm(0.975)*sd_vec_ij
+    }
+  }
+
+  create_named_list(Y_summary, Y_hat, Y_low, Y_upp,
+                    gbl_hat, mu_hat, list_Psi_hat,
+                    Zeta_hat, list_zeta_ellipse)
+
+}
+
