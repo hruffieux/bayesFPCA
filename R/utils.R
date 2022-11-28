@@ -149,7 +149,7 @@ vecInverse <- function(a) {
   return(A)
 }
 
-
+#' @export
 trapint <- function(xgrid,fgrid) {
   ng <- length(xgrid)
 
