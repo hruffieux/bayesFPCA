@@ -3,7 +3,7 @@ display_eigenfunctions <- function(p, L, time_g, mu_g, Psi_g,
                                    mu_hat, list_Psi_hat,
                                    mu_hat_add = NULL, list_Psi_hat_add = NULL,
                                    mu_hat_ci = NULL, list_Psi_hat_ci = NULL,
-                                   lwd = 2, data_col = "black",
+                                   lwd = 2, data_col = "red",
                                    vec_col_add = NULL, vec_lwd = NULL) { # perso
 
   ylim <- c(min(c(unlist(mu_g),
@@ -218,7 +218,8 @@ display_fit <- function(N_sample, time_obs, time_g, Y, Y_hat, Y_low, Y_upp, offs
 display_fit_list <- function(p_sample, N_sample, time_obs, time_g, Y,
                              Y_hat, Y_low, Y_upp,
                              Y_hat_add = NULL, Y_low_add = NULL, Y_upp_add = NULL, offset = 0.1,
-                             col_data = "black", col = "blue", col_add = "red", lwd = 1.2, lwd_add = 1.2) {
+                             col_data = "grey55", col = "black", col_add = "blue",
+                             lwd = 1.2, lwd_add = 1.2) {
 
   p_sample <- sort(p_sample)
   N_sample <- sort(N_sample)
