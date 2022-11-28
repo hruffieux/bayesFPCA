@@ -1500,7 +1500,7 @@ run_mfvb_fpca <- function(n_mfvb, N, n, n_g, p, K, L, C, Y, sigma_zeta,
   }
 
   gbl_hat <- vector("list", length = L + 1)
-  list_Psi_hat <- vector("list", length = L + 1)
+  list_Psi_hat <- vector("list", length = L)
   gbl_hat[[1]] <- mu_hat <- as.matrix(Reduce(cbind, mu_hat)) # now deals with the case p = 1
   for(l in 1:L) {
 
