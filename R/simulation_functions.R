@@ -1,23 +1,33 @@
 #' @export
-generate_fpca_data <- function(N, p, n, K, L, n_g, sigma_zeta_vec,
-                               sigma_eps, mu_func, Psi_func, time_obs = NULL,
-                               format_univ = FALSE) {
+generate_fpca_data <- function(N, p, n, K, L, n_g, vec_sd_eps, mu_func, Psi_func,
+                               time_obs = NULL, format_univ = FALSE,
+                               generate_from_univ = FALSE,
+                               vec_sd_zeta = NULL,
+                               vec_rho_Zeta = NULL) {
 
-  if (format_univ & p == 1) {
-    gauss_fpca_data(N, n, K, L, n_g, sigma_zeta_vec, sigma_eps, mu_func, Psi_func,
-                    time_obs)
+  if (format_univ & p == 1) { # don't use it, not helpful.
+    gauss_fpca_data(N, n, K, L, n_g, vec_sd_eps, mu_func, Psi_func, time_obs,
+                    vec_sd_zeta = vec_sd_zeta)
   } else {
     if (p > 1) {
       stopifnot(!format_univ) # multivariate format required as p > 1
+    } else {
+      stopifnot(!generate_from_univ & !is.null(vec_rho_Zeta))
     }
-    gauss_mfpca_data(N, p, n, K, L, n_g, sigma_zeta_vec, sigma_eps, mu_func,
-                     Psi_func, time_obs)
+
+    gauss_mfpca_data(N, p, n, K, L, n_g, vec_sd_eps, mu_func,
+                     Psi_func, time_obs,
+                     generate_from_univ = generate_from_univ,
+                     vec_sd_zeta = vec_sd_zeta,
+                     vec_rho_Zeta = vec_rho_Zeta)
+
   }
 }
 
 
-gauss_fpca_data <- function(N, n, K, L, n_g, sigma_zeta_vec, sigma_eps,
-                            mu_func, Psi_func, time_obs = NULL) {
+
+gauss_fpca_data <- function(N, n, K, L, n_g, vec_sd_eps, mu_func, Psi_func,
+                            vec_sd_zeta = NULL, time_obs = NULL) {
 
   # Determine necessary parameters:
 
@@ -29,7 +39,7 @@ gauss_fpca_data <- function(N, n, K, L, n_g, sigma_zeta_vec, sigma_eps,
   }
 
   unique_time_obs <- sort(unique(Reduce(c, time_obs)))
-  int_knots <- quantile(unique_time_obs, seq(0,1,length=K)[-c(1,K)])
+  int_knots <- quantile(unique_time_obs, seq(0, 1, length=K)[-c(1,K)])
 
   X <- vector("list", length=N)
   Z <- vector("list", length=N)
@@ -42,6 +52,11 @@ gauss_fpca_data <- function(N, n, K, L, n_g, sigma_zeta_vec, sigma_eps,
   }
 
   # Set the scores:
+  if (is.null(vec_sd_zeta)) {
+    vec_sd_zeta <- 1/(1:L)
+  } else {
+    stopifnot(length(vec_sd_zeta) == L)
+  }
 
   Zeta <- vector("list", length=N)
   for(i in 1:N) {
@@ -50,7 +65,7 @@ gauss_fpca_data <- function(N, n, K, L, n_g, sigma_zeta_vec, sigma_eps,
 
     for(l in 1:L) {
 
-      Zeta[[i]][l] <- rnorm(1, 0, sigma_zeta_vec[l])
+      Zeta[[i]][l] <- rnorm(1, 0, vec_sd_zeta[l])
     }
   }
 
@@ -69,7 +84,7 @@ gauss_fpca_data <- function(N, n, K, L, n_g, sigma_zeta_vec, sigma_eps,
       Psi_t[[i]][,l] <- Psi_func(time_obs[[i]], j = 1, p = 1)[,l]
     }
 
-    epsilon <- rnorm(n[i], 0, sigma_eps)
+    epsilon <- rnorm(n[i], 0, vec_sd_eps)
 
     Y_hat <- mu_t[[i]] + as.vector(Psi_t[[i]]%*%Zeta[[i]])
     Y[[i]] <- Y_hat + epsilon
@@ -98,9 +113,70 @@ gauss_fpca_data <- function(N, n, K, L, n_g, sigma_zeta_vec, sigma_eps,
 
 }
 
+
+get_Zeta <- function(N, L, vec_sd_zeta = NULL) {
+
+  if (is.null(vec_sd_zeta)) {
+    vec_sd_zeta <- 1/(1:L)
+  } else {
+    stopifnot(length(vec_sd_zeta) == L)
+  }
+
+  Zeta <- matrix(NA, N, L)
+  for(i in 1:N) {
+    Zeta[i,] <- mvrnorm(1, rep(0, L), diag(vec_sd_zeta^2))
+  }
+
+  Zeta
+
+}
+
+get_list_corr_Zeta_univ <- function(N, L, p, vec_sd_zeta = NULL, vec_rho = 1/(2:(L+1))^0.2) { # vec_rho = correlation of the 1st, 2nd, etc sets of scores across the p variables (expected to decrease as l increases... )
+
+  if (is.null(vec_sd_zeta)) {
+    vec_sd_zeta <- 1/(1:L)
+  } else {
+    stopifnot(length(vec_sd_zeta) == L)
+  }
+
+  list_Zeta <- vector("list", p)
+  for (l in 1:L) {
+    R <- matrix(vec_rho[l], nrow = p,  ncol = p)
+    diag(R) <- 1
+    L_mat <- t(chol(R))
+    tZ <- matrix(sapply(1:p, function(j) rnorm(N, 0, vec_sd_zeta[l])),
+                 ncol = N, byrow = TRUE)
+    Zeta_l <- as.matrix(t(L_mat %*% tZ))
+
+    list_Zeta <- lapply(1:p, function(j) cbind(list_Zeta[[j]], Zeta_l[,j]))
+  }
+
+  list_Zeta
+}
+
+
+get_Y <- function(N, n, p, time_obs, Zeta, vec_sd_eps, mu_func, Psi_func) {
+
+  Y <- vector("list", length = N)
+  for(i in 1:N) {
+
+    Y[[i]] <- vector("list", length = p)
+    for(j in 1:p) {
+
+      resid_vec <- rnorm(n[i, j], 0, vec_sd_eps[j])
+      mean_vec <- mu_func(time_obs[[i]][[j]], j = j) +
+        Psi_func(time_obs[[i]][[j]], j = j, p = p) %*% Zeta[i, ]
+      Y[[i]][[j]] <- as.vector(mean_vec + resid_vec)
+    }
+  }
+
+  Y
+}
+
+
 gauss_mfpca_data <- function(
-    N, p, n, K, L, n_g, sigma_zeta_vec,
-    sigma_eps, mu_func, Psi_func, time_obs = NULL) {
+    N, p, n, K, L, n_g, vec_sd_eps, mu_func, Psi_func, time_obs = NULL,
+    generate_from_univ = FALSE, vec_sd_zeta = NULL, vec_rho_Zeta = NULL) {
 
   # Set up fixed parameters
 
@@ -149,28 +225,45 @@ gauss_mfpca_data <- function(
     Psi_g[[j]] <- Psi_func(time_g, j = j, p = p)
   }
 
-  # Simulate the scores
+  # Simulate the scores and responses
+  #
+  if (generate_from_univ) {
 
-  Zeta <- matrix(NA, N, L)
-  for(i in 1:N) {
-
-    Zeta[i,] <- mvrnorm(1, rep(0, L), diag(sigma_zeta_vec^2))
-  }
-
-  # List of length N, containing n x p matrices (i.e., one matrix per subject)
-
-  Y <- vector("list", length = N)
-  for(i in 1:N) {
-
-    Y[[i]] <- vector("list", length = p)
-    for(j in 1:p) {
-
-      resid_vec <- rnorm(n[i, j], 0, sigma_eps[j])
-      mean_vec <- mu_func(time_obs[[i]][[j]], j = j) +
-        Psi_func(time_obs[[i]][[j]], j = j, p = p) %*% Zeta[i, ]
-      Y[[i]][[j]] <- as.vector(mean_vec + resid_vec)
+    if (is.null(vec_rho_Zeta) | all(vec_rho_Zeta == 0)) {
+      corr_Zeta <- FALSE
+      list_Zeta <- NULL
+    } else {
+      corr_Zeta <- TRUE
+      list_Zeta <- get_list_corr_Zeta_univ(N, L, p, vec_sd_zeta = vec_sd_zeta,
+                                           vec_rho = vec_rho_Zeta)
     }
+
+    for (j in 1:p) {
+
+      if (corr_Zeta) {
+        Zeta_univ <- list_Zeta[[j]]
+      } else {
+        Zeta_univ <- get_Zeta(N, L, vec_sd_zeta = vec_sd_zeta)
+        list_Zeta <- append(list_Zeta, list(Zeta_univ))
+      }
+
+      Y_univ <- get_Y(N, n, p, time_obs, Zeta_univ, vec_sd_eps, mu_func, Psi_func)
+      if (j == 1) {
+        Y <- lapply(Y_univ, function(ll) ll[1])
+      } else {
+        Y <- lapply(seq_along(Y), function(ii) append(Y[[ii]], Y_univ[[ii]][j]))
+      }
+    }
+    Zeta <- list_Zeta
+
+  } else {
+
+    Zeta <- get_Zeta(N, L, vec_sd_zeta = vec_sd_zeta)
+
+    Y <- get_Y(N, n, p, time_obs, Zeta, vec_sd_eps, mu_func, Psi_func)
+
   }
+
 
   # output the results:
 

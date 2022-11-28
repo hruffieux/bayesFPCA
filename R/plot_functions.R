@@ -283,7 +283,7 @@ display_fit_list <- function(p_sample, N_sample, time_obs, time_g, Y,
 }
 
 #' @export
-plot_scores <- function(N_sample, Zeta,
+plot_scores <- function(N_sample, p, Zeta,
                         Zeta_hat, zeta_ellipse,
                         Zeta_hat_add = NULL, zeta_ellipse_add = NULL,
                         vec_col = c("black", "blue"), data_col = "red", mfrow = NULL) {
@@ -329,6 +329,26 @@ plot_scores <- function(N_sample, Zeta,
     zeta_ellipse_add_y <- zeta_ellipse_add_mat[,2]
   }
 
+
+  if (is.list(Zeta)) {
+    xtmp_z <- as.vector(sapply(N_sample, function(ns) c(zeta_ellipse[[ns]][,1],
+                                                        unlist(lapply(Zeta, function(zz) zz[ns, 1])),
+                                                        Zeta_hat[ns,1])))
+    ytmp_z <- as.vector(sapply(N_sample, function(ns) c(zeta_ellipse[[ns]][,2],
+                                                        unlist(lapply(Zeta, function(zz) zz[ns, 2])),
+                                                        Zeta_hat[ns,2])))
+
+  } else {
+    xtmp_z <- as.vector(sapply(N_sample, function(ns) c(zeta_ellipse[[ns]][,1],
+                                                        Zeta[ns, 1],
+                                                        Zeta_hat[ns,1])))
+    ytmp_z <- as.vector(sapply(N_sample, function(ns) c(zeta_ellipse[[ns]][,2],
+                                                        Zeta[ns, 2],
+                                                        Zeta_hat[ns,2])))
+  }
+  xlim_z <- c(min(xtmp_z), max(xtmp_z))
+  ylim_z <- c(min(ytmp_z), max(ytmp_z))
+
   score_plots <- xyplot(
     zeta_ellipse_y ~ zeta_ellipse_x | zeta_labels, groups = zeta_labels,
     data=data.frame(
@@ -337,18 +357,8 @@ plot_scores <- function(N_sample, Zeta,
     ),
     layout=mfrow, main="",
     strip=strip.math,
-    xlim = 1.1*c(min(sapply(N_sample, function(ns) min(c(zeta_ellipse[[ns]][,1],
-                                                         Zeta[ns, 1],
-                                                         Zeta_hat[ns,1])))),
-                 max(sapply(N_sample, function(ns) max(c(zeta_ellipse[[ns]][,1],
-                                                         Zeta[ns, 1],
-                                                         Zeta_hat[ns,1]))))),
-    ylim = 1.1*c(min(sapply(N_sample, function(ns) min(c(zeta_ellipse[[ns]][,2],
-                                                         Zeta[ns, 2],
-                                                         Zeta_hat[ns,2])))),
-                 max(sapply(N_sample, function(ns) max(c(zeta_ellipse[[ns]][,2],
-                                                         Zeta[ns, 2],
-                                                         Zeta_hat[ns,2]))))),
+    xlim = 1.1*xlim_z,
+    ylim = 1.1*ylim_z,
     par.strip.text=list(cex=0.8),
     par.settings = list(layout.heights = list(strip = 1),
                         strip.background=list(col="white")),
@@ -371,10 +381,21 @@ plot_scores <- function(N_sample, Zeta,
         Zeta_hat[N_sample[i],1], Zeta_hat[N_sample[i],2],
         col= vec_col[1], type="p", pch=16, cex=0.7
       )
-      panel.xyplot(
-        Zeta[N_sample[i], 1], Zeta[N_sample[i], 2],
-        col=data_col, type="p", pch=16, cex=0.7
-      )
+
+      if (is.list(Zeta)) {
+        for (j in 1:p) {
+          panel.xyplot(
+            Zeta[[j]][N_sample[i], 1], Zeta[[j]][N_sample[i], 2],
+            col=data_col, type="p", pch=16, cex=0.7
+          )
+        }
+
+      } else {
+        panel.xyplot(
+          Zeta[N_sample[i], 1], Zeta[N_sample[i], 2],
+          col=data_col, type="p", pch=16, cex=0.7
+        )
+      }
 
       if (!is.null(Zeta_hat_add)) {
         panel.xyplot(

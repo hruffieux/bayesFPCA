@@ -21,11 +21,10 @@ n <- matrix(sample(N_t_min:N_t_max, N*p,
 n_int_knots <- 8                              # number of interior knots
 K <- n_int_knots + 2                          # number of spline basis functions
 L <- 2                                        # number of FPCA basis functions
-d <- (K+2)*(L+1)                              # dimension of spline vector
 
 tol  <- 1e-5                                  # convergence tolerance # 1e-3 is not enough! (doesn't match the mfvb run)
-maxit_vmp <- 250                              # number of vmp iterations
-n_mfvb <- 250                                 # number of mfvb iterations (no convergence criterion implemented yet for mfvb)
+maxit_vmp <- 5                              # maximum number of vmp iterations
+n_mfvb <- 5                                 # number of mfvb iterations (no convergence criterion implemented yet for mfvb)
 
 n_g <- 1000                                   # length of the plotting grid
 
@@ -38,7 +37,6 @@ if (bool_multiple_repl_eigen) {
 
 # Parameters for data generation
 #
-sigma_zeta_vec <- 2*1/(1:L)                   # sd for first and second scores
 sigma_eps <- rep(1, p)                        # sd of the residuals
 sigsq_eps <- sigma_eps^2
 
@@ -63,8 +61,6 @@ mu_beta <- rep(0, 2)
 A <- 1e5
 sigsq_zeta <- 1
 sigma_zeta <- sqrt(sigsq_zeta)
-Sigma_zeta <- sigsq_zeta*diag(L)
-
 
 format_univ <- FALSE # can be faster if TRUE (although not clear!)
                      # when p = 1 but then the plot functions need to be adapeted
@@ -97,7 +93,7 @@ if (bool_save) {
 
 # Set up the data:
 #
-data <- generate_fpca_data(N, p, n, K, L, n_g, sigma_zeta_vec, sigma_eps,
+data <- generate_fpca_data(N, p, n, K, L, n_g, sigma_eps,
                            mu_func, Psi_func, format_univ = format_univ)
 
 time_obs <- data$time_obs
@@ -187,7 +183,7 @@ if (!format_univ) { # not implemented for format univ
 
   set.seed(seed)
 
-  mfvb_res <- run_mfvb_fpca(n_mfvb, N, n, n_g, p, d, K, L, C, Y, sigma_zeta, mu_beta,
+  mfvb_res <- run_mfvb_fpca(n_mfvb, N, n, n_g, p, K, L, C, Y, sigma_zeta, mu_beta,
                             sigsq_beta, A, time_g, C_g, Psi_g = Psi_g)
 
 
@@ -236,7 +232,7 @@ for (ps in 1:n_plots_scores) {
     pdf(paste0(res_dir, "/scores_samples_", paste0(N_sample_ps, collapse = "-"), ".pdf"),
         width = 6, height = 6, paper='special')
   }
-  plot_scores(N_sample_ps, Zeta, Zeta_hat, list_zeta_ellipse,
+  plot_scores(N_sample_ps, p, Zeta, Zeta_hat, list_zeta_ellipse,
               Zeta_hat_add = mfvb_res$Zeta_hat,
               zeta_ellipse_add = mfvb_res$list_zeta_ellipse,
               mfrow = c(ceiling(sqrt(n_sample_ps)), tail(sqrt(n_sample_ps))))
@@ -254,12 +250,9 @@ if (bool_multiple_repl_eigen & !format_univ) {
 
     set.seed(repl)
 
-    data_repl <- generate_fpca_data(
-      N, p, n, K, L, n_g, sigma_zeta_vec,
-      sigma_eps, mu_func, Psi_func,
-      time_obs = time_obs, # don't re-generate the observations
-      format_univ = format_univ
-    )
+    data_repl <- generate_fpca_data(N, p, n, K, L, n_g, sigma_eps, mu_func,
+                                    Psi_func, time_obs = time_obs, # don't re-generate the observations
+                                    format_univ = format_univ)
 
     Y_repl <- data_repl$Y
 

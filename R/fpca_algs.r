@@ -769,7 +769,7 @@ vmp_gauss_mfpca <- function(
 
 		iter <- iter + 1
 
-		cat("starting iteration", iter, "of", n_vmp, "\n")
+		cat("Iteration", iter, "\n")
 
 		eta_vec$"nu->p(Y|nu,zeta,sigsq_eps)" <- eta_vec$"p(nu|Sigma_nu)->nu"
 		eta_vec$"nu->p(nu|Sigma_nu)" <- eta_vec$"p(Y|nu,zeta,sigsq_eps)->nu"
@@ -1190,8 +1190,10 @@ vmp_gauss_mfpca <- function(
 # Mean-field version, ELBO not implemented, no tolerance tol
 #
 #' @export
-run_mfvb_fpca <- function(n_mfvb, N, n, n_g, p, d, K, L, C, Y, sigma_zeta,
+run_mfvb_fpca <- function(n_mfvb, N, n, n_g, p, K, L, C, Y, sigma_zeta,
                           mu_beta, sigsq_beta, A, time_g, C_g, Psi_g = NULL) {
+
+  d <- (K+2)*(L+1)
 
   E_q_zeta <- vector("list", length = N)
   Cov_q_zeta <- vector("list", length = N)
