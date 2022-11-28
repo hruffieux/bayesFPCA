@@ -386,7 +386,8 @@ plot_scores <- function(N_sample, p, Zeta,
         for (j in 1:p) {
           panel.xyplot(
             Zeta[[j]][N_sample[i], 1], Zeta[[j]][N_sample[i], 2],
-            col=data_col, type="p", pch=16, cex=0.7
+            # col=grDevices::adjustcolor(data_col, alpha.f = 1/j^0.9),
+            col = data_col, type="p", pch=16, cex=0.7
           )
         }
 

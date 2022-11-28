@@ -174,9 +174,9 @@ get_Y <- function(N, n, p, time_obs, Zeta, vec_sd_eps, mu_func, Psi_func) {
 }
 
 
-gauss_mfpca_data <- function(
-    N, p, n, K, L, n_g, vec_sd_eps, mu_func, Psi_func, time_obs = NULL,
-    generate_from_univ = FALSE, vec_sd_zeta = NULL, vec_rho_Zeta = NULL) {
+gauss_mfpca_data <- function(N, p, n, K, L, n_g, vec_sd_eps, mu_func, Psi_func,
+                             time_obs = NULL, generate_from_univ = FALSE,
+                             vec_sd_zeta = NULL, vec_rho_Zeta = NULL) {
 
   # Set up fixed parameters
 
@@ -220,7 +220,6 @@ gauss_mfpca_data <- function(
   mu_g <- vector("list", length = p)
   Psi_g <- vector("list", length = p)
   for(j in 1:p) {
-
     mu_g[[j]] <- mu_func(time_g, j = j)
     Psi_g[[j]] <- Psi_func(time_g, j = j, p = p)
   }

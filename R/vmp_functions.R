@@ -2281,7 +2281,7 @@ mfpc_rotation <- function(L, eta_in, time_g, C_g, Psi_g = NULL) {
     Y_hat[[i]] <- Y_low[[i]] <- Y_upp[[i]] <- vector("list", length = p)
     for(j in 1:p) {
 
-      Y_hat_ij <- mu_hat[[j]] + Psi_hat[[j]] %*% Zeta_hat[i, ]
+      Y_hat_ij <- mu_hat[, j] + Psi_hat[[j]] %*% Zeta_hat[i, ]
       sd_vec_ij <- sqrt(diag(tcrossprod(Psi_hat[[j]] %*% Cov_zeta_hat[[i]], Psi_hat[[j]])))
 
       # Y_summary[[i]][[j]] <- matrix(NA, n_g, 3)
