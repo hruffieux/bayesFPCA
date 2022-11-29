@@ -2263,7 +2263,7 @@ mfpc_rotation <- function(L, eta_in, time_g, C_g, Psi_g = NULL) {
   }
 
   mu_hat <- as.matrix(Reduce(cbind, mu_hat)) # now deals with the case p = 1
-  list_Psi_hat <- vector("list", length = L + 1)
+  list_Psi_hat <- vector("list", length = L)
 
   for(l in 1:L) {
 
