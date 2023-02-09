@@ -1,4 +1,19 @@
 #' @export
+flip_sign <- function(vec_flip, list_Psi_hat, Zeta_hat, zeta_ellipse) {
+
+  list_Psi_hat <- lapply(list_Psi_hat, function(Psi_hat_var) {
+    Psi_hat_var[, seq_along(vec_flip)] <- sweep(Psi_hat_var[, seq_along(vec_flip)], 2, vec_flip, "*") # first two eigenfunctions
+    Psi_hat_var
+  })
+
+  Zeta_hat[,seq_along(vec_flip)] <- sweep(Zeta_hat[,seq_along(vec_flip)], 2, vec_flip, "*")
+
+  zeta_ellipse <- lapply(zeta_ellipse, function(zeta_ellipse_subj) sweep(zeta_ellipse_subj, 2, vec_flip, "*"))
+
+  create_named_list(list_Psi_hat, Zeta_hat, zeta_ellipse)
+}
+
+#' @export
 display_eigenfunctions <- function(p, L, time_g, mu_g, Psi_g,
                                    mu_hat, list_Psi_hat,
                                    mu_hat_add = NULL, list_Psi_hat_add = NULL,
@@ -283,6 +298,9 @@ display_fit_list <- function(p_sample, N_sample, time_obs, time_g, Y,
 
 }
 
+
+
+
 #' @export
 plot_scores <- function(N_sample, p, Zeta,
                         Zeta_hat, zeta_ellipse,
@@ -414,3 +432,16 @@ plot_scores <- function(N_sample, p, Zeta,
 
   print(score_plots)
 }
+
+#' @export
+set_plotting_grid <- function(p, n_g, t_min, t_max, int_knots) {
+
+  time_g <- seq(0, 1, length.out=n_g)
+
+  X_g <- X_design(time_g)
+  Z_g <- ZOSull(time_g, range.x=c(t_min, t_max), intKnots=int_knots)
+  C_g <- cbind(X_g, Z_g)
+
+  create_named_list(time_g, X_g, Z_g, C_g)
+}
+

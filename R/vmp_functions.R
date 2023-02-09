@@ -2115,6 +2115,9 @@ fpc_rotation <- function(L, eta_in, time_g, C_g, Psi_g = NULL) {
 
   }
 
+  names(Y_hat) <- names(Y_low) <- names(Y_upp) <- names(Y)
+
+
   list_zeta_ellipse <- vector("list", length=N)
 
   for(i in 1:N) {
@@ -2130,7 +2133,8 @@ fpc_rotation <- function(L, eta_in, time_g, C_g, Psi_g = NULL) {
     list_zeta_ellipse[[i]] <- zeta_ellipse
 
   }
-
+  rownames(Zeta_hat) <- names(list_zeta_ellipse) <- names(Y)
+  colnames(Zeta_hat) <- paste0("FPC_", 1:L)
 
   mu_hat <- mu_q_mu
   list_Psi_hat <- Psi_hat
@@ -2271,7 +2275,9 @@ mfpc_rotation <- function(L, eta_in, time_g, C_g, Psi_g = NULL) {
     for(j in 1:p) {
       list_Psi_hat[[l]][,j] <- Psi_hat[[j]][, l]
     }
+    names(list_Psi_hat[[l]]) <- names(Y[[1]])
   }
+  names(list_Psi_hat) <- paste0("FPC_", 1:L)
 
   # Y_summary <-
   Y_hat <- Y_low <- Y_upp <- vector("list", length = N)
@@ -2293,7 +2299,12 @@ mfpc_rotation <- function(L, eta_in, time_g, C_g, Psi_g = NULL) {
       Y_low[[i]][[j]] <- Y_hat_ij + qnorm(0.025)*sd_vec_ij
       Y_upp[[i]][[j]] <- Y_hat_ij + qnorm(0.975)*sd_vec_ij
     }
+    names(Y_hat[[i]]) <- names(Y_low[[i]]) <- names(Y_upp[[i]]) <- names(Y[[i]])
+
   }
+
+  rownames(Zeta_hat) <- names(list_zeta_ellipse) <- names(Y_hat) <- names(Y_low) <- names(Y_upp) <- names(Y)
+  colnames(Zeta_hat) <- paste0("FPC_", 1:L)
 
   # Establish the outputs:
 
