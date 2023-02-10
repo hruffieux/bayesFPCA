@@ -1,9 +1,13 @@
 #' @export
 flip_sign <- function(vec_flip, list_Psi_hat, Zeta_hat, zeta_ellipse) {
 
-  list_Psi_hat <- lapply(list_Psi_hat, function(Psi_hat_var) {
-    Psi_hat_var[, seq_along(vec_flip)] <- sweep(Psi_hat_var[, seq_along(vec_flip)], 2, vec_flip, "*") # first two eigenfunctions
-    Psi_hat_var
+  # list_Psi_hat <- lapply(list_Psi_hat, function(Psi_hat_var) {
+  #   Psi_hat_var[, seq_along(vec_flip)] <- sweep(Psi_hat_var[, seq_along(vec_flip)], 2, vec_flip, "*") # first two eigenfunctions
+  #   Psi_hat_var
+  # })
+
+  list_Psi_hat <- lapply(seq_along(vec_flip), function(ll) {
+    list_Psi_hat[[ll]] * vec_flip[ll]
   })
 
   Zeta_hat[,seq_along(vec_flip)] <- sweep(Zeta_hat[,seq_along(vec_flip)], 2, vec_flip, "*")
