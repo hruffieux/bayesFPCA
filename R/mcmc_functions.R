@@ -1,3 +1,6 @@
+# temporary script - likely to be removed in the released package which will
+# only include variational inference routines.
+#
 summarise_mcmc_multivariate <- function(stan_obj, C_g, Psi_g) {
 
   mcmc_samples <- extract(stan_obj, permuted=FALSE)
@@ -72,8 +75,7 @@ summarise_mcmc_multivariate <- function(stan_obj, C_g, Psi_g) {
 
 
     # Orthogonalisation:
-
-
+    #
     mu_g_mcmc_k <- Reduce(c, lapply(mu_g_mcmc, function(ll) ll[,k]))
     Psi_k <- Reduce(rbind, Psi)
 
@@ -122,7 +124,7 @@ summarise_mcmc_multivariate <- function(stan_obj, C_g, Psi_g) {
 
 
   # Summarise the MCMC outputs:
-
+  #
   Y_g_mcmc_summary <- vector("list", length=N)
   for(i in 1:N) {
 

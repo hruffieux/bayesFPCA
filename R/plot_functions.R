@@ -436,16 +436,3 @@ plot_scores <- function(N_sample, p, Zeta,
 
   print(score_plots)
 }
-
-#' @export
-set_plotting_grid <- function(p, n_g, t_min, t_max, int_knots) {
-
-  time_g <- seq(0, 1, length.out=n_g)
-
-  X_g <- X_design(time_g)
-  Z_g <- ZOSull(time_g, range.x=c(t_min, t_max), intKnots=int_knots)
-  C_g <- cbind(X_g, Z_g)
-
-  create_named_list(time_g, X_g, Z_g, C_g)
-}
-

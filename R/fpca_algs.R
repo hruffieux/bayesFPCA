@@ -1,8 +1,74 @@
 #' @export
-run_vmp_fpca <- function(n_vmp, N, p, L, C, Y, sigma_zeta, mu_beta,
-                         Sigma_beta, A, time_g, C_g,
-                         tol, plot_elbo = FALSE, format_univ = FALSE,
-                         Psi_g = NULL) {
+run_vmp_fpca <- function(time_obs, Y, K, L,
+                         sigma_zeta = 1, mu_beta = rep(0, 2),
+                         Sigma_beta = 1e10*diag(2), A = 1e5,
+                         tol = 1e-5, n_g = 1000, time_g = NULL,
+                         maxit = 1e4, plot_elbo = FALSE,
+                         Psi_g = NULL, verbose = TRUE) {
+
+
+  N <- length(time_obs) # move to vmp_gauss_fpca and vmp_gauss_mfpca
+
+  subj_names <- names(Y)
+
+  format_univ <- ifelse(is.list(time_obs[[1]]), FALSE, TRUE) # If TRUE, then p = 1, and vmp_gauss_fpca is used.
+                                                             # Note that if FALSE and p = 1, vmp_gauss_mfpca will be used,
+                                                             # i.e., special case of multivariate algorithm for p=1 gives the univariate model
+                                                             # (produces inference equivalent to vmp_gauss_fpca, the difference is the format of the input)
+
+  grid_obj <- get_grid_objects(time_obs, K, n_g = n_g, time_g = time_g,
+                               format_univ = format_univ)
+
+  C <- grid_obj$C
+  n_g <- grid_obj$n_g
+  time_g <- grid_obj$time_g
+  C_g <- grid_obj$C_g
+
+  if (format_univ) {
+
+    eta_vec <- vmp_gauss_fpca(n_vmp = maxit, N, L, C, Y, sigma_zeta, mu_beta,
+                              Sigma_beta, A, time_g, C_g, tol, plot_elbo,
+                              verbose = verbose)
+
+    # Orthogonalisation:
+
+    eta_in <- list(
+      eta_vec$"p(nu|Sigma_nu)->nu", eta_vec$"p(Y|nu,zeta,sigsq_eps)->nu",
+      eta_vec$"p(zeta)->zeta", eta_vec$"p(Y|nu,zeta,sigsq_eps)->zeta"
+    )
+
+    fpc_rotation(subj_names, L, eta_in, time_g, C_g, Psi_g)
+
+  } else {
+
+    p <- length(Y[[1]])
+    var_names <- names(Y[[1]])
+
+    eta_vec <- vmp_gauss_mfpca(n_vmp = maxit, N, p, L, C, Y, sigma_zeta, mu_beta,
+                               Sigma_beta, A, time_g, C_g, tol,
+                               plot_elbo = plot_elbo, verbose = verbose)
+
+    # Orthogonalisation:
+
+    eta_in <- list(
+      eta_vec$"p(nu|Sigma_nu)->nu", eta_vec$"p(Y|nu,zeta,sigsq_eps)->nu",
+      eta_vec$"p(zeta)->zeta", eta_vec$"p(Y|nu,zeta,sigsq_eps)->zeta"
+    )
+
+    mfpc_rotation(subj_names, var_names, L, eta_in, time_g, C_g, Psi_g)
+
+  }
+
+}
+
+
+#' @export
+run_vmp_fpca_deprecated <- function(n_vmp, N, p, L, C, Y, sigma_zeta, mu_beta,
+                                    Sigma_beta, A, time_g, C_g,
+                                    tol, plot_elbo = FALSE, format_univ = FALSE,
+                                    Psi_g = NULL) {
+
+  subj_names <- names(Y)
 
   if (format_univ & p == 1) {
 
@@ -16,9 +82,11 @@ run_vmp_fpca <- function(n_vmp, N, p, L, C, Y, sigma_zeta, mu_beta,
       eta_vec$"p(zeta)->zeta", eta_vec$"p(Y|nu,zeta,sigsq_eps)->zeta"
     )
 
-    fpc_rotation(L, eta_in, time_g, C_g, Psi_g)
+    fpc_rotation(subj_names, L, eta_in, time_g, C_g, Psi_g)
 
   } else {
+
+    var_names <- names(Y[[1]])
 
     if (p > 1) {
       stopifnot(!format_univ) # multivariate format required as p > 1
@@ -35,17 +103,15 @@ run_vmp_fpca <- function(n_vmp, N, p, L, C, Y, sigma_zeta, mu_beta,
       eta_vec$"p(zeta)->zeta", eta_vec$"p(Y|nu,zeta,sigsq_eps)->zeta"
     )
 
-    mfpc_rotation(L, eta_in, time_g, C_g, Psi_g)
+    mfpc_rotation(subj_names, var_names, L, eta_in, time_g, C_g, Psi_g)
 
   }
 
 }
 
 
-vmp_gauss_fpca <- function(
-	n_vmp, N, L, C, Y, sigma_zeta, mu_beta,
-	Sigma_beta, A, time_g, C_g, tol, plot_elbo=FALSE
-) {
+vmp_gauss_fpca <- function(n_vmp, N, L, C, Y, sigma_zeta, mu_beta, Sigma_beta,
+                           A, time_g, C_g, tol, plot_elbo=FALSE, verbose = TRUE) {
 
 	# Establish necessary parameters:
 
@@ -595,11 +661,9 @@ vmp_gauss_fpca <- function(
 }
 
 
-vmp_gauss_mfpca <- function(
-	n_vmp, N, p, L, C, Y, sigma_zeta, mu_beta,
-	Sigma_beta, A, time_g, C_g,
-	tol, plot_elbo = FALSE
-) {
+vmp_gauss_mfpca <- function(n_vmp, N, p, L, C, Y, sigma_zeta, mu_beta,
+                            Sigma_beta, A, time_g, C_g, tol, plot_elbo = FALSE,
+                            verbose = TRUE) {
 
 	# Establish necessary parameters:
 
@@ -769,7 +833,9 @@ vmp_gauss_mfpca <- function(
 
 		iter <- iter + 1
 
-		cat("Iteration", iter, "\n")
+		if (verbose) {
+		  cat("Iteration", iter, "\n")
+		}
 
 		eta_vec$"nu->p(Y|nu,zeta,sigsq_eps)" <- eta_vec$"p(nu|Sigma_nu)->nu"
 		eta_vec$"nu->p(nu|Sigma_nu)" <- eta_vec$"p(Y|nu,zeta,sigsq_eps)->nu"
@@ -1190,7 +1256,378 @@ vmp_gauss_mfpca <- function(
 # Mean-field version, ELBO not implemented, no tolerance tol
 #
 #' @export
-run_mfvb_fpca <- function(n_mfvb, N, n, n_g, p, K, L, C, Y, sigma_zeta,
+run_mfvb_fpca <- function(time_obs, Y, K, L,
+                          sigma_zeta = 1, mu_beta = rep(0, 2),
+                          sigsq_beta = 1e10, A = 1e5,
+                          n_mfvb = 500, n_g = 1000, time_g = NULL, Psi_g = NULL,
+                          verbose = TRUE) {
+
+  stopifnot(is.list(time_obs[[1]])) # function not implemented for format format_univ = TRUE
+
+  n <- t(sapply(time_obs,
+                function(time_obs_i) sapply(time_obs_i,
+                                            function(time_obs_ij) length(time_obs_ij))))
+
+  d <- (K+2)*(L+1)
+
+  N <- length(time_obs) # move to vmp_gauss_fpca and vmp_gauss_mfpca
+  p <- length(time_obs[[1]])
+
+  grid_obj <- get_grid_objects(time_obs, K, n_g = n_g, time_g = time_g,
+                               format_univ = FALSE)
+
+  C <- grid_obj$C
+  n_g <- grid_obj$n_g
+  time_g <- grid_obj$time_g
+  C_g <- grid_obj$C_g
+
+  E_q_zeta <- vector("list", length = N)
+  Cov_q_zeta <- vector("list", length = N)
+  for(i in 1:N) {
+
+    E_q_zeta[[i]] <- rnorm(L, 0, sigma_zeta)
+    Cov_q_zeta[[i]] <- diag(L)
+  }
+
+  YTY <- matrix(NA, N, p)
+  CTY <- vector("list", length = N)
+  CTC <- vector("list", length = N)
+  for(i in 1:N) {
+
+    CTY[[i]] <- matrix(NA, K + 2, p)
+    CTC[[i]] <- vector("list", length = p)
+    for(j in 1:p) {
+
+      YTY[i, j] <- cprod(Y[[i]][[j]])
+      CTY[[i]][, j] <- cprod(Y[[i]][[j]], C[[i]][[j]])
+      CTC[[i]][[j]] <- crossprod(C[[i]][[j]])
+    }
+  }
+
+  # Set fixed parameters:
+
+  inds_mat <- matrix(1:d, K + 2, L + 1)
+
+  # Initialisation
+
+  E_q_recip_sigsq_eps <- rep(1, p)
+  E_q_recip_a_eps <- rep(1, p)
+
+  E_q_recip_sigsq_mu <- rep(1, p)
+  E_q_recip_a_mu <- rep(1, p)
+  E_q_recip_sigsq_psi <- matrix(1, nrow = p, ncol = L)
+  E_q_recip_a_psi <- matrix(1, nrow = p, ncol = L)
+
+  # Iterations:
+
+  for(iter in 1:n_mfvb) {
+
+    if (verbose) {
+      cat("Iteration", iter,  "of", n_mfvb, "\n")
+    }
+
+    # Update q(nu):
+
+    inv_fixed_var <- 1/sigsq_beta*diag(2)
+    Cov_q_nu <- vector("list", length = p)
+    E_q_nu <- vector("list", length = p)
+    for(j in 1:p) {
+
+      Cov_sum <- 0
+      E_sum <- 0
+      for(i in 1:N) {
+
+        E_q_zeta_tilde <- c(1, E_q_zeta[[i]])
+        Cov_q_zeta_tilde <- adiag(0, Cov_q_zeta[[i]])
+        E_q_tcross_zeta_tilde <- Cov_q_zeta_tilde + tcrossprod(E_q_zeta_tilde)
+
+        sum_val <- kronecker(E_q_tcross_zeta_tilde, CTC[[i]][[j]])
+        Cov_sum <- Cov_sum + sum_val
+
+        sum_val <- cprod(kronecker(t(E_q_zeta_tilde), C[[i]][[j]]), Y[[i]][[j]])
+        E_sum <- E_sum + sum_val
+      }
+
+      E_q_inv_Sigma_mu <- adiag(inv_fixed_var, E_q_recip_sigsq_mu[j]*diag(K))
+      E_q_inv_Sigma_psi <- vector("list", length = L)
+      for(l in 1:L) {
+
+        E_q_inv_Sigma_psi[[l]] <- adiag(inv_fixed_var, E_q_recip_sigsq_psi[j, l]*diag(K))
+      }
+
+      E_q_inv_Sigma_nu <- adiag(E_q_inv_Sigma_mu, Reduce(adiag, E_q_inv_Sigma_psi))
+
+      Cov_q_nu[[j]] <- solve(E_q_recip_sigsq_eps[j]*Cov_sum + E_q_inv_Sigma_nu)
+      E_q_nu[[j]] <- E_q_recip_sigsq_eps[j]*as.vector(Cov_q_nu[[j]] %*% E_sum)
+    }
+
+    inds_mat <- matrix(1:d, K + 2, L + 1)
+    mu_inds <- inds_mat[, 1]
+    psi_inds <- as.vector(inds_mat[, 1:L + 1])
+
+    E_q_V <- vector("list", length = p)
+    E_q_nu_mu <- vector("list", length = p)
+    E_q_V_psi <- vector("list", length = p)
+    E_q_nu_psi <- vector("list", length = p)
+    Cov_q_nu_mu <- vector("list", length = p)
+    Cov_q_nu_psi <- vector("list", length = p)
+    Cov_q_nu_mu_psi <- vector("list", length = p)
+    for(j in 1:p) {
+
+      E_q_V[[j]] <- matrix(E_q_nu[[j]], K + 2, L + 1)
+      E_q_nu_mu[[j]] <- E_q_V[[j]][, 1]
+      E_q_V_psi[[j]] <- E_q_V[[j]][, 1:L + 1]
+      E_q_nu_psi[[j]] <- as.vector(E_q_V_psi[[j]])
+
+      Cov_q_nu_mu[[j]] <- Cov_q_nu[[j]][mu_inds, mu_inds]
+      Cov_q_nu_psi[[j]] <- Cov_q_nu[[j]][psi_inds, psi_inds]
+      Cov_q_nu_mu_psi[[j]] <- Cov_q_nu[[j]][mu_inds, psi_inds]
+    }
+
+    # For i = 1, ..., N, update q(zeta[i]):
+
+    E_q_h_mu <- matrix(NA, N, p)
+    E_q_h_mu_psi <- vector("list", length = N)
+    E_q_H_psi <- vector("list", length = N)
+    E_q_zeta <- vector("list", length = N)
+    Cov_q_zeta <- vector("list", length = N)
+    E_q_tcross_zeta <- vector("list", length = N)
+    for(i in 1:N) {
+
+      E_q_h_mu_psi[[i]] <- matrix(NA, L, p)
+      E_q_H_psi[[i]] <- vector("list", length = p)
+      Cov_sum <- 0
+      E_sum <- 0
+      for(j in 1:p) {
+
+        E_q_h_mu[i, j] <- E_cprod(
+          E_q_nu_mu[[j]], Cov_q_nu_mu[[j]],
+          E_q_nu_mu[[j]], CTC[[i]][[j]]
+        )
+
+        E_q_h_mu_psi[[i]][, j] <- E_h(
+          L, E_q_nu_psi[[j]], Cov_q_nu_mu_psi[[j]],
+          E_q_nu_mu[[j]], CTC[[i]][[j]]
+        )
+
+        E_q_H_psi[[i]][[j]] <- E_H(
+          L, L, E_q_nu_psi[[j]], Cov_q_nu_psi[[j]],
+          E_q_nu_psi[[j]], CTC[[i]][[j]]
+        )
+
+        sum_val <- E_q_recip_sigsq_eps[j]*E_q_H_psi[[i]][[j]]
+        Cov_sum <- Cov_sum + sum_val
+
+        freq_scores <- cprod(E_q_V_psi[[j]], CTY[[i]][, j]) - E_q_h_mu_psi[[i]][, j]
+        sum_val <- E_q_recip_sigsq_eps[j]*freq_scores
+        E_sum <- E_sum + sum_val
+      }
+      Cov_q_zeta[[i]] <- solve(Cov_sum + diag(L))
+      E_q_zeta[[i]] <- as.vector(Cov_q_zeta[[i]] %*% E_sum)
+      E_q_tcross_zeta[[i]] <- Cov_q_zeta[[i]] + tcrossprod(E_q_zeta[[i]])
+    }
+
+    # For j = 1, ..., p, update q(sigsq_eps[j]):
+
+    E_q_recip_sigsq_eps <- rep(NA, p)
+    for(j in 1:p) {
+
+      kappa_q_sigsq_eps <- sum(n[, j]) + 1
+
+      lambda_sum <- 0
+      for(i in 1:N) {
+
+        summands <- rep(NA, 6)
+        summands[1] <- YTY[i, j]
+        summands[2] <- - 2*cprod(E_q_nu_mu[[j]], CTY[[i]][, j])
+        summands[3] <- -2*cprod(E_q_V_psi[[j]] %*% E_q_zeta[[i]], CTY[[i]][, j])
+        summands[4] <- E_q_h_mu[i, j]
+        summands[5] <- 2*cprod(E_q_zeta[[i]], E_q_h_mu_psi[[i]][, j])
+        summands[6] <- tr(E_q_tcross_zeta[[i]] %*% E_q_H_psi[[i]][[j]])
+        sum_val <- sum(summands)
+        lambda_sum <- lambda_sum + sum_val
+      }
+      lambda_q_sigsq_eps <- lambda_sum + E_q_recip_a_eps[j]
+
+      E_q_recip_sigsq_eps[j] <- kappa_q_sigsq_eps/lambda_q_sigsq_eps
+    }
+
+    # For j = 1, ..., p, update q(a_eps[j]):
+
+    E_q_recip_a_eps <- rep(NA, p)
+    for(j in 1:p) {
+
+      lambda_q_a_eps <- E_q_recip_sigsq_eps[j] + 1/A^2
+      E_q_recip_a_eps[j] <- 2/lambda_q_a_eps
+    }
+
+    # For j = 1, ..., p, update q(sigsq_mu[j]):
+
+    lambda_q_sigsq_mu <- rep(NA, p)
+    u_inds <- inds_mat[, 1][3:(K+2)]
+    for(j in 1:p) {
+
+      tr_term <- tr(Cov_q_nu[[j]][u_inds, u_inds])
+      cprod_term <- cprod(E_q_nu[[j]][u_inds])
+      lambda_q_sigsq_mu[j] <- tr_term + cprod_term + E_q_recip_a_mu[j]
+    }
+    E_q_recip_sigsq_mu <- (K+1)/lambda_q_sigsq_mu
+
+    # Update q(a_mu):
+
+    lambda_q_a_mu <- E_q_recip_sigsq_mu + 1/A^2
+    E_q_recip_a_mu <- 2/lambda_q_a_mu
+
+    # For j = 1, ..., p and l = 1, ..., L, update q(sigsq_psi[j, l]):
+
+    lambda_q_sigsq_psi <- matrix(NA, p, L)
+    for(l in 1:L) {
+
+      u_inds <- inds_mat[, l + 1][3:(K+2)]
+
+      for(j in 1:p) {
+
+        tr_term <- tr(Cov_q_nu[[j]][u_inds, u_inds])
+        cprod_term <- cprod(E_q_nu[[j]][u_inds])
+        lambda_q_sigsq_psi[j, l] <- tr_term + cprod_term + E_q_recip_a_psi[j, l]
+      }
+    }
+    E_q_recip_sigsq_psi <- (K+1)/lambda_q_sigsq_psi
+
+    # For j = 1, ..., p and l = 1, ..., L, update q(a_psi[j, l]):
+
+    lambda_q_a_psi <- E_q_recip_sigsq_psi + 1/A^2
+    E_q_recip_a_psi <- 2/lambda_q_a_psi
+  }
+
+  # Orthogonalisation:
+
+  E_q_Zeta <- Reduce(rbind, E_q_zeta)
+
+  E_q_mu <- vector("list", length = p)
+  E_q_Psi <- vector("list", length = p)
+  for(j in 1:p) {
+
+    gbl_post <- C_g %*% E_q_V[[j]]
+    E_q_mu[[j]] <- gbl_post[, 1]
+    E_q_Psi[[j]] <- gbl_post[, 1:L + 1]
+  }
+  E_q_mu <- Reduce(c, E_q_mu)
+  E_q_Psi <- Reduce(rbind, E_q_Psi)
+
+  svd_Psi <- svd(E_q_Psi)
+  U_psi <- svd_Psi$u
+  D_psi <- diag(svd_Psi$d)
+  V_psi <- svd_Psi$v
+
+  zeta_rotn <- t(E_q_Zeta %*% V_psi %*% D_psi)
+  C_zeta <- cov(t(zeta_rotn))
+  eigen_C <- eigen(C_zeta)
+  Q <- eigen_C$vectors
+  Lambda <- diag(eigen_C$values)
+
+  Psi_tilde <- U_psi %*% Q %*% sqrt(Lambda)
+  Zeta_tilde <- crossprod(zeta_rotn, Q %*% solve(sqrt(Lambda)))
+
+  mu_hat <- split(E_q_mu, rep(1:p, each = n_g))
+
+  Psi_hat <- matrix(NA, p*n_g, L)
+  Zeta_hat <- matrix(NA, N, L)
+  norm_vec <- rep(NA, L)
+  time_int_vec <- seq(0, p, length = n_g*p)
+  for(l in 1:L) {
+
+    norm_vec[l] <- sqrt(trapint(time_int_vec, Psi_tilde[, l]^2))
+    Psi_hat[, l] <- Psi_tilde[, l]/norm_vec[l]
+    Zeta_hat[, l] <- norm_vec[l]*Zeta_tilde[, l]
+
+    if (!is.null(Psi_g)) {
+      Psi_g_comb <- vector("list", length = p)
+      for(j in 1:p) {
+
+        Psi_g_comb[[j]] <- Psi_g[[j]][, l]
+      }
+      Psi_g_comb <- Reduce(c, Psi_g_comb)
+
+      inner_prod_sign <- sign(cprod(Psi_g_comb, Psi_hat[, l]))
+      if(inner_prod_sign == -1) {
+
+        Psi_hat[, l] <- -Psi_hat[, l]
+        Zeta_hat[, l] <- -Zeta_hat[, l]
+      }
+    }
+
+  }
+  Psi_hat <- lapply(split(Psi_hat, rep(1:p, each = n_g)), matrix, nrow = n_g, ncol = L)
+
+  Cov_zeta_hat <- vector("list", length = N)
+  rotn_mat <- V_psi %*% D_psi %*% Q %*% solve(sqrt(Lambda)) %*% diag(norm_vec)
+  for(i in 1:N) {
+
+    Cov_zeta_hat[[i]] <- crossprod(rotn_mat, Cov_q_zeta[[i]] %*% rotn_mat)
+  }
+
+  # Store the results:
+
+  zeta_summary <- list_zeta_ellipse <- vector("list", length=N)
+
+  for(i in 1:N) {
+
+    zeta_mean <- Zeta_hat[i,][1:2]
+
+    zeta_ellipse <- ellipse(
+      Cov_zeta_hat[[i]][1:2, 1:2],
+      centre=zeta_mean,
+      level=0.95
+    )
+
+    list_zeta_ellipse[[i]] <- zeta_ellipse
+
+    zeta_summary[[i]] <- list(zeta_mean, zeta_ellipse)
+    names(zeta_summary[[i]]) <- c("mean", "credible boundary")
+  }
+
+  gbl_hat <- vector("list", length = L + 1)
+  list_Psi_hat <- vector("list", length = L)
+  gbl_hat[[1]] <- mu_hat <- as.matrix(Reduce(cbind, mu_hat)) # now deals with the case p = 1
+  for(l in 1:L) {
+
+    gbl_hat[[l+1]] <- list_Psi_hat[[l]] <- matrix(NA, n_g, p)
+    for(j in 1:p) {
+
+      gbl_hat[[l+1]][, j] <- list_Psi_hat[[l]][,j] <- Psi_hat[[j]][, l]
+    }
+  }
+
+  Y_summary <- Y_hat <- Y_low <- Y_upp <- vector("list", length = N)
+  for(i in 1:N) {
+
+    Y_summary[[i]] <- Y_hat[[i]] <- Y_low[[i]] <- Y_upp[[i]] <- vector("list", length = p)
+    for(j in 1:p) {
+
+      Y_hat_ij <- mu_hat[,j] + Psi_hat[[j]] %*% Zeta_hat[i, ]
+      sd_vec_ij <- sqrt(diag(tcrossprod(Psi_hat[[j]] %*% Cov_zeta_hat[[i]], Psi_hat[[j]])))
+
+      Y_summary[[i]][[j]] <- matrix(NA, n_g, 3)
+
+      Y_summary[[i]][[j]][, 1] <- Y_hat_ij + qnorm(0.025)*sd_vec_ij
+      Y_summary[[i]][[j]][, 2] <- Y_hat_ij
+      Y_summary[[i]][[j]][, 3] <- Y_hat_ij + qnorm(0.975)*sd_vec_ij
+      Y_hat[[i]][[j]] <- Y_hat_ij
+      Y_low[[i]][[j]] <- Y_hat_ij + qnorm(0.025)*sd_vec_ij
+      Y_upp[[i]][[j]] <- Y_hat_ij + qnorm(0.975)*sd_vec_ij
+    }
+  }
+
+  create_named_list(time_g,
+                    Y_summary, Y_hat, Y_low, Y_upp,
+                    gbl_hat, mu_hat, list_Psi_hat,
+                    Zeta_hat, list_zeta_ellipse)
+
+}
+
+#' @export
+run_mfvb_fpca_deprecated <- function(n_mfvb, N, n, n_g, p, K, L, C, Y, sigma_zeta,
                           mu_beta, sigsq_beta, A, time_g, C_g, Psi_g = NULL) {
 
   d <- (K+2)*(L+1)
@@ -1236,7 +1673,7 @@ run_mfvb_fpca <- function(n_mfvb, N, n, n_g, p, K, L, C, Y, sigma_zeta,
 
   for(iter in 1:n_mfvb) {
 
-    cat("starting iteration", iter, "of", n_mfvb, "\n")
+    cat("Iteration", iter,  "of", n_mfvb, "\n")
 
     # Update q(nu):
 
