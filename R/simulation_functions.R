@@ -11,9 +11,10 @@ generate_fpca_data <- function(N, p, n, K, L, n_g, vec_sd_eps, mu_func, Psi_func
   } else {
     if (p > 1) {
       stopifnot(!format_univ) # multivariate format required as p > 1
-    } else {
-      stopifnot(!generate_from_univ & !is.null(vec_rho_Zeta))
     }
+    # else {
+    #   stopifnot(!generate_from_univ & !is.null(vec_rho_Zeta))
+    # }
 
     gauss_mfpca_data(N, p, n, K, L, n_g, vec_sd_eps, mu_func,
                      Psi_func, time_obs,

@@ -1,13 +1,34 @@
 #' @export
-run_vmp_fpca <- function(n_vmp, N, p, L, C, Y, sigma_zeta, mu_beta,
-                         Sigma_beta, A, time_g, C_g,
-                         tol, plot_elbo = FALSE, format_univ = FALSE,
-                         Psi_g = NULL) {
+run_vmp_fpca <- function(time_obs, Y, K, L,
+                         sigma_zeta = 1, mu_beta = rep(0, 2),
+                         Sigma_beta = 1e10*diag(2), A = 1e5,
+                         tol = 1e-5, n_g = 1000, time_g = NULL,
+                         maxit = 1e4, plot_elbo = FALSE,
+                         Psi_g = NULL, verbose = TRUE) {
 
-  if (format_univ & p == 1) {
 
-    eta_vec <- vmp_gauss_fpca(n_vmp, N, L, C, Y, sigma_zeta, mu_beta,
-                              Sigma_beta, A, time_g, C_g, tol, plot_elbo)
+  N <- length(time_obs) # move to vmp_gauss_fpca and vmp_gauss_mfpca
+
+  subj_names <- names(Y)
+
+  format_univ <- ifelse(is.list(time_obs[[1]]), FALSE, TRUE) # If TRUE, then p = 1, and vmp_gauss_fpca is used.
+                                                             # Note that if FALSE and p = 1, vmp_gauss_mfpca will be used,
+                                                             # i.e., special case of multivariate algorithm for p=1 gives the univariate model
+                                                             # (produces inference equivalent to vmp_gauss_fpca, the difference is the format of the input)
+
+  grid_obj <- get_grid_objects(time_obs, K, n_g = n_g, time_g = time_g,
+                               format_univ = format_univ)
+
+  C <- grid_obj$C
+  n_g <- grid_obj$n_g
+  time_g <- grid_obj$time_g
+  C_g <- grid_obj$C_g
+
+  if (format_univ) {
+
+    eta_vec <- vmp_gauss_fpca(n_vmp = maxit, N, L, C, Y, sigma_zeta, mu_beta,
+                              Sigma_beta, A, time_g, C_g, tol, plot_elbo,
+                              verbose = verbose)
 
     # Orthogonalisation:
 
@@ -16,17 +37,16 @@ run_vmp_fpca <- function(n_vmp, N, p, L, C, Y, sigma_zeta, mu_beta,
       eta_vec$"p(zeta)->zeta", eta_vec$"p(Y|nu,zeta,sigsq_eps)->zeta"
     )
 
-    fpc_rotation(L, eta_in, time_g, C_g, Psi_g)
+    fpc_rotation(subj_names, L, eta_in, time_g, C_g, Psi_g)
 
   } else {
 
-    if (p > 1) {
-      stopifnot(!format_univ) # multivariate format required as p > 1
-    }
+    p <- length(Y[[1]])
+    var_names <- names(Y[[1]])
 
-    eta_vec <- vmp_gauss_mfpca(n_vmp, N, p, L, C, Y, sigma_zeta, mu_beta,
-                               Sigma_beta, A, time_g, C_g,
-                               tol, plot_elbo = plot_elbo)
+    eta_vec <- vmp_gauss_mfpca(n_vmp = maxit, N, p, L, C, Y, sigma_zeta, mu_beta,
+                               Sigma_beta, A, time_g, C_g, tol,
+                               plot_elbo = plot_elbo, verbose = verbose)
 
     # Orthogonalisation:
 
@@ -35,17 +55,15 @@ run_vmp_fpca <- function(n_vmp, N, p, L, C, Y, sigma_zeta, mu_beta,
       eta_vec$"p(zeta)->zeta", eta_vec$"p(Y|nu,zeta,sigsq_eps)->zeta"
     )
 
-    mfpc_rotation(L, eta_in, time_g, C_g, Psi_g)
+    mfpc_rotation(subj_names, var_names, L, eta_in, time_g, C_g, Psi_g)
 
   }
 
 }
 
 
-vmp_gauss_fpca <- function(
-	n_vmp, N, L, C, Y, sigma_zeta, mu_beta,
-	Sigma_beta, A, time_g, C_g, tol, plot_elbo=FALSE
-) {
+vmp_gauss_fpca <- function(n_vmp, N, L, C, Y, sigma_zeta, mu_beta, Sigma_beta,
+                           A, time_g, C_g, tol, plot_elbo=FALSE, verbose = TRUE) {
 
 	# Establish necessary parameters:
 
@@ -595,11 +613,9 @@ vmp_gauss_fpca <- function(
 }
 
 
-vmp_gauss_mfpca <- function(
-	n_vmp, N, p, L, C, Y, sigma_zeta, mu_beta,
-	Sigma_beta, A, time_g, C_g,
-	tol, plot_elbo = FALSE
-) {
+vmp_gauss_mfpca <- function(n_vmp, N, p, L, C, Y, sigma_zeta, mu_beta,
+                            Sigma_beta, A, time_g, C_g, tol, plot_elbo = FALSE,
+                            verbose = TRUE) {
 
 	# Establish necessary parameters:
 
@@ -769,7 +785,9 @@ vmp_gauss_mfpca <- function(
 
 		iter <- iter + 1
 
-		cat("Iteration", iter, "\n")
+		if (verbose) {
+		  cat("Iteration", iter, "\n")
+		}
 
 		eta_vec$"nu->p(Y|nu,zeta,sigsq_eps)" <- eta_vec$"p(nu|Sigma_nu)->nu"
 		eta_vec$"nu->p(nu|Sigma_nu)" <- eta_vec$"p(Y|nu,zeta,sigsq_eps)->nu"
@@ -1190,10 +1208,30 @@ vmp_gauss_mfpca <- function(
 # Mean-field version, ELBO not implemented, no tolerance tol
 #
 #' @export
-run_mfvb_fpca <- function(n_mfvb, N, n, n_g, p, K, L, C, Y, sigma_zeta,
-                          mu_beta, sigsq_beta, A, time_g, C_g, Psi_g = NULL) {
+run_mfvb_fpca <- function(time_obs, Y, K, L,
+                          sigma_zeta = 1, mu_beta = rep(0, 2),
+                          sigsq_beta = 1e10, A = 1e5,
+                          n_mfvb = 500, n_g = 1000, time_g = NULL, Psi_g = NULL,
+                          verbose = TRUE) {
+
+  stopifnot(is.list(time_obs[[1]])) # function not implemented for format format_univ = TRUE
+
+  n <- t(sapply(time_obs,
+                function(time_obs_i) sapply(time_obs_i,
+                                            function(time_obs_ij) length(time_obs_ij))))
 
   d <- (K+2)*(L+1)
+
+  N <- length(time_obs) # move to vmp_gauss_fpca and vmp_gauss_mfpca
+  p <- length(time_obs[[1]])
+
+  grid_obj <- get_grid_objects(time_obs, K, n_g = n_g, time_g = time_g,
+                               format_univ = FALSE)
+
+  C <- grid_obj$C
+  n_g <- grid_obj$n_g
+  time_g <- grid_obj$time_g
+  C_g <- grid_obj$C_g
 
   E_q_zeta <- vector("list", length = N)
   Cov_q_zeta <- vector("list", length = N)
@@ -1236,7 +1274,9 @@ run_mfvb_fpca <- function(n_mfvb, N, n, n_g, p, K, L, C, Y, sigma_zeta,
 
   for(iter in 1:n_mfvb) {
 
-    cat("starting iteration", iter, "of", n_mfvb, "\n")
+    if (verbose) {
+      cat("Iteration", iter,  "of", n_mfvb, "\n")
+    }
 
     # Update q(nu):
 
@@ -1531,9 +1571,9 @@ run_mfvb_fpca <- function(n_mfvb, N, n, n_g, p, K, L, C, Y, sigma_zeta,
     }
   }
 
-  create_named_list(Y_summary, Y_hat, Y_low, Y_upp,
+  create_named_list(time_g,
+                    Y_summary, Y_hat, Y_low, Y_upp,
                     gbl_hat, mu_hat, list_Psi_hat,
                     Zeta_hat, list_zeta_ellipse)
 
 }
-

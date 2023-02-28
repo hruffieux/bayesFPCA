@@ -2,6 +2,69 @@ create_named_list <- function(...) {
   setNames(list(...), as.character(match.call()[-1]))
 }
 
+#' @export
+get_grid_objects <- function(time_obs, K, n_g = 1000, time_g = NULL,
+                             t_min = NULL, t_max = NULL, int_knots = NULL,
+                             format_univ = FALSE) {
+
+  time_vec <- unlist(time_obs)
+
+  if (is.null(t_min)) {
+    t_min <- 1.01*min(time_vec) - 0.01*max(time_vec)
+  }
+
+  if (is.null(t_max)) {
+    t_max <- 1.01*max(time_vec) - 0.01*min(time_vec)
+  }
+
+  if (is.null(int_knots)) {
+    int_knots <- quantile(unique(time_vec), seq(0, 1, length = K)[-c(1, K)])
+  }
+
+  N <- length(time_obs)
+
+  X <- vector("list", length=N)
+  Z <- vector("list", length=N)
+  C <- vector("list", length=N)
+
+  if (format_univ) {
+    for(i in 1:N) {
+      X[[i]] <- X_design(time_obs[[i]])
+      Z[[i]] <- ZOSull(time_obs[[i]], range.x=c(t_min, t_max), intKnots=int_knots)
+      C[[i]] <- cbind(X[[i]], Z[[i]])
+    }
+
+  } else {
+
+    p <- length(time_obs[[1]])
+
+    for(i in 1:N) {
+      C[[i]] <- vector("list", length = p)
+      for(j in 1:p) {
+
+        X <- X_design(time_obs[[i]][[j]])
+        Z <- ZOSull(time_obs[[i]][[j]], range.x = c(t_min, t_max), intKnots = int_knots)
+        C[[i]][[j]] <- cbind(X, Z)
+      }
+    }
+  }
+
+  if (is.null(time_g)) {
+    stopifnot(!is.null(n_g))
+    time_g <- seq(t_min, t_max, length.out = n_g)
+  } else {
+    stopifnot(is.null(n_g))
+    n_g <- length(time_g)
+  }
+
+  X_g <- X_design(time_g)
+  Z_g <- ZOSull(time_g, range.x=c(t_min, t_max), intKnots=int_knots)
+  C_g <- cbind(X_g, Z_g)
+
+  create_named_list(X, Z, C, n_g, time_g, X_g, Z_g, C_g)
+}
+
+
 X_design <- function(x) {
 
   if(is.list(x)) {
