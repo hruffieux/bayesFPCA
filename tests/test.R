@@ -53,14 +53,6 @@ Psi_func <- function(time_obs, j, p) {
   return(ans)
 }
 
-# Establish hyperparameters:
-#
-sigsq_beta <- 1e10
-Sigma_beta <- sigsq_beta*diag(2)
-mu_beta <- rep(0, 2)
-A <- 1e5
-sigsq_zeta <- 1
-sigma_zeta <- sqrt(sigsq_zeta)
 
 format_univ <- FALSE # can be faster if TRUE (although not clear!)
                      # when p = 1 but then the plot functions need to be adapeted

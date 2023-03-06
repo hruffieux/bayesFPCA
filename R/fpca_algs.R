@@ -1,15 +1,69 @@
 #' @export
 run_vmp_fpca <- function(time_obs, Y, K, L,
-                         sigma_zeta = 1, mu_beta = rep(0, 2),
-                         Sigma_beta = 1e10*diag(2), A = 1e5,
-                         tol = 1e-5, n_g = 1000, time_g = NULL,
-                         maxit = 1e4, plot_elbo = FALSE,
-                         Psi_g = NULL, verbose = TRUE) {
+                         list_hyper = NULL,
+                         n_g = 1000, time_g = NULL,
+                         tol = 1e-5, maxit = 1e4, plot_elbo = FALSE,
+                         Psi_g = NULL, verbose = TRUE, seed = NULL) {
 
+  check_structure(seed, "vector", "numeric", 1, null_ok = TRUE)
+  if (!is.null(seed)) {
+    cat(paste0("== Seed set to ", seed, " ==\n\n"))
+    set.seed(seed)
+  }
+
+  stopifnot(is.list(time_obs))
+  stopifnot(is.list(Y))
+  stopifnot(isTRUE(all.equal(length(time_obs), length(Y))))
+
+  check_structure(K, "vector", "numeric", 1)
+  check_natural(K)
+
+  check_structure(L, "vector", "numeric", 1)
+  check_natural(L)
+
+  if (is.null(list_hyper)) {
+    list_hyper <- set_hyper()
+  } else if (!inherits(list_hyper, "hyper")) {
+    stop(paste0("The provided list_hyper must be an object of class ",
+                "``hyper''. \n *** you must either use the ",
+                "function set_hyper to set your own hyperparameters or ",
+                "list_hyper to NULL for automatic choice. ***"))
+  }
+
+  sigma_zeta <- list_hyper$sigma_zeta
+  mu_beta <- list_hyper$mu_beta
+  Sigma_beta <- list_hyper$Sigma_beta
+  A <- list_hyper$A
+
+  check_structure(n_g, "vector", "numeric", 1, null_ok = TRUE)
+  if (!is.null(n_g)) check_natural(n_g)
+
+  check_structure(time_g, "vector", "numeric", null_ok = TRUE)
+
+  check_structure(tol, "vector", "numeric", 1)
+  check_positive(tol, eps=.Machine$double.eps)
+
+  check_structure(maxit, "vector", "numeric", 1)
+  check_natural(maxit)
+
+  if (!is.null(Psi_g)) {
+    stopifnot(is.list(Psi_g))
+  }
+
+  check_structure(plot_elbo, "vector", "logical", 1)
+  check_structure(verbose, "vector", "logical", 1)
 
   N <- length(time_obs) # move to vmp_gauss_fpca and vmp_gauss_mfpca
 
-  subj_names <- names(Y)
+  if (is.null(names(Y))) {
+    stopifnot(is.null(names(time_obs)))
+    subj_names <- paste0("subj_", 1:N)
+    names(Y) <- names(time_obs) <- subj_names
+  } else {
+    subj_names <- names(Y)
+    stopifnot(isTRUE(all.equal(names(time_obs), subj_names)) | is.null(names(time_obs)))
+  }
+  names(time_obs) <- subj_names
 
   format_univ <- ifelse(is.list(time_obs[[1]]), FALSE, TRUE) # If TRUE, then p = 1, and vmp_gauss_fpca is used.
                                                              # Note that if FALSE and p = 1, vmp_gauss_mfpca will be used,
@@ -42,7 +96,24 @@ run_vmp_fpca <- function(time_obs, Y, K, L,
   } else {
 
     p <- length(Y[[1]])
-    var_names <- names(Y[[1]])
+
+    tmp_names <- lapply(Y, function(Y_i) names(Y_i))
+    tmp_names_time <-  lapply(time_obs, function(time_obs_i) names(time_obs_i))
+    if (is.null(unlist(unique(tmp_names)))) {
+      stopifnot(is.null(unlist(unique(tmp_names_time))))
+      var_names <- paste0("variable_", 1:p)
+      Y <- lapply(Y, function(Y_i) { names(Y_i) <- var_names; Y_i})
+    } else if (!all_same(tmp_names)) {
+      stop("Variable names in Y must be the same for all individuals.")
+    } else {
+      var_names <- names(Y[[1]])
+    }
+
+    if (!is.null(unlist(unique(tmp_names_time))) && (!all_same(tmp_names_time) | !isTRUE(all.equal(tmp_names_time[[1]], var_names)))) {
+      stop("Variable names for each individual in time_obs must be the same as in Y.")
+    }
+
+    time_obs <- lapply(time_obs, function(time_obs_i) { names(time_obs_i) <- var_names; time_obs_i})
 
     eta_vec <- vmp_gauss_mfpca(n_vmp = maxit, N, p, L, C, Y, sigma_zeta, mu_beta,
                                Sigma_beta, A, time_g, C_g, tol,
@@ -1208,11 +1279,53 @@ vmp_gauss_mfpca <- function(n_vmp, N, p, L, C, Y, sigma_zeta, mu_beta,
 # Mean-field version, ELBO not implemented, no tolerance tol
 #
 #' @export
-run_mfvb_fpca <- function(time_obs, Y, K, L,
-                          sigma_zeta = 1, mu_beta = rep(0, 2),
-                          sigsq_beta = 1e10, A = 1e5,
+run_mfvb_fpca <- function(time_obs, Y, K, L, list_hyper = NULL,
                           n_mfvb = 500, n_g = 1000, time_g = NULL, Psi_g = NULL,
-                          verbose = TRUE) {
+                          verbose = TRUE, seed = NULL) {
+
+  check_structure(seed, "vector", "numeric", 1, null_ok = TRUE)
+  if (!is.null(seed)) {
+    cat(paste0("== Seed set to ", seed, " ==\n\n"))
+    set.seed(seed)
+  }
+
+  stopifnot(is.list(time_obs))
+  stopifnot(is.list(Y))
+  stopifnot(isTRUE(all.equal(length(time_obs), length(Y))))
+
+  check_structure(K, "vector", "numeric", 1)
+  check_natural(K)
+
+  check_structure(L, "vector", "numeric", 1)
+  check_natural(L)
+
+  if (is.null(list_hyper)) {
+    list_hyper <- set_hyper()
+  } else if (!inherits(list_hyper, "hyper")) {
+    stop(paste0("The provided list_hyper must be an object of class ",
+                "``hyper''. \n *** you must either use the ",
+                "function set_hyper to set your own hyperparameters or ",
+                "list_hyper to NULL for automatic choice. ***"))
+  }
+
+  sigma_zeta <- list_hyper$sigma_zeta
+  mu_beta <- list_hyper$mu_beta
+  Sigma_beta <- list_hyper$Sigma_beta
+  A <- list_hyper$A
+
+  check_structure(n_g, "vector", "numeric", 1, null_ok = TRUE)
+  if (!is.null(n_g)) check_natural(n_g)
+
+  check_structure(time_g, "vector", "numeric", null_ok = TRUE)
+
+  check_structure(n_mfvb, "vector", "numeric", 1)
+  check_natural(n_mfvb)
+
+  if (!is.null(Psi_g)) {
+    stopifnot(is.list(Psi_g))
+  }
+
+  check_structure(verbose, "vector", "logical", 1)
 
   stopifnot(is.list(time_obs[[1]])) # function not implemented for format format_univ = TRUE
 
@@ -1280,7 +1393,10 @@ run_mfvb_fpca <- function(time_obs, Y, K, L,
 
     # Update q(nu):
 
-    inv_fixed_var <- 1/sigsq_beta*diag(2)
+    # inv_fixed_var <- 1/sigsq_beta*diag(2)
+    inv_fixed_var <- Sigma_beta
+    diag(inv_fixed_var) <- 1/diag(Sigma_beta)
+
     Cov_q_nu <- vector("list", length = p)
     E_q_nu <- vector("list", length = p)
     for(j in 1:p) {

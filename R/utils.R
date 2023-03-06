@@ -2,6 +2,100 @@ create_named_list <- function(...) {
   setNames(list(...), as.character(match.call()[-1]))
 }
 
+all_same <- function(x) length(unique(x)) == 1
+
+check_natural <- function(x, eps = .Machine$double.eps^0.75){
+  if (any(x < eps | abs(x - round(x)) > eps)) {
+    stop(paste0(deparse(substitute(x)),
+                " must be natural."))
+  }
+}
+
+check_positive <- function(x, eps = .Machine$double.eps^0.75){
+  if (any(x < eps)) {
+    err_mess <- paste0(deparse(substitute(x)), " must be positive (larger than precision zero in R).")
+    if (length(x) > 1) err_mess <- paste0("All entries of ", err_mess)
+    stop(err_mess)
+  }
+}
+
+check_zero_one <- function(x){
+  if (any(x < 0) | any(x > 1)) {
+    err_mess <- paste0(deparse(substitute(x)), " must lie between 0 and 1.")
+    if (length(x) > 1) err_mess <- paste0("All entries of ", err_mess)
+    stop(err_mess)
+  }
+}
+
+check_structure <- function(x, struct, type, size = NULL,
+                             null_ok = FALSE,  inf_ok = FALSE, na_ok = FALSE) {
+  if (type == "double") {
+    bool_type <-  is.double(x)
+    type_mess <- "a double-precision "
+  } else if (type == "integer") {
+    bool_type <- is.integer(x)
+    type_mess <- "an integer "
+  } else if (type == "numeric") {
+    bool_type <- is.numeric(x)
+    type_mess <- "a numeric "
+  } else if (type == "logical") {
+    bool_type <- is.logical(x)
+    type_mess <- "a boolean "
+  } else if (type == "string") {
+    bool_type <- is.character(x)
+    type_mess <- "string "
+  }
+
+  bool_size <- TRUE # for case size = NULL (no assertion on the size/dimension)
+  size_mess <- ""
+  if (struct == "vector") {
+    bool_struct <- is.vector(x) & (length(x) > 0) # not an empty vector
+    if (!is.null(size)) {
+      bool_size <- length(x) %in% size
+      size_mess <- paste0(" of length ", paste0(size, collapse=" or "))
+    }
+  } else if (struct == "matrix") {
+    bool_struct <- is.matrix(x) & (length(x) > 0) # not an empty matrix
+    if (!is.null(size)) {
+      bool_size <- all(dim(x) == size)
+      size_mess <- paste0(" of dimension ", size[1], " x ", size[2])
+    }
+  }
+
+  correct_obj <- bool_struct & bool_type & bool_size
+
+  bool_null <- is.null(x)
+
+  if (!is.list(x) & type != "string") {
+    na_mess <- ""
+    if (!na_ok) {
+      if (!bool_null) correct_obj <- correct_obj & !any(is.na(x))
+      na_mess <- " without missing value"
+    }
+
+    inf_mess <- ""
+    if (!inf_ok) {
+      if (!bool_null) correct_obj <- correct_obj & all(is.finite(x[!is.na(x)]))
+      inf_mess <- ", finite"
+    }
+  } else {
+    na_mess <- ""
+    inf_mess <- ""
+  }
+
+  null_mess <- ""
+  if (null_ok) {
+    correct_obj <- correct_obj | bool_null
+    null_mess <- " or must be NULL"
+  }
+
+  if(!(correct_obj)) {
+    stop(paste0(deparse(substitute(x)), " must be a non-empty ", type_mess, struct,
+                size_mess, inf_mess, na_mess, null_mess, "."))
+  }
+}
+
+
 #' @export
 get_grid_objects <- function(time_obs, K, n_g = 1000, time_g = NULL,
                              t_min = NULL, t_max = NULL, int_knots = NULL,

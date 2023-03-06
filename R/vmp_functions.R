@@ -2263,11 +2263,11 @@ mfpc_rotation <- function(subj_names, var_names, L, eta_in, time_g, C_g, Psi_g =
 
     list_zeta_ellipse[[i]] <- zeta_ellipse
 
-    # zeta_summary[[i]] <- list(zeta_mean, zeta_ellipse)
-    # names(zeta_summary[[i]]) <- c("mean", "credible boundary")
   }
 
   mu_hat <- as.matrix(Reduce(cbind, mu_hat)) # now deals with the case p = 1
+  colnames(mu_hat) <- var_names
+
   list_Psi_hat <- vector("list", length = L)
 
   for(l in 1:L) {
@@ -2280,21 +2280,14 @@ mfpc_rotation <- function(subj_names, var_names, L, eta_in, time_g, C_g, Psi_g =
   }
   names(list_Psi_hat) <- paste0("FPC_", 1:L)
 
-  # Y_summary <-
   Y_hat <- Y_low <- Y_upp <- vector("list", length = N)
   for(i in 1:N) {
 
-    # Y_summary[[i]] <-
     Y_hat[[i]] <- Y_low[[i]] <- Y_upp[[i]] <- vector("list", length = p)
     for(j in 1:p) {
 
       Y_hat_ij <- mu_hat[, j] + Psi_hat[[j]] %*% Zeta_hat[i, ]
       sd_vec_ij <- sqrt(diag(tcrossprod(Psi_hat[[j]] %*% Cov_zeta_hat[[i]], Psi_hat[[j]])))
-
-      # Y_summary[[i]][[j]] <- matrix(NA, n_g, 3)
-      # Y_summary[[i]][[j]][, 1] <- Y_hat_ij + qnorm(0.025)*sd_vec_ij
-      # Y_summary[[i]][[j]][, 2] <- Y_hat_ij
-      # Y_summary[[i]][[j]][, 3] <- Y_hat_ij + qnorm(0.975)*sd_vec_ij
 
       Y_hat[[i]][[j]] <- Y_hat_ij
       Y_low[[i]][[j]] <- Y_hat_ij + qnorm(0.025)*sd_vec_ij
