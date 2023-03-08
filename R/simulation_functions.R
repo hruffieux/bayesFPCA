@@ -196,16 +196,20 @@ gauss_mfpca_data <- function(N, p, n, K, L, n_g, vec_sd_eps, mu_func, Psi_func,
   time_vec <- unlist(time_obs)
   t_min <- 1.01*min(time_vec) - 0.01*max(time_vec)
   t_max <- 1.01*max(time_vec) - 0.01*min(time_vec)
-  int_knots <- quantile(unique(time_vec), seq(0, 1, length = K)[-c(1, K)])
+  
+  int_knots <- lapply(
+    K,
+    function(x) quantile(unique(time_vec), seq(0, 1, length = x)[-c(1, x)])
+  )
 
   C <- vector("list", length = N)
   for(i in 1:N) {
-
+    
     C[[i]] <- vector("list", length = p)
     for(j in 1:p) {
-
+      
       X <- X_design(time_obs[[i]][[j]])
-      Z <- ZOSull(time_obs[[i]][[j]], range.x = c(0, 1), intKnots = int_knots)
+      Z <- ZOSull(time_obs[[i]][[j]], range.x = c(0, 1), intKnots = int_knots[[j]])
       C[[i]][[j]] <- cbind(X, Z)
     }
   }
@@ -213,10 +217,13 @@ gauss_mfpca_data <- function(N, p, n, K, L, n_g, vec_sd_eps, mu_func, Psi_func,
   # Set up plotting grid
 
   time_g <- seq(0, 1, length.out = n_g)
-
+  
   X_g <- X_design(time_g)
-  Z_g <- ZOSull(time_g, range.x = c(0, 1), intKnots = int_knots)
-  C_g <- cbind(X_g, Z_g)
+  Z_g <- lapply(
+    int_knots,
+    function(x) ZOSull(time_g, range.x = c(0, 1), intKnots = x)
+  )
+  C_g <- lapply(Z_g, function(Z) cbind(X_g, Z))
 
   mu_g <- vector("list", length = p)
   Psi_g <- vector("list", length = p)

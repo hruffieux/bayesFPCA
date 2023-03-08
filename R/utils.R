@@ -112,13 +112,13 @@ get_grid_objects <- function(time_obs, K, n_g = 1000, time_g = NULL,
   }
 
   if (is.null(int_knots)) {
-    int_knots <- quantile(unique(time_vec), seq(0, 1, length = K)[-c(1, K)])
+    int_knots <- lapply(
+      K, function(x) quantile(unique(time_vec), seq(0, 1, length = x)[-c(1, x)])
+    )
   }
 
   N <- length(time_obs)
-
-  X <- vector("list", length=N)
-  Z <- vector("list", length=N)
+  
   C <- vector("list", length=N)
 
   if (format_univ) {
@@ -131,13 +131,14 @@ get_grid_objects <- function(time_obs, K, n_g = 1000, time_g = NULL,
   } else {
 
     p <- length(time_obs[[1]])
-
+    
     for(i in 1:N) {
+      
       C[[i]] <- vector("list", length = p)
       for(j in 1:p) {
-
+        
         X <- X_design(time_obs[[i]][[j]])
-        Z <- ZOSull(time_obs[[i]][[j]], range.x = c(t_min, t_max), intKnots = int_knots)
+        Z <- ZOSull(time_obs[[i]][[j]], range.x = c(0, 1), intKnots = int_knots[[j]])
         C[[i]][[j]] <- cbind(X, Z)
       }
     }
@@ -145,15 +146,17 @@ get_grid_objects <- function(time_obs, K, n_g = 1000, time_g = NULL,
 
   if (is.null(time_g)) {
     stopifnot(!is.null(n_g))
-    time_g <- seq(t_min, t_max, length.out = n_g)
+    time_g <- seq(0, 1, length.out = n_g)
   } else {
-    stopifnot(is.null(n_g))
-    n_g <- length(time_g)
+    if(is.null(n_g)) n_g <- length(time_g)
   }
 
   X_g <- X_design(time_g)
-  Z_g <- ZOSull(time_g, range.x=c(t_min, t_max), intKnots=int_knots)
-  C_g <- cbind(X_g, Z_g)
+  Z_g <- lapply(
+    int_knots,
+    function(x) ZOSull(time_g, range.x = c(0, 1), intKnots = x)
+  )
+  C_g <- lapply(Z_g, function(Z) cbind(X_g, Z))
 
   create_named_list(X, Z, C, n_g, time_g, X_g, Z_g, C_g)
 }

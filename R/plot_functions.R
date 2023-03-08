@@ -18,7 +18,7 @@ flip_sign <- function(vec_flip, list_Psi_hat, Zeta_hat, zeta_ellipse) {
 }
 
 #' @export
-display_eigenfunctions <- function(p, L, time_g, mu_g, Psi_g,
+display_eigenfunctions <- function(p_sample, L, time_g, mu_g, Psi_g,
                                    mu_hat, list_Psi_hat,
                                    mu_hat_add = NULL, list_Psi_hat_add = NULL,
                                    mu_hat_ci = NULL, list_Psi_hat_ci = NULL,

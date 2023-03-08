@@ -40,3 +40,4 @@ and copyright are provided in [DESCRIPTION](DESCRIPTION).
 
 To report an issue, please use the [bayesFPCA issue
 tracker](https://github.com/hruffieux/bayesFPCA/issues) at github.com.
+making changes to mfvb-based mfpca
