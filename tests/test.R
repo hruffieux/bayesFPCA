@@ -18,8 +18,8 @@ N_t_max <- 20
 n <- matrix(sample(N_t_min:N_t_max, N*p,
                    replace = TRUE), N, p)     # number of time observations
 
-n_int_knots <- 8                              # number of interior knots
-K <- n_int_knots + 2                          # number of spline basis functions
+n_int_knots <- rep(8,p)                              # number of interior knots
+K <- n_int_knots + 2                          # number of spline basis functions # if length(K) = 1, then will be set to K <- rep(K, p) within the run_* functions
 L <- 2                                        # number of FPCA basis functions
 
 tol  <- 1e-5                                  # convergence tolerance # 1e-3 is not enough! (doesn't match the mfvb run)
@@ -105,6 +105,8 @@ Psi_g <- data$Psi_g
 
 set.seed(seed)
 
+# doesn't run successfully at the moment as treatment of K and corrections in fpca_rotation and mfpca_rotation functions need to be implemented
+#
 system.time(vmp_res <- run_vmp_fpca(time_obs, Y, K, L, n_g = NULL, time_g = time_g, # here we use the same time grid as that used to simulate the true mean and eigen- functions
                                     tol = tol, maxit = maxit_vmp,
                                     plot_elbo = TRUE, Psi_g = Psi_g))

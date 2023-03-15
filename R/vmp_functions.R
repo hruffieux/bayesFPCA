@@ -2161,7 +2161,7 @@ mfpc_rotation <- function(subj_names, var_names, L, eta_in, time_g, C_g, Psi_g =
   p <- length(eta_in[[1]])
   l_eta_nu <- length(eta_in[[1]][[1]])
   d <- (sqrt(4*l_eta_nu + 1) - 1)/2
-  K <- d/(L+1) - 2
+  K <- d/(L+1) - 2 ######################################## <-----------------
   D_L <- duplication.matrix(L)
   n_g <- length(time_g)
 
@@ -2186,7 +2186,7 @@ mfpc_rotation <- function(subj_names, var_names, L, eta_in, time_g, C_g, Psi_g =
     eta_in_nu <- list(eta_in[[1]][[j]], eta_in[[2]][[j]])
     q_nu <- gauss_q(eta_in_nu, use_vech = FALSE)
     E_q_nu <- q_nu[[1]]
-    E_q_V <- matrix(E_q_nu, K + 2, L + 1)
+    E_q_V <- matrix(E_q_nu, K + 2, L + 1) ######################################## <-----------------
 
     gbl_post <- C_g %*% E_q_V
     E_q_mu[[j]] <- gbl_post[, 1]
