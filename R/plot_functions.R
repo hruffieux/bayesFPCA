@@ -18,11 +18,11 @@ flip_sign <- function(vec_flip, list_Psi_hat, Zeta_hat, zeta_ellipse) {
 }
 
 #' @export
-display_eigenfunctions <- function(p_sample, L, time_g, mu_g, Psi_g,
-                                   mu_hat, list_Psi_hat,
+display_eigenfunctions <- function(L, time_g, mu_g, Psi_g,
+                                   mu_hat, list_Psi_hat, format_univ = FALSE,
                                    mu_hat_add = NULL, list_Psi_hat_add = NULL,
                                    mu_hat_ci = NULL, list_Psi_hat_ci = NULL,
-                                   lwd = 2, data_col = "red",
+                                   lwd = 2, data_col = "red", p_sample = 1,
                                    vec_col_add = NULL, vec_lwd = NULL) { # perso
 
   ylim <- c(min(c(unlist(mu_g),
@@ -45,6 +45,13 @@ display_eigenfunctions <- function(p_sample, L, time_g, mu_g, Psi_g,
   p_sample <- sort(p_sample)
 
   par(mfrow = c(1+L, length(p_sample))) #, mar = c(5.1, 4.1, 4.1, 2.1))
+  
+  if(format_univ){
+    mu_g <- list(mu_g)
+    Psi_g <- list(Psi_g)
+    mu_hat <- matrix(mu_hat)
+    list_Psi_hat <- lapply(split(list_Psi_hat, col(list_Psi_hat)), matrix)
+  }
 
   for (j in p_sample) {
     par(mar = c(1,4.5,4,1))
@@ -306,8 +313,8 @@ display_fit_list <- function(p_sample, N_sample, time_obs, time_g, Y,
 
 
 #' @export
-plot_scores <- function(N_sample, p, Zeta,
-                        Zeta_hat, zeta_ellipse,
+plot_scores <- function(N_sample, Zeta,
+                        Zeta_hat, zeta_ellipse, p = 1,
                         Zeta_hat_add = NULL, zeta_ellipse_add = NULL,
                         vec_col = c("black", "blue"), data_col = "red", mfrow = NULL) {
 
