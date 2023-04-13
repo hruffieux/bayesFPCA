@@ -1,33 +1,10 @@
-######### R script: mfpca_vmp.R ##########
+rm(list = ls())
 
-# For performing Bayesian MFPCA via VMP.
+CORE_DIR <- Sys.getenv("CORE_DIR")
 
-# Created: 21 MAR 2023
-# Last changed: 21 MAR 2023
+out_dir <- file.path(CORE_DIR, "output/")
 
-# Load libraries:
-
-library(splines)
-library(pracma)
-library(matrixcalc)
-library(lattice)
-library(magic)
-
-# Required functions:
-
-setwd("../R")
-
-source("fourier_basis.r")
-source("fpca_algs.R")
-source("OSullivan_splines.R")
-source("plot_functions.R")
-source("set_hyper.R")
-source("simulation_functions.R")
-source("utils.R")
-source("vmp_functions.R")
-source("wait.r")
-
-setwd("../tests")
+library(bayesFPCA)
 
 # Establish simulation variables:
 
@@ -50,8 +27,6 @@ L <- 2                              # number of FPCA basis functions
 n_vmp <- 200                       # number of vmp iterations
 n_g <- 1000                         # length of the plotting grid
 
-criterion  <- 1e-5                        # convergence criterion
-
 sigma_zeta_vec <- 2/(1:L)           # sd for first and second scores
 sigma_eps <- rep(1, p)      # sd of the residuals
 
@@ -60,19 +35,19 @@ tol <- 1e-5                       # convergence threshold
 # Set the mean function and the FPCA basis functions:
 
 mu <- function(time_obs, j) {
-	
+
 	ans <- ((-1)^j)*3*sin(pi*j*time_obs) - 3/2
 	return(ans)
 }
 
 psi_1 <- function(time_obs, j) {
-	
+
 	ans <- sqrt(2/p)*sin(2*pi*j*time_obs)
 	return(ans)
 }
 
 psi_2 <- function(time_obs, j) {
-	
+
 	ans <- sqrt(2/p)*cos(2*pi*j*time_obs)
 	return(ans)
 }
@@ -147,7 +122,7 @@ Y <- mfpca_data$"Y"
   # eta_vec$"p(zeta)->zeta", eta_vec$"p(Y|nu,zeta,sigsq_eps)->zeta"
 # )
 
-# mfpca_res <- mfpc_orthgn(subj_names, L, K, eta_in, time_g, N_sample, C_g, Psi_g)
+# mfpca_res <- mfpc_orthgn(subj_names, L, K, eta_in, time_g, N, p, C_g, Psi_g)
 
 mfpca_res <- run_vmp_fpca(
 	time_obs, Y, K, L, tol = tol, maxit = n_vmp,

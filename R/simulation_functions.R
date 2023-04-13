@@ -1,16 +1,17 @@
 #' @export
 generate_fpca_data <- function(N, p, n, K, L, n_g, vec_sd_eps, mu_func, Psi_func,
-                               time_obs = NULL,
+                               time_obs = NULL, format_univ = FALSE,
                                generate_from_univ = FALSE,
                                vec_sd_zeta = NULL,
                                vec_rho_Zeta = NULL) {
-  
-  format_univ <- (p == 1)
-  
-  if (format_univ) { # don't use it, not helpful.
-    gauss_fpca_data(N, n, K, L, n_g, vec_sd_eps, mu_func, Psi_func,
-                    vec_sd_zeta = vec_sd_zeta, time_obs = time_obs)
+
+  if (format_univ & p == 1) { # don't use it, not helpful.
+    gauss_fpca_data(N, n, K, L, n_g, vec_sd_eps, mu_func, Psi_func, time_obs,
+                    vec_sd_zeta = vec_sd_zeta)
   } else {
+    if (p > 1) {
+      stopifnot(!format_univ) # multivariate format required as p > 1
+    }
     # else {
     #   stopifnot(!generate_from_univ & !is.null(vec_rho_Zeta))
     # }
@@ -23,7 +24,6 @@ generate_fpca_data <- function(N, p, n, K, L, n_g, vec_sd_eps, mu_func, Psi_func
 
   }
 }
-
 
 
 gauss_fpca_data <- function(N, n, K, L, n_g, vec_sd_eps, mu_func, Psi_func,
@@ -79,7 +79,7 @@ gauss_fpca_data <- function(N, n, K, L, n_g, vec_sd_eps, mu_func, Psi_func,
     Psi_t <- matrix(NA, nrow=n[i], ncol=L)
     for(l in 1:L) {
 
-      Psi_t[,l] <- Psi_func[[l]](time_obs[[i]])
+      Psi_t[,l] <- Psi_func(time_obs[[i]])[,l]
     }
 
     epsilon <- rnorm(n[i], 0, vec_sd_eps)
@@ -100,12 +100,12 @@ gauss_fpca_data <- function(N, n, K, L, n_g, vec_sd_eps, mu_func, Psi_func,
   Psi_g <- matrix(NA, nrow=n_g, ncol=L)
   for(l in 1:L) {
 
-    Psi_g[,l] <- Psi_func[[l]](time_g)
+    Psi_g[,l] <- Psi_func(time_g)[,l]
   }
 
   Zeta <- Reduce(rbind, Zeta)
 
-  create_named_list(time_obs, Zeta, mu_g, Psi_g, Y)
+  create_named_list(time_obs, Zeta, time_g, mu_g, Psi_g, Y)
 
 }
 
@@ -127,7 +127,8 @@ get_Zeta <- function(N, L, vec_sd_zeta = NULL) {
 
 }
 
-get_list_corr_Zeta_univ <- function(N, L, p, vec_sd_zeta = NULL, vec_rho = 1/(2:(L+1))^0.2) { # vec_rho = correlation of the 1st, 2nd, etc sets of scores across the p variables (expected to decrease as l increases... )
+get_list_corr_Zeta_univ <- function(N, L, p, vec_sd_zeta = NULL,
+                                    vec_rho = 1/(2:(L+1))^0.2) { # vec_rho = correlation of the 1st, 2nd, etc sets of scores across the p variables (expected to decrease as l increases... )
 
   if (is.null(vec_sd_zeta)) {
     vec_sd_zeta <- 1/(1:L)
@@ -191,7 +192,7 @@ gauss_mfpca_data <- function(N, p, n, K, L, n_g, vec_sd_eps, mu_func, Psi_func,
   # time_vec <- unlist(time_obs)
   # t_min <- 1.01*min(time_vec) - 0.01*max(time_vec)
   # t_max <- 1.01*max(time_vec) - 0.01*min(time_vec)
-  
+
   # int_knots <- lapply(
     # K,
     # function(x) quantile(unique(time_vec), seq(0, 1, length = x)[-c(1, x)])
@@ -199,10 +200,10 @@ gauss_mfpca_data <- function(N, p, n, K, L, n_g, vec_sd_eps, mu_func, Psi_func,
 
   # C <- vector("list", length = N)
   # for(i in 1:N) {
-    
+
     # C[[i]] <- vector("list", length = p)
     # for(j in 1:p) {
-      
+
       # X <- X_design(time_obs[[i]][[j]])
       # Z <- ZOSull(time_obs[[i]][[j]], range.x = c(0, 1), intKnots = int_knots[[j]])
       # C[[i]][[j]] <- cbind(X, Z)
@@ -212,7 +213,7 @@ gauss_mfpca_data <- function(N, p, n, K, L, n_g, vec_sd_eps, mu_func, Psi_func,
   # Set up plotting grid
 
   time_g <- seq(0, 1, length.out = n_g)
-  
+
   # X_g <- X_design(time_g)
   # Z_g <- lapply(
     # int_knots,
@@ -269,6 +270,6 @@ gauss_mfpca_data <- function(N, p, n, K, L, n_g, vec_sd_eps, mu_func, Psi_func,
 
   # output the results:
 
-  create_named_list(time_obs, Zeta, mu_g, Psi_g, Y)
+  create_named_list(time_obs, Zeta, time_g, mu_g, Psi_g, Y)
 
 }

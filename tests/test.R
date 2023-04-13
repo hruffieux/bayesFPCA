@@ -42,13 +42,13 @@ sigsq_eps <- sigma_eps^2
 
 # Set the mean function and the FPCA basis functions:
 
-mu_func <- function(t, j) (-1)^j*2*sin((2*pi+j)*t)
+mu_func <- function(t, j = 1) (-1)^j*2*sin((2*pi+j)*t) # default values = 1 for the case format_univ = T
 
-psi_1 <- function(t, j, p) (-1)^j * sqrt(2/p)*cos(2*pi*t)
-psi_2 <- function(t, j, p) (-1)^j * sqrt(2/p)*sin(2*pi*t)
+psi_1 <- function(t, j = 1, p = 1) (-1)^j * sqrt(2/p)*cos(2*pi*t)
+psi_2 <- function(t, j = 1, p = 1) (-1)^j * sqrt(2/p)*sin(2*pi*t)
 
 
-Psi_func <- function(time_obs, j, p) {
+Psi_func <- function(time_obs, j = 1, p = 1) {
   ans <- cbind(psi_1(time_obs, j, p), psi_2(time_obs, j, p))
   return(ans)
 }
@@ -200,7 +200,7 @@ if (!format_univ) { # not implemented for format univ
           width = 6.3, height = 5, paper='special')
   }
 
-  display_eigenfunctions(p_sample, L, time_g, mu_g, Psi_g,
+  display_eigenfunctions(L, time_g, mu_g, Psi_g,
                          mu_hat, list_Psi_hat, # vmp = grey
                          mu_hat_add = mfvb_res$mu_hat, # mfvb = blue
                          list_Psi_hat_add = mfvb_res$list_Psi_hat,
@@ -208,6 +208,12 @@ if (!format_univ) { # not implemented for format univ
   if (bool_save) {
     dev.off()
   }
+
+  Zeta_hat_add <- mfvb_res$Zeta_hat
+  zeta_ellipse_add <- mfvb_res$list_zeta_ellipse
+
+} else {
+  Zeta_hat_add <- zeta_ellipse_add <- NULL
 }
 
 n_plots_scores <- 4
@@ -222,9 +228,9 @@ for (ps in 1:n_plots_scores) {
     pdf(paste0(res_dir, "/scores_samples_", paste0(N_sample_ps, collapse = "-"), ".pdf"),
         width = 6, height = 6, paper='special')
   }
-  plot_scores(N_sample_ps, p, Zeta, Zeta_hat, list_zeta_ellipse,
-              Zeta_hat_add = mfvb_res$Zeta_hat,
-              zeta_ellipse_add = mfvb_res$list_zeta_ellipse,
+  plot_scores(N_sample_ps, Zeta, Zeta_hat, list_zeta_ellipse,
+              Zeta_hat_add = Zeta_hat_add,
+              zeta_ellipse_add = zeta_ellipse_add,
               mfrow = c(ceiling(sqrt(n_sample_ps)), tail(sqrt(n_sample_ps))))
   if (bool_save) {
     dev.off()
@@ -248,7 +254,7 @@ if (bool_multiple_repl_eigen & !format_univ) {
 
 
     vmp_res_repl <- run_vmp_fpca(time_obs, Y_repl, K, L, n_g = NULL, time_g = time_g, # here we use the same time grid as that used to simulate the true mean and eigen- functions
-                                 tol = tol, maxit = maxit_vmp, plot_elbo = TRUE,
+                                 tol = tol, maxit = maxit_vmp, plot_elbo = FALSE,
                                  Psi_g = Psi_g)
 
     mu_hat <- vmp_res_repl$mu_hat
@@ -265,7 +271,7 @@ if (bool_multiple_repl_eigen & !format_univ) {
     pdf(paste0(res_dir, "/eigenfunction_n_repl_", n_repl_eigen, ".pdf"),
         width = 6.3, height = 5, paper='special')
   }
-  display_eigenfunctions(p_sample, L, time_g, mu_g, Psi_g, list_mu_hat,
+  display_eigenfunctions(L, time_g, mu_g, Psi_g, list_mu_hat,
                          list_list_Psi_hat, lwd = 1)
 
   if (bool_save) {
@@ -277,10 +283,12 @@ if (bool_multiple_repl_eigen & !format_univ) {
 
 # Compare first level scores:
 
-norm_diff <- apply(mfvb_res$Zeta - Zeta, 1, function(x) sqrt(cprod(x)))
-mfvb_rmse <- sqrt(mean(norm_diff))
+if (!format_univ) {
+  norm_diff <- apply(mfvb_res$Zeta - Zeta, 1, function(x) sqrt(cprod(x)))
+  mfvb_rmse <- sqrt(mean(norm_diff))
 
-cat("The MFVB-based rmse is:", mfvb_rmse, "\n")
+  cat("The MFVB-based rmse is:", mfvb_rmse, "\n")
+}
 
 norm_diff <- apply(vmp_res$Zeta - Zeta, 1, function(x) sqrt(cprod(x)))
 vmp_rmse <- sqrt(mean(norm_diff))

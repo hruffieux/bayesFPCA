@@ -16,7 +16,7 @@
 #' @importFrom matrixcalc duplication.matrix
 #' @importFrom pracma blkdiag
 #' @importFrom splines spline.des
-#' @importFrom stats cov qnorm quantile rbinom rnorm runif setNames
+#' @importFrom stats cov pnorm qnorm quantile rbinom rnorm runif setNames
 #' @importFrom rstan extract
 #' @importFrom utils read.table
 NULL

@@ -1,17 +1,10 @@
 rm(list = ls())
 
-using_hr_comp <- readline("Are you using Helene's computer (T/F)? ")
+CORE_DIR <- Sys.getenv("CORE_DIR")
 
-if(using_hr_comp) {
-  
-  CORE_DIR <- Sys.getenv("CORE_DIR")
-} else {
-  
-  CORE_DIR <- paste0(Sys.getenv("HOME"), "/Desktop/repos")
-}
+out_dir <- file.path(CORE_DIR, "output/")
 
-main_dir <- file.path(CORE_DIR, "bayesFPCA/R/")
-setwd(main_dir)
+library(bayesFPCA)
 
 ######### R script: mfpca_vmp.R ##########
 
@@ -31,25 +24,6 @@ setwd(main_dir)
 
 # Created: 01 JUL 2022
 # Last changed: 03 MAR 2023
-
-# Load libraries:
-
-library(MASS)
-library(magic)
-library(lattice)
-library(pracma)
-library(ellipse)
-library(splines)
-
-# Required functions:
-
-source("fpca_algs.r")
-source("OSullivan_splines.R")
-source("plot_functions.R")
-source("set_hyper.R")
-source("simulation_functions.R")
-source("utils.R")
-source("wait.R")
 
 # Establish simulation variables:
 
@@ -108,25 +82,25 @@ Sigma_zeta <- sigsq_zeta*diag(L)
 # Set the mean function and the FPCA basis functions:
 
 mu <- function(time_obs, j) {
-	
+
 	ans <- ((-1)^j)*3*sin(pi*j*time_obs) - 3/2
 	return(ans)
 }
 
 psi_1 <- function(time_obs, j) {
-	
+
 	ans <- sqrt(2/p)*sin(2*pi*j*time_obs)
 	return(ans)
 }
 
 psi_2 <- function(time_obs, j) {
-	
+
 	ans <- sqrt(2/p)*cos(2*pi*j*time_obs)
 	return(ans)
 }
 
 Psi_func <- function(time_obs, j, p) {
-	
+
 	ans <- cbind(psi_1(time_obs, j), psi_2(time_obs, j))
 	return(ans)
 }
@@ -195,7 +169,7 @@ wait()
 # Plot the eigenfunctions:
 
 if(print_pdf) {
-	
+
 	pdf(
 		"./images/mfpca_gbl_funcs.pdf",
 		width=plot_width, height=plot_height

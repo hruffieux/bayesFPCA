@@ -1,32 +1,10 @@
-######### R script: fpca_vmp.R ##########
+rm(list = ls())
 
-# For performing Bayesian FPCA via VMP.
+CORE_DIR <- Sys.getenv("CORE_DIR")
 
-# Created: 20 MAR 2023
-# Last changed: 21 MAR 2023
+out_dir <- file.path(CORE_DIR, "output/")
 
-# Load libraries:
-
-library(splines)
-library(pracma)
-library(matrixcalc)
-library(lattice)
-
-# Required functions:
-
-setwd("../R")
-
-source("fourier_basis.r")
-source("fpca_algs.R")
-source("OSullivan_splines.R")
-source("plot_functions.R")
-source("set_hyper.R")
-source("simulation_functions.R")
-source("utils.R")
-source("vmp_functions.R")
-source("wait.r")
-
-setwd("../tests")
+library(bayesFPCA)
 
 # Establish simulation variables:
 
@@ -71,7 +49,9 @@ mu_g <- fpca_data$"mu_g"
 Psi_g <- fpca_data$"Psi_g"
 Y <- fpca_data$"Y"
 
-fpca_res <- run_vmp_fpca(time_obs, Y, K, L, list_hyper = NULL, n_g = 1000, time_g = NULL, tol = tol, maxit = n_vmp, plot_elbo = TRUE, Psi_g = Psi_g, verbose = TRUE, seed = NULL)
+fpca_res <- run_vmp_fpca(time_obs, Y, K, L, list_hyper = NULL, n_g = 1000,
+                         time_g = NULL, tol = tol, maxit = n_vmp, plot_elbo = TRUE,
+                         Psi_g = Psi_g, verbose = TRUE, seed = NULL)
 
 # subj_names <- paste0("subj_", 1:N)
 

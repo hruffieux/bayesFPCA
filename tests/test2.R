@@ -6,25 +6,6 @@ out_dir <- file.path(CORE_DIR, "output/")
 
 library(bayesFPCA)
 
-######### R script: mfpca_vmp.R ##########
-
-# For comparing MFPCA via VMP and MFVB. The modifications are:
-# 1.  inferring eigenfunctions
-# 2.  inferring scores and including orthogonalization
-# 3.  inferring residual posteriors
-# 4.  functionalising the likelihood fragment
-# 5.  functionalising the orthogonalization
-# 6.  functionalising the data generation
-# 7.  functionalising the raw data plots
-# 8.  computing convergence
-# 9.  functionalising the likelihood cross-entropy
-# 10. functionalising the vmp algorithm
-# 11. functionalising the plots of the comparison of fits
-# 11. functionalising the plots of the comparison of global curves
-
-# Created: 01 JUL 2022
-# Last changed: 03 MAR 2023
-
 seed <- 1
 set.seed(seed)
 
@@ -195,4 +176,3 @@ plot_scores(N_sample, p, Zeta,
             Zeta_hat_add = NULL, zeta_ellipse_add = NULL,
             vec_col = c("black", "blue"), data_col = "red", mfrow = NULL)
 
-############ End of mfpca_vmp.R ############
