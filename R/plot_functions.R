@@ -19,7 +19,7 @@ flip_sign <- function(vec_flip, list_Psi_hat, Zeta_hat, zeta_ellipse) {
 
 #' @export
 display_eigenfunctions <- function(L, time_g, mu_g, Psi_g,
-                                   mu_hat, list_Psi_hat, format_univ = FALSE,
+                                   mu_hat, list_Psi_hat,
                                    mu_hat_add = NULL, list_Psi_hat_add = NULL,
                                    mu_hat_ci = NULL, list_Psi_hat_ci = NULL,
                                    lwd = 2, data_col = "red", p_sample = NULL,
@@ -43,13 +43,17 @@ display_eigenfunctions <- function(L, time_g, mu_g, Psi_g,
                   as.vector(unlist(list_Psi_hat_ci)))))
 
   if (is.null(p_sample)) {
-    p_sample <- seq_along(Psi_g)
+    if (is.list(Psi_g)) {
+      p_sample <- seq_along(Psi_g)
+    } else {
+      p_sample <- 1
+    }
   }
   p_sample <- sort(p_sample)
 
   par(mfrow = c(1+L, length(p_sample))) #, mar = c(5.1, 4.1, 4.1, 2.1))
 
-  if(format_univ){
+  if(!is.list(Psi_g)){
     mu_g <- list(mu_g)
     Psi_g <- list(Psi_g)
     mu_hat <- matrix(mu_hat)
@@ -93,11 +97,11 @@ display_eigenfunctions <- function(L, time_g, mu_g, Psi_g,
   }
 
   for (l in 1:L) {
-    if (l == L){
-      par(mar = c(4,4.5,1,1))
-    } else {
-      par(mar = c(2.5,4.5,2.5,1))
-    }
+    # if (l == L){
+    #   par(mar = c(4,4.5,1,1))
+    # } else {
+    #   par(mar = c(2.5,4.5,2.5,1))
+    # }
     for (j in p_sample) {
 
       if (is.list(mu_hat)) { # keep is.list(mu_hat) as list_Psi_hat will be a list in both cases
@@ -316,10 +320,10 @@ display_fit_list <- function(p_sample, N_sample, time_obs, time_g, Y,
 
 
 #' @export
-plot_scores <- function(N_sample, Zeta,
-                        Zeta_hat, zeta_ellipse,
-                        Zeta_hat_add = NULL, zeta_ellipse_add = NULL,
-                        vec_col = c("black", "blue"), data_col = "red", mfrow = NULL) {
+display_scores <- function(N_sample, Zeta, Zeta_hat, zeta_ellipse,
+                           Zeta_hat_add = NULL, zeta_ellipse_add = NULL,
+                           vec_col = c("black", "blue"), data_col = "red",
+                           mfrow = NULL) {
 
   n_sample <- length(N_sample)
 

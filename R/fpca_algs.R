@@ -857,7 +857,7 @@ vmp_gauss_mfpca <- function(n_vmp, N, p, L, K, C, Y, sigma_zeta, mu_beta, Sigma_
 
     iter <- iter + 1
 
-    cat("starting iteration", iter, "of", n_vmp, "\n")
+    cat("Iteration", iter, "\n")
 
     eta_vec$"nu->p(Y|nu,zeta,sigsq_eps)" <- eta_vec$"p(nu|Sigma_nu)->nu"
     eta_vec$"nu->p(nu|Sigma_nu)" <- eta_vec$"p(Y|nu,zeta,sigsq_eps)->nu"

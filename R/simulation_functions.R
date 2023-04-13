@@ -1,12 +1,86 @@
+# Set the mean function and the FPCA basis functions:
+
 #' @export
-generate_fpca_data <- function(N, p, n, K, L, n_g, vec_sd_eps, mu_func, Psi_func,
+mu_func <- function(t, j = 1, alpha = 3) (-1)^j*alpha*sin((2*pi+j)*t) # default values = 1 for the case format_univ = T
+
+psi_1 <- function(t, j = 1, p = 1) (-1)^j * sqrt(2/p)*cos(2*pi*t)
+psi_2 <- function(t, j = 1, p = 1) (-1)^j * sqrt(2/p)*sin(2*pi*t)
+
+#' @export
+Psi_func <- function(time_obs, j = 1, p = 1) {
+  ans <- cbind(psi_1(time_obs, j, p), psi_2(time_obs, j, p))
+  return(ans)
+}
+
+gen_sin_bf <- function(n, p) {
+
+  sin_bf <- function(x) {
+
+    ans <- sqrt(2/p)*sin(2*n*pi*x)
+    return(ans)
+  }
+
+  return(sin_bf)
+}
+
+gen_cos_bf <- function(n, p) {
+
+  cos_bf <- function(x) {
+
+    ans <- sqrt(2/p)*cos(2*n*pi*x)
+    return(ans)
+  }
+
+  return(cos_bf)
+}
+
+fourier_basis <- function(L, p) {
+
+  L_even <- ((L/2) %% 1 == 0)
+
+  if(L_even) {
+
+    n <- 1:(L/2)
+    sin_list <- lapply(n, gen_sin_bf, p)
+    cos_list <- lapply(n, gen_cos_bf, p)
+    fb <- do.call(c, Map(list, sin_list, cos_list))
+  } else {
+
+    n_sin <- 1:ceiling(L/2)
+    sin_list <- lapply(n_sin, gen_sin_bf, p)
+
+    if(floor(L/2) > 0) {
+
+      n_cos <- 1:floor(L/2)
+      cos_list <- lapply(n_cos, gen_cos_bf, p)
+
+      fb <- vector("list", length = L)
+      fb[c(TRUE, FALSE)] <- sin_list
+      fb[c(FALSE, TRUE)] <- cos_list
+    } else {
+
+      fb <- sin_list
+    }
+  }
+
+  return(fb)
+}
+
+#' @export
+Psi_fourier_func <- function(time_obs, j = 1, p = 1) {
+  ans <- sapply(fourier_basis(L, p), function(ff) ff(time_obs))
+  return(ans)
+}
+
+#' @export
+generate_fpca_data <- function(N, p, n, L, n_g, vec_sd_eps, mu_func, Psi_func,
                                time_obs = NULL, format_univ = FALSE,
                                generate_from_univ = FALSE,
                                vec_sd_zeta = NULL,
                                vec_rho_Zeta = NULL) {
 
   if (format_univ & p == 1) { # don't use it, not helpful.
-    gauss_fpca_data(N, n, K, L, n_g, vec_sd_eps, mu_func, Psi_func, time_obs,
+    gauss_fpca_data(N, n, L, n_g, vec_sd_eps, mu_func, Psi_func, time_obs,
                     vec_sd_zeta = vec_sd_zeta)
   } else {
     if (p > 1) {
@@ -16,7 +90,7 @@ generate_fpca_data <- function(N, p, n, K, L, n_g, vec_sd_eps, mu_func, Psi_func
     #   stopifnot(!generate_from_univ & !is.null(vec_rho_Zeta))
     # }
 
-    gauss_mfpca_data(N, p, n, K, L, n_g, vec_sd_eps, mu_func,
+    gauss_mfpca_data(N, p, n, L, n_g, vec_sd_eps, mu_func,
                      Psi_func, time_obs,
                      generate_from_univ = generate_from_univ,
                      vec_sd_zeta = vec_sd_zeta,
@@ -26,7 +100,7 @@ generate_fpca_data <- function(N, p, n, K, L, n_g, vec_sd_eps, mu_func, Psi_func
 }
 
 
-gauss_fpca_data <- function(N, n, K, L, n_g, vec_sd_eps, mu_func, Psi_func,
+gauss_fpca_data <- function(N, n, L, n_g, vec_sd_eps, mu_func, Psi_func,
                             vec_sd_zeta = NULL, time_obs = NULL) {
 
   # Determine necessary parameters:
@@ -74,12 +148,12 @@ gauss_fpca_data <- function(N, n, K, L, n_g, vec_sd_eps, mu_func, Psi_func,
   Y <- vector("list", length=N)
   for(i in 1:N) {
 
-    mu_t <- mu_func(time_obs[[i]])
+    mu_t <- mu_func(time_obs[[i]], j = 1)
 
     Psi_t <- matrix(NA, nrow=n[i], ncol=L)
     for(l in 1:L) {
 
-      Psi_t[,l] <- Psi_func(time_obs[[i]])[,l]
+      Psi_t[,l] <- Psi_func(time_obs[[i]], j = 1, p = 1)[,l]
     }
 
     epsilon <- rnorm(n[i], 0, vec_sd_eps)
@@ -171,7 +245,7 @@ get_Y <- function(N, n, p, time_obs, Zeta, vec_sd_eps, mu_func, Psi_func) {
 }
 
 
-gauss_mfpca_data <- function(N, p, n, K, L, n_g, vec_sd_eps, mu_func, Psi_func,
+gauss_mfpca_data <- function(N, p, n, L, n_g, vec_sd_eps, mu_func, Psi_func,
                              time_obs = NULL, generate_from_univ = FALSE,
                              vec_sd_zeta = NULL, vec_rho_Zeta = NULL) {
 

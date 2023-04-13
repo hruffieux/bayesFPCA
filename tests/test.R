@@ -11,20 +11,20 @@ set.seed(seed)
 
 # Establish simulation variables:
 
-p <- 3                                        # number of responses
+p <- 1                                        # number of responses
 N <- 100                                      # number of curves
 N_t_min <- 10
 N_t_max <- 20
 n <- matrix(sample(N_t_min:N_t_max, N*p,
                    replace = TRUE), N, p)     # number of time observations
 
-n_int_knots <- rep(8,p)                              # number of interior knots
+n_int_knots <- rep(8, p)                      # number of interior knots
 K <- n_int_knots + 2                          # number of spline basis functions # if length(K) = 1, then will be set to K <- rep(K, p) within the run_* functions
 L <- 2                                        # number of FPCA basis functions
 
 tol  <- 1e-5                                  # convergence tolerance # 1e-3 is not enough! (doesn't match the mfvb run)
-maxit_vmp <- 25                              # maximum number of vmp iterations (artificially low for test purpose only)
-n_mfvb <- 25                                 # number of mfvb iterations (no convergence criterion implemented yet for mfvb - artificially low for test purpose only)
+maxit_vmp <- 25                               # maximum number of vmp iterations (artificially low for test purpose only)
+n_mfvb <- 25                                  # number of mfvb iterations (no convergence criterion implemented yet for mfvb - artificially low for test purpose only)
 
 n_g <- 1000                                   # length of the plotting grid
 
@@ -40,21 +40,7 @@ if (bool_multiple_repl_eigen) {
 sigma_eps <- rep(1, p)                        # sd of the residuals
 sigsq_eps <- sigma_eps^2
 
-# Set the mean function and the FPCA basis functions:
-
-mu_func <- function(t, j = 1) (-1)^j*2*sin((2*pi+j)*t) # default values = 1 for the case format_univ = T
-
-psi_1 <- function(t, j = 1, p = 1) (-1)^j * sqrt(2/p)*cos(2*pi*t)
-psi_2 <- function(t, j = 1, p = 1) (-1)^j * sqrt(2/p)*sin(2*pi*t)
-
-
-Psi_func <- function(time_obs, j = 1, p = 1) {
-  ans <- cbind(psi_1(time_obs, j, p), psi_2(time_obs, j, p))
-  return(ans)
-}
-
-
-format_univ <- FALSE # can be faster if TRUE (although not clear!)
+format_univ <- T#FALSE # can be faster if TRUE (although not clear!)
                      # when p = 1 but then the plot functions need to be adapeted
 if (format_univ) {
   if (p == 1) {
@@ -85,7 +71,7 @@ if (bool_save) {
 
 # Set up the data:
 #
-data <- generate_fpca_data(N, p, n, K, L, n_g, sigma_eps,
+data <- generate_fpca_data(N, p, n, L, n_g, sigma_eps,
                            mu_func, Psi_func, format_univ = format_univ)
 
 time_obs <- data$time_obs
@@ -108,8 +94,7 @@ set.seed(seed)
 # doesn't run successfully at the moment as treatment of K and corrections in fpca_rotation and mfpca_rotation functions need to be implemented
 #
 system.time(vmp_res <- run_vmp_fpca(time_obs, Y, K, L, n_g = NULL, time_g = time_g, # here we use the same time grid as that used to simulate the true mean and eigen- functions
-                                    tol = tol, maxit = maxit_vmp,
-                                    plot_elbo = TRUE, Psi_g = Psi_g))
+                                    tol = tol, maxit = maxit_vmp, Psi_g = Psi_g))
 
 Y_hat <- vmp_res$Y_hat
 Y_low <- vmp_res$Y_low
@@ -228,7 +213,7 @@ for (ps in 1:n_plots_scores) {
     pdf(paste0(res_dir, "/scores_samples_", paste0(N_sample_ps, collapse = "-"), ".pdf"),
         width = 6, height = 6, paper='special')
   }
-  plot_scores(N_sample_ps, Zeta, Zeta_hat, list_zeta_ellipse,
+  display_scores(N_sample_ps, Zeta, Zeta_hat, list_zeta_ellipse,
               Zeta_hat_add = Zeta_hat_add,
               zeta_ellipse_add = zeta_ellipse_add,
               mfrow = c(ceiling(sqrt(n_sample_ps)), tail(sqrt(n_sample_ps))))

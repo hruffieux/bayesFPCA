@@ -4,28 +4,7 @@ CORE_DIR <- Sys.getenv("CORE_DIR")
 
 out_dir <- file.path(CORE_DIR, "output/")
 
-library(bayesFPCA)
-
-######### R script: mfpca_vmp.R ##########
-
-# For comparing MFPCA via VMP and MFVB. The modifications are:
-# 1.  inferring eigenfunctions
-# 2.  inferring scores and including orthogonalization
-# 3.  inferring residual posteriors
-# 4.  functionalising the likelihood fragment
-# 5.  functionalising the orthogonalization
-# 6.  functionalising the data generation
-# 7.  functionalising the raw data plots
-# 8.  computing convergence
-# 9.  functionalising the likelihood cross-entropy
-# 10. functionalising the vmp algorithm
-# 11. functionalising the plots of the comparison of fits
-# 11. functionalising the plots of the comparison of global curves
-
-# Created: 01 JUL 2022
-# Last changed: 03 MAR 2023
-
-# Establish simulation variables:
+require(bayesFPCA)
 
 n_obs <- list(10:20, 50:70, 30:40, 100:120)
 n_int_knots <- c(5, 15, 9, 25)                # number of interior knots
@@ -38,38 +17,18 @@ n <- Reduce(                                  # number of time observations
 		size = N, replace = TRUE
 	)
 )
-n_sample <- 4                                 # number of curves for the plots
-N_sample <- sort(sample(1:N, n_sample))       # specific curves for the plots
+
 K <- n_int_knots[1:p] + 2                # number of spline basis functions
 L <- 2                              # number of FPCA basis functions
-data_col <- "grey51"                # colour of the data in the plots
 
-n_mfvb <- 250                       # number of vmp iterations
+n_mfvb <- 25                       # number of vmp iterations (artificially small for testing purposes)
 n_g <- 1000                         # length of the plotting grid
-mfvb_col <- "red"                  # colour of the vmp plots
-plot_lwd <- 2
-
-criterion  <- 1e-5                        # convergence criterion
 
 sigma_zeta_vec <- 2*1/(1:L)           # sd for first and second scores
 sigma_eps <- rep(1, p)      # sd of the residuals
 sigsq_eps <- sigma_eps^2
 
 delta <- 1e-3                       # convergence threshold
-
-# Set up plotting variables:
-
-plot_dim <- c(4, 1)                 # (ncol, nrow) for curve plots
-plot_gbl_dim <- c(3, 1)             # (ncol, nrow) for the mean and basis function plots
-
-n_g <- 1000                         # length of plotting grid
-
-plot_width <- 6
-plot_height <- 6
-
-print_pdf <- FALSE
-
-# Establish hyperparameters:
 
 sigsq_beta <- 1e10
 Sigma_beta <- sigsq_beta*diag(2)
@@ -113,7 +72,7 @@ Psi_func <- function(time_obs, j, p) {
 
 # Set up the data:
 
-mfpca_data <- gauss_mfpca_data(N, p, n, K, L, n_g, sigma_eps, mu, Psi_func)
+mfpca_data <- gauss_mfpca_data(N, p, n, L, n_g, sigma_eps, mu, Psi_func)
 
 time_obs <- mfpca_data$"time_obs"
 time_g <- mfpca_data$"time_g"
@@ -150,13 +109,8 @@ list_zeta_ellipse <- mfvb_res$"list_zeta_ellipse"
 
 wait()
 
-####################################################
-#
-#  COMPARISONS
-#
-####################################################
-
-# Plot the fits:
+n_sample <- 4                                 # number of curves for the plots
+N_sample <- sort(sample(1:N, n_sample))       # specific curves for the plots
 
 display_fit_list(1:p, N_sample, time_obs, time_g, Y,
                              Y_hat, Y_low, Y_upp,
@@ -187,7 +141,7 @@ wait()
 
 # Compare first level scores:
 
-plot_scores(N_sample, p, Zeta,
+display_scores(N_sample, p, Zeta,
                         Zeta_hat, list_zeta_ellipse,
                         Zeta_hat_add = NULL, zeta_ellipse_add = NULL,
                         vec_col = c("black", "blue"), data_col = "red", mfrow = NULL)
