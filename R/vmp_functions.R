@@ -4119,7 +4119,7 @@ fpc_orthgn <- function(subj_names, L, K, eta_in, time_g, C_g, Psi_g = NULL) {
 
   # Establish the outputs:
 
-  outputs <- create_named_list(time_g, Y_hat, Y_low, Y_upp,
+  outputs <- create_named_list(time_g, K, Y_hat, Y_low, Y_upp,
                                mu_hat, list_Psi_hat,
                                Zeta_hat, Cov_zeta_hat,
                                list_zeta_ellipse)
@@ -4280,7 +4280,7 @@ mfpc_orthgn <- function(subj_names, var_names, Y, L, K, eta_in,
 
   # Establish the outputs:
 
-  outputs <- create_named_list(time_g, Y_hat, Y_low, Y_upp,
+  outputs <- create_named_list(time_g, K, Y_hat, Y_low, Y_upp,
                                mu_hat, list_Psi_hat,
                                Zeta_hat, Cov_zeta_hat,
                                list_zeta_ellipse)

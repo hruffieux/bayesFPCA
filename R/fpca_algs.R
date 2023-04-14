@@ -1,5 +1,5 @@
 #' @export
-run_vmp_fpca <- function(time_obs, Y, K, L,
+run_vmp_fpca <- function(time_obs, Y, L, K = NULL,
                          list_hyper = NULL,
                          n_g = 1000, time_g = NULL,
                          tol = 1e-5, maxit = 1e4, plot_elbo = FALSE,
@@ -63,14 +63,24 @@ run_vmp_fpca <- function(time_obs, Y, K, L,
                                                              # i.e., special case of multivariate algorithm for p=1 gives the univariate model
                                                              # (produces inference equivalent to vmp_gauss_fpca, the difference is the format of the input)
 
-  # if supplied K is such that length(K) = 1, then will be set to K <- rep(K, p)
+
   if (!format_univ) {
     p <- length(time_obs[[1]])
-    check_structure(K, "vector", "numeric", c(1,p))
-    if (length(K)==1) K <- rep(K, p)
     if (!is.null(Psi_g)) {
       stopifnot(is.list(Psi_g))
     }
+  }
+
+  if (is.null(K)) {  # Ruppert (2002) sets a simple default value for K as min(nobs/4,40), where nobs is the number of observations.
+                     # here since nobs differs for each i, we take the nobs / 4 = round(mean(obs_i)/4), and do this for each variable j = 1, ..., p
+                     # and we enforce that K>=2
+
+    K <- sapply(1:p, function(j) max(2, min(round(mean(sapply(time_obs, function(time_obs_i) length(time_obs_i[[j]])))/4), 40)))
+
+    # if supplied K is such that length(K) = 1, then will be set to K <- rep(K, p)
+  } else if (!format_univ) {
+    check_structure(K, "vector", "numeric", c(1,p))
+    if (length(K)==1) K <- rep(K, p)
   } else {
     check_structure(K, "vector", "numeric", 1)
   }
@@ -1280,7 +1290,7 @@ vmp_gauss_mfpca <- function(n_vmp, N, p, L, K, C, Y, sigma_zeta, mu_beta, Sigma_
 # Mean-field version, ELBO not implemented, no tolerance tol
 #
 #' @export
-run_mfvb_fpca <- function(time_obs, Y, K, L, list_hyper = NULL,
+run_mfvb_fpca <- function(time_obs, Y, L, K = NULL, list_hyper = NULL,
                           n_mfvb = 500, n_g = 1000, time_g = NULL, Psi_g = NULL,
                           verbose = TRUE, seed = NULL) {
 
@@ -1329,9 +1339,18 @@ run_mfvb_fpca <- function(time_obs, Y, K, L, list_hyper = NULL,
 
   # if supplied K is such that length(K) = 1, then will be set to K <- rep(K, p)
   p <- length(time_obs[[1]])
-  check_structure(K, "vector", "numeric", c(1, p))
-  if (length(K)==1) K <- rep(K, p)
 
+  if (is.null(K)) {  # Ruppert (2002) sets a simple default value for K as min(nobs/4,40), where nobs is the number of observations.
+                     # here since nobs differs for each i, we take the nobs / 4 = round(mean(obs_i)/4), and do this for each variable j = 1, ..., p
+                     # and we enforce that K>=2
+
+    K <- sapply(1:p, function(j) max(2, min(round(mean(sapply(time_obs, function(time_obs_i) length(time_obs_i[[j]])))/4), 40)))
+
+    # if supplied K is such that length(K) = 1, then will be set to K <- rep(K, p)
+  } else {
+    check_structure(K, "vector", "numeric", c(1, p))
+    if (length(K)==1) K <- rep(K, p)
+  }
   check_natural(K)
 
   n <- t(sapply(time_obs,
@@ -1687,7 +1706,7 @@ run_mfvb_fpca <- function(time_obs, Y, K, L, list_hyper = NULL,
     }
   }
 
-  create_named_list(time_g,
+  create_named_list(time_g, K,
                     Y_summary, Y_hat, Y_low, Y_upp,
                     gbl_hat, mu_hat, list_Psi_hat,
                     Zeta_hat, list_zeta_ellipse)

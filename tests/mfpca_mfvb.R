@@ -65,7 +65,7 @@ Psi_g <- mfpca_data$Psi_g
 Y <- mfpca_data$Y
 
 
-mfpca_res <- run_mfvb_fpca(time_obs, Y, K, L,  n_mfvb = maxit_mfvb, n_g = n_g,
+mfpca_res <- run_mfvb_fpca(time_obs, Y, L, K = K, n_mfvb = maxit_mfvb, n_g = n_g,
                            Psi_g = Psi_g)
 
 time_g <- mfpca_res$time_g

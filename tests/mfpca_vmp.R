@@ -63,7 +63,7 @@ mu_g <- mfpca_data$mu_g
 Psi_g <- mfpca_data$Psi_g
 Y <- mfpca_data$Y
 
-mfpca_res <- run_vmp_fpca(time_obs, Y, K, L, tol = tol, maxit = maxit_vmp,
+mfpca_res <- run_vmp_fpca(time_obs, Y, L, K = K, tol = tol, maxit = maxit_vmp,
                           n_g = n_g, Psi_g = Psi_g)
 
 time_g <- mfpca_res$time_g

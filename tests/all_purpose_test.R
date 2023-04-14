@@ -91,7 +91,7 @@ set.seed(seed)
 
 # doesn't run successfully at the moment as treatment of K and corrections in fpca_rotation and mfpca_rotation functions need to be implemented
 #
-system.time(vmp_res <- run_vmp_fpca(time_obs, Y, K, L, n_g = NULL, time_g = time_g, # here we use the same time grid as that used to simulate the true mean and eigen- functions
+system.time(vmp_res <- run_vmp_fpca(time_obs, Y, L, K = K, n_g = NULL, time_g = time_g, # here we use the same time grid as that used to simulate the true mean and eigen- functions
                                     tol = tol, maxit = maxit_vmp, Psi_g = Psi_g))
 
 Y_hat <- vmp_res$Y_hat
@@ -157,7 +157,7 @@ if (!format_univ) { # not implemented for format univ
 
   set.seed(seed)
 
-  mfvb_res <- run_mfvb_fpca(time_obs, Y, K, L, n_mfvb = n_mfvb, n_g = NULL,
+  mfvb_res <- run_mfvb_fpca(time_obs, Y, L, n_mfvb = n_mfvb, K = K, n_g = NULL,
                             time_g = time_g, # here we use the same time grid as that used to simulate the true mean and eigen- functions
                             Psi_g = Psi_g)
 
