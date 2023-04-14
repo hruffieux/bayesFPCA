@@ -9,9 +9,7 @@ library(bayesFPCA)
 seed <- 1
 set.seed(seed)
 
-# Establish simulation variables:
-
-p <- 1                                        # number of responses
+p <- 3                                        # number of responses
 N <- 100                                      # number of curves
 N_t_min <- 10
 N_t_max <- 20
@@ -23,7 +21,7 @@ K <- n_int_knots + 2                          # number of spline basis functions
 L <- 2                                        # number of FPCA basis functions
 
 tol  <- 1e-5                                  # convergence tolerance # 1e-3 is not enough! (doesn't match the mfvb run)
-maxit_vmp <- 25                               # maximum number of vmp iterations (artificially low for test purpose only)
+maxit_vmp <- 250                               # maximum number of vmp iterations (artificially low for test purpose only)
 n_mfvb <- 25                                  # number of mfvb iterations (no convergence criterion implemented yet for mfvb - artificially low for test purpose only)
 
 n_g <- 1000                                   # length of the plotting grid
@@ -40,7 +38,7 @@ if (bool_multiple_repl_eigen) {
 sigma_eps <- rep(1, p)                        # sd of the residuals
 sigsq_eps <- sigma_eps^2
 
-format_univ <- T#FALSE # can be faster if TRUE (although not clear!)
+format_univ <- FALSE # can be faster if TRUE (although not clear!)
                      # when p = 1 but then the plot functions need to be adapeted
 if (format_univ) {
   if (p == 1) {

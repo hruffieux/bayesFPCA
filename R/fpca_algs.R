@@ -131,7 +131,7 @@ run_vmp_fpca <- function(time_obs, Y, K, L,
       eta_vec$"p(zeta)->zeta", eta_vec$"p(Y|nu,zeta,sigsq_eps)->zeta"
     )
 
-    mfpc_orthgn(subj_names, var_names, L, K, eta_in, time_g, N, p, C_g, Psi_g)
+    mfpc_orthgn(subj_names, var_names, Y, L, K, eta_in, time_g, N, p, C_g, Psi_g)
 
   }
 
@@ -270,6 +270,8 @@ vmp_gauss_fpca <- function(n_vmp, N, L, K, C, Y, sigma_zeta, mu_beta,
   while((!converged) & (iter < n_vmp)) {
 
     iter <- iter + 1
+
+    if (verbose) cat("Iteration", iter, "\n")
 
     eta_vec$"nu->p(Y|nu,zeta,sigsq_eps)" <- eta_vec$"p(nu|Sigma_nu)->nu"
     eta_vec$"nu->p(nu|Sigma_nu)" <- eta_vec$"p(Y|nu,zeta,sigsq_eps)->nu"
@@ -857,7 +859,7 @@ vmp_gauss_mfpca <- function(n_vmp, N, p, L, K, C, Y, sigma_zeta, mu_beta, Sigma_
 
     iter <- iter + 1
 
-    cat("Iteration", iter, "\n")
+    if (verbose) cat("Iteration", iter, "\n")
 
     eta_vec$"nu->p(Y|nu,zeta,sigsq_eps)" <- eta_vec$"p(nu|Sigma_nu)->nu"
     eta_vec$"nu->p(nu|Sigma_nu)" <- eta_vec$"p(Y|nu,zeta,sigsq_eps)->nu"
@@ -1127,7 +1129,7 @@ vmp_gauss_mfpca <- function(n_vmp, N, p, L, K, C, Y, sigma_zeta, mu_beta, Sigma_
       G$"p(Y|nu,zeta,sigsq_eps)->sigsq_eps"
     )
 
-    c_ent_p_Y <- cross_entropy_mfpc_lik_frag(eta_in, G_in, C, Y, L)
+    c_ent_p_Y <- cross_entropy_mfpc_lik_frag(eta_in, G_in, n, C, Y, L)
 
     c_ent <- c_ent + c_ent_p_Y
 
@@ -1391,9 +1393,7 @@ run_mfvb_fpca <- function(time_obs, Y, K, L, list_hyper = NULL,
 
   for(iter in 1:n_mfvb) {
 
-    if (verbose) {
-      cat("Iteration", iter,  "of", n_mfvb, "\n")
-    }
+    if (verbose) cat("Iteration", iter,  "of", n_mfvb, "\n")
 
     # Update q(nu):
 

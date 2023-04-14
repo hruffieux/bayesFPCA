@@ -40,7 +40,6 @@ summarise_mcmc_multivariate <- function(stan_obj, C_g, Psi_g) {
 
   }
 
-
   zeta_mcmc <- vector("list", length=N)
   for(i in 1:N) {
 
@@ -66,13 +65,11 @@ summarise_mcmc_multivariate <- function(stan_obj, C_g, Psi_g) {
 
     }
 
-
     Zeta <- matrix(NA, N, L)
     for(i in 1:N) {
 
       Zeta[i,] <- zeta_mcmc[[i]][k,]
     }
-
 
     # Orthogonalisation:
     #

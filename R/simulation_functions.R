@@ -1,5 +1,3 @@
-# Set the mean function and the FPCA basis functions:
-
 #' @export
 mu_func <- function(t, j = 1, alpha = 3) (-1)^j*alpha*sin((2*pi+j)*t) # default values = 1 for the case format_univ = T
 
@@ -9,66 +7,6 @@ psi_2 <- function(t, j = 1, p = 1) (-1)^j * sqrt(2/p)*sin(2*pi*t)
 #' @export
 Psi_func <- function(time_obs, j = 1, p = 1) {
   ans <- cbind(psi_1(time_obs, j, p), psi_2(time_obs, j, p))
-  return(ans)
-}
-
-gen_sin_bf <- function(n, p) {
-
-  sin_bf <- function(x) {
-
-    ans <- sqrt(2/p)*sin(2*n*pi*x)
-    return(ans)
-  }
-
-  return(sin_bf)
-}
-
-gen_cos_bf <- function(n, p) {
-
-  cos_bf <- function(x) {
-
-    ans <- sqrt(2/p)*cos(2*n*pi*x)
-    return(ans)
-  }
-
-  return(cos_bf)
-}
-
-fourier_basis <- function(L, p) {
-
-  L_even <- ((L/2) %% 1 == 0)
-
-  if(L_even) {
-
-    n <- 1:(L/2)
-    sin_list <- lapply(n, gen_sin_bf, p)
-    cos_list <- lapply(n, gen_cos_bf, p)
-    fb <- do.call(c, Map(list, sin_list, cos_list))
-  } else {
-
-    n_sin <- 1:ceiling(L/2)
-    sin_list <- lapply(n_sin, gen_sin_bf, p)
-
-    if(floor(L/2) > 0) {
-
-      n_cos <- 1:floor(L/2)
-      cos_list <- lapply(n_cos, gen_cos_bf, p)
-
-      fb <- vector("list", length = L)
-      fb[c(TRUE, FALSE)] <- sin_list
-      fb[c(FALSE, TRUE)] <- cos_list
-    } else {
-
-      fb <- sin_list
-    }
-  }
-
-  return(fb)
-}
-
-#' @export
-Psi_fourier_func <- function(time_obs, j = 1, p = 1) {
-  ans <- sapply(fourier_basis(L, p), function(ff) ff(time_obs))
   return(ans)
 }
 
@@ -85,10 +23,9 @@ generate_fpca_data <- function(N, p, n, L, n_g, vec_sd_eps, mu_func, Psi_func,
   } else {
     if (p > 1) {
       stopifnot(!format_univ) # multivariate format required as p > 1
+    } else {
+      stopifnot(!generate_from_univ & !is.null(vec_rho_Zeta))
     }
-    # else {
-    #   stopifnot(!generate_from_univ & !is.null(vec_rho_Zeta))
-    # }
 
     gauss_mfpca_data(N, p, n, L, n_g, vec_sd_eps, mu_func,
                      Psi_func, time_obs,
@@ -103,27 +40,10 @@ generate_fpca_data <- function(N, p, n, L, n_g, vec_sd_eps, mu_func, Psi_func,
 gauss_fpca_data <- function(N, n, L, n_g, vec_sd_eps, mu_func, Psi_func,
                             vec_sd_zeta = NULL, time_obs = NULL) {
 
-  # Determine necessary parameters:
-
-  # Set up fixed parameters:
-
   if (is.null(time_obs)) {
     time_obs <- sapply(n, runif)
     time_obs <- lapply(time_obs, sort)
   }
-
-  # unique_time_obs <- sort(unique(Reduce(c, time_obs)))
-  # int_knots <- quantile(unique_time_obs, seq(0, 1, length=K)[-c(1,K)])
-
-  # X <- vector("list", length=N)
-  # Z <- vector("list", length=N)
-  # C <- vector("list", length=N)
-  # for(i in 1:N) {
-
-    # X[[i]] <- X_design(time_obs[[i]])
-    # Z[[i]] <- ZOSull(time_obs[[i]], range.x=c(0, 1), intKnots=int_knots)
-    # C[[i]] <- cbind(X[[i]], Z[[i]])
-  # }
 
   # Set the scores:
   if (is.null(vec_sd_zeta)) {
@@ -143,8 +63,6 @@ gauss_fpca_data <- function(N, n, L, n_g, vec_sd_eps, mu_func, Psi_func,
     }
   }
 
-  # Set up curve observations:
-
   Y <- vector("list", length=N)
   for(i in 1:N) {
 
@@ -162,13 +80,7 @@ gauss_fpca_data <- function(N, n, L, n_g, vec_sd_eps, mu_func, Psi_func,
     Y[[i]] <- Y_hat + epsilon
   }
 
-  # Set up plotting grid
-
   time_g <- seq(0, 1, length.out=n_g)
-
-  # X_g <- X_design(time_g)
-  # Z_g <- ZOSull(time_g, range.x=c(0, 1), intKnots=int_knots)
-  # C_g <- cbind(X_g, Z_g)
 
   mu_g <- mu_func(time_g)
   Psi_g <- matrix(NA, nrow=n_g, ncol=L)
@@ -249,8 +161,6 @@ gauss_mfpca_data <- function(N, p, n, L, n_g, vec_sd_eps, mu_func, Psi_func,
                              time_obs = NULL, generate_from_univ = FALSE,
                              vec_sd_zeta = NULL, vec_rho_Zeta = NULL) {
 
-  # Set up fixed parameters
-
   if (is.null(time_obs)) {
     time_obs <- vector("list", length = N)
     for(i in 1:N) {
@@ -263,37 +173,7 @@ gauss_mfpca_data <- function(N, p, n, L, n_g, vec_sd_eps, mu_func, Psi_func,
     }
   }
 
-  # time_vec <- unlist(time_obs)
-  # t_min <- 1.01*min(time_vec) - 0.01*max(time_vec)
-  # t_max <- 1.01*max(time_vec) - 0.01*min(time_vec)
-
-  # int_knots <- lapply(
-    # K,
-    # function(x) quantile(unique(time_vec), seq(0, 1, length = x)[-c(1, x)])
-  # )
-
-  # C <- vector("list", length = N)
-  # for(i in 1:N) {
-
-    # C[[i]] <- vector("list", length = p)
-    # for(j in 1:p) {
-
-      # X <- X_design(time_obs[[i]][[j]])
-      # Z <- ZOSull(time_obs[[i]][[j]], range.x = c(0, 1), intKnots = int_knots[[j]])
-      # C[[i]][[j]] <- cbind(X, Z)
-    # }
-  # }
-
-  # Set up plotting grid
-
   time_g <- seq(0, 1, length.out = n_g)
-
-  # X_g <- X_design(time_g)
-  # Z_g <- lapply(
-    # int_knots,
-    # function(x) ZOSull(time_g, range.x = c(0, 1), intKnots = x)
-  # )
-  # C_g <- lapply(Z_g, function(Z) cbind(X_g, Z))
 
   mu_g <- vector("list", length = p)
   Psi_g <- vector("list", length = p)
@@ -302,8 +182,6 @@ gauss_mfpca_data <- function(N, p, n, L, n_g, vec_sd_eps, mu_func, Psi_func,
     Psi_g[[j]] <- Psi_func(time_g, j = j, p = p)
   }
 
-  # Simulate the scores and responses
-  #
   if (generate_from_univ) {
 
     if (is.null(vec_rho_Zeta) | all(vec_rho_Zeta == 0)) {
@@ -340,9 +218,6 @@ gauss_mfpca_data <- function(N, p, n, L, n_g, vec_sd_eps, mu_func, Psi_func,
     Y <- get_Y(N, n, p, time_obs, Zeta, vec_sd_eps, mu_func, Psi_func)
 
   }
-
-
-  # output the results:
 
   create_named_list(time_obs, Zeta, time_g, mu_g, Psi_g, Y)
 

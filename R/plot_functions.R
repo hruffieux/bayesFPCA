@@ -1,11 +1,6 @@
 #' @export
 flip_sign <- function(vec_flip, list_Psi_hat, Zeta_hat, zeta_ellipse) {
 
-  # list_Psi_hat <- lapply(list_Psi_hat, function(Psi_hat_var) {
-  #   Psi_hat_var[, seq_along(vec_flip)] <- sweep(Psi_hat_var[, seq_along(vec_flip)], 2, vec_flip, "*") # first two eigenfunctions
-  #   Psi_hat_var
-  # })
-
   list_Psi_hat <- lapply(seq_along(vec_flip), function(ll) {
     list_Psi_hat[[ll]] * vec_flip[ll]
   })
@@ -97,11 +92,11 @@ display_eigenfunctions <- function(L, time_g, mu_g, Psi_g,
   }
 
   for (l in 1:L) {
-    # if (l == L){
-    #   par(mar = c(4,4.5,1,1))
-    # } else {
-    #   par(mar = c(2.5,4.5,2.5,1))
-    # }
+    if (l == L){
+      par(mar = c(4,4.5,1,1))
+    } else {
+      par(mar = c(2.5,4.5,2.5,1))
+    }
     for (j in p_sample) {
 
       if (is.list(mu_hat)) { # keep is.list(mu_hat) as list_Psi_hat will be a list in both cases

@@ -1,81 +1,4 @@
-############### R library: vmp_functions.r ###############
-
-# A library that stores VMP fragment and sufficient
-# statistic expectation updates:
-
-# Created: 08 JUN 2020
-# Last Updated: 09 DEC 2022
-
-# require(matrixcalc)
-# require(pracma)
-# require(MASS)
-# require(ellipse)
-# source("trapint.r")
-#source("logistic.r")
-
-# LIST  OF  FUNCTIONS:
-
-# Fragment Updates:
-# igw_prior_frag
-# iter_igw_frag
-# gauss_prior_frag
-# gauss_lik_frag
-# logistic_lik_frag
-# gauss_pen_frag
-# mult_gauss_pen_frag
-# fpc_gauss_pen_frag
-# fpc_lik_frag
-# mlfpc_lik_frag
-# mfpc_lik_frag
-# logistic_fpc_lik_frag
-
-# Natural Parameter to Common Parameter Updates and
-# Expectatoin of Sufficient Statistic Computations:
-# igw_q
-# gauss_q
-
-# Entropy Functions:
-# entropy_igw
-# entropy_gauss
-# entropy_two_lev_gauss
-# entropy_two_lev_fpc_prod
-
-# Cross-Entropy Functions:
-# cross_entropy_igw_prior
-# cross_entropy_iter_igw
-# cross_entropy_gauss_prior
-# cross_entropy_logistic_lik
-# cross_entropy_two_lev_gauss_prior
-# cross_entropy_fpc_gauss_pen
-# cross_entropy_fpc_lik_frag
-# cross_entropy_mfpc_lik_frag
-# cross_entropy_mlfpc_lik_frag
-# cross_entropy_logistic_fpc_lik_frag
-
-# FPCA functions:
-# fpc_orthgn
-# mfpc_orthgn
-# mlfpc_orthgn
-# fpc_orthgn_two_lev
-# fpca_mc
-# logistic_fpca_mc
-
-# Multilevel functions:
-# solve_two_lev_sparse_mat
-# two_level_nat_to_comm_parms
-# two_level_fpc_orthogonalization
-# two_level_fpc_rotation
-
-# Miscellaneous Functions:
-# is_int
-# tr
-# cprod
-
-##########################################
-#
-#  FRAGMENT  UPDATES
-#
-##########################################
+# VMP fragment and sufficient statistic expectation updates
 
 igw_prior_frag <- function(h_params=list(G_Theta, xi_Theta, Lambda_Theta)) {
 
@@ -3134,7 +3057,7 @@ cross_entropy_fpc_lik_frag <- function(eta_in, G_in, C, Y, T_vec, L) {
   return(ans)
 }
 
-cross_entropy_mfpc_lik_frag <- function(eta_in, G_in, C, Y, L) {
+cross_entropy_mfpc_lik_frag <- function(eta_in, G_in, n, C, Y, L) {
 
   # order of eta_in:
   # 1. nu -> p(Y|nu,zeta,sigsq_eps)
@@ -4202,7 +4125,7 @@ fpc_orthgn <- function(subj_names, L, K, eta_in, time_g, C_g, Psi_g = NULL) {
                                list_zeta_ellipse)
 }
 
-mfpc_orthgn <- function(subj_names, var_names, L, K, eta_in,
+mfpc_orthgn <- function(subj_names, var_names, Y, L, K, eta_in,
                         time_g, N, p, C_g, Psi_g = NULL) {
 
   # order of eta_in:
@@ -4365,10 +4288,7 @@ mfpc_orthgn <- function(subj_names, var_names, L, K, eta_in,
   return(outputs)
 }
 
-mlfpc_orthgn <- function(
-  eta_in, time_g, C_g, L_1, L_2,
-  N, p, Psi_g = NULL
-) {
+mlfpc_orthgn <- function(eta_in, time_g, C_g, n_g, L_1, L_2, N, p, Psi_g = NULL) {
 
   # order of eta_in:
   # 1. p(nu|Sigma_nu) -> nu
@@ -4791,7 +4711,7 @@ mlfpc_orthgn <- function(
   # return(ans)
 # }
 
-fpc_orthgn_two_lev <- function(eta_in, time_g, C_g, Psi_1_g, Psi_2_g) {
+fpc_orthgn_two_lev <- function(eta_in, M, E_q_zeta, Cov_q_zeta, time_g, C_g, Psi_1_g, Psi_2_g) {
 
   # order of eta_in:
   # 1. p(nu|Sigma_nu) -> nu
@@ -4944,7 +4864,7 @@ fpc_orthgn_two_lev <- function(eta_in, time_g, C_g, Psi_1_g, Psi_2_g) {
   return(outputs)
 }
 
-fpca_mc <- function(q_nu, q_zeta, n_mc, time_g, C_g, Psi_g) {
+fpca_mc <- function(q_nu, q_zeta, n_mc, mu_q_nu_psi, K, d, time_g, C_g, Psi_g) {
 
   # components of q_nu:
   # mu_q_nu
@@ -5044,105 +4964,105 @@ fpca_mc <- function(q_nu, q_zeta, n_mc, time_g, C_g, Psi_g) {
   return(output)
 }
 
-logistic_fpca_mc <- function(q_nu, q_zeta, n_mc, time_g, C_g, Psi_g) {
-
-  # components of q_nu:
-  # mu_q_nu
-  # Sigma_q_nu
-
-  # components of q_zeta:
-  # mu_q_zeta
-  # Sigma_q_zeta
-
-  mu_q_nu <- q_nu[[1]]
-  Sigma_q_nu <- q_nu[[2]]
-
-  mu_q_zeta <- q_zeta[[1]]
-  Sigma_q_zeta <- q_zeta[[2]]
-
-  N <- length(mu_q_zeta)
-  L <- length(mu_q_nu_psi)
-  n_g <- length(time_g)
-
-  Y_mc <- vector("list", length=N)
-  zeta_star_mc <- vector("list", length=N)
-  for(i in 1:N) {
-
-    Y_mc[[i]] <- matrix(NA, n_mc, n_g)
-    zeta_star_mc[[i]] <- matrix(NA, n_mc, L)
-  }
-
-  psi_star_mc <- vector("list", length=L)
-  for(l in 1:L) {
-
-    psi_star_mc[[l]] <- matrix(NA, n_mc, n_g)
-  }
-
-  for(j in 1:n_mc) {
-
-    cat("starting Monte Carlo sample", j, "of", n_mc, "\n")
-
-    nu_mc <- mvrnorm(1, mu_q_nu, Sigma_q_nu)
-
-    mu_inds <- 1:(K+2)
-    nu_mu_mc <- nu_mc[mu_inds]
-    mu_mc <- C_g%*%nu_mu_mc
-
-    psi_inds <- (1:d)[-mu_inds]
-    psi_groups <- ceiling(psi_inds/(K+2))-1
-    psi_inds <- split(psi_inds, psi_groups)
-    Psi_mc <- matrix(NA, n_g, L)
-    for(l in 1:L) {
-
-      psi_inds_l <- psi_inds[[l]]
-      nu_psi_mc <- nu_mc[psi_inds_l]
-      Psi_mc[,l] <- C_g%*%nu_psi_mc
-    }
-
-    Zeta_mc <- matrix(NA, N, L)
-    for(i in 1:N) {
-
-      Zeta_mc[i,] <- mvrnorm(1, mu_q_zeta[[i]], Sigma_q_zeta[[i]])
-    }
-
-    svd_list <- svd(Psi_mc)
-    U_orth <- svd_list$u
-    D_diag <- diag(svd_list$d)
-    V_orth <- svd_list$v
-
-    Psi_star_mc <- U_orth
-    Zeta_star_mc <- Zeta_mc%*%V_orth%*%D_diag
-    for(l in 1:L) {
-
-      norm_const <- trapint(time_g, Psi_star_mc[,l]^2)
-      Psi_star_mc[,l] <- 1/sqrt(norm_const)*Psi_star_mc[,l]
-      Zeta_star_mc[,l] <- sqrt(norm_const)*Zeta_star_mc[,l]
-
-      cprod_test <- cprod(Psi_g[,l], Psi_star_mc[,l])
-
-      if(cprod_test < 0) {
-
-        Psi_star_mc[,l] <- -Psi_star_mc[,l]
-        Zeta_star_mc[,l] <- -Zeta_star_mc[,l]
-      }
-
-      psi_star_mc[[l]][j,] <- Psi_star_mc[,l]
-    }
-
-    for(i in 1:N) {
-
-      zeta_star_mc[[i]][j,] <- Zeta_star_mc[i,]
-
-      zeta_mc <- Zeta_mc[i,]
-      Y_mc[[i]][j,] <- inv_logit(mu_mc + as.vector(Psi_mc%*%zeta_mc))
-    }
-  }
-
-  output <- list(Y_mc, psi_star_mc, zeta_star_mc)
-  names(output) <- c("Y", "psi_star", "zeta_star")
-
-  return(output)
-}
+# logistic_fpca_mc <- function(q_nu, q_zeta, n_mc, time_g, C_g, Psi_g) {
+#
+#   # components of q_nu:
+#   # mu_q_nu
+#   # Sigma_q_nu
+#
+#   # components of q_zeta:
+#   # mu_q_zeta
+#   # Sigma_q_zeta
+#
+#   mu_q_nu <- q_nu[[1]]
+#   Sigma_q_nu <- q_nu[[2]]
+#
+#   mu_q_zeta <- q_zeta[[1]]
+#   Sigma_q_zeta <- q_zeta[[2]]
+#
+#   N <- length(mu_q_zeta)
+#   L <- length(mu_q_nu_psi)
+#   n_g <- length(time_g)
+#
+#   Y_mc <- vector("list", length=N)
+#   zeta_star_mc <- vector("list", length=N)
+#   for(i in 1:N) {
+#
+#     Y_mc[[i]] <- matrix(NA, n_mc, n_g)
+#     zeta_star_mc[[i]] <- matrix(NA, n_mc, L)
+#   }
+#
+#   psi_star_mc <- vector("list", length=L)
+#   for(l in 1:L) {
+#
+#     psi_star_mc[[l]] <- matrix(NA, n_mc, n_g)
+#   }
+#
+#   for(j in 1:n_mc) {
+#
+#     cat("starting Monte Carlo sample", j, "of", n_mc, "\n")
+#
+#     nu_mc <- mvrnorm(1, mu_q_nu, Sigma_q_nu)
+#
+#     mu_inds <- 1:(K+2)
+#     nu_mu_mc <- nu_mc[mu_inds]
+#     mu_mc <- C_g%*%nu_mu_mc
+#
+#     psi_inds <- (1:d)[-mu_inds]
+#     psi_groups <- ceiling(psi_inds/(K+2))-1
+#     psi_inds <- split(psi_inds, psi_groups)
+#     Psi_mc <- matrix(NA, n_g, L)
+#     for(l in 1:L) {
+#
+#       psi_inds_l <- psi_inds[[l]]
+#       nu_psi_mc <- nu_mc[psi_inds_l]
+#       Psi_mc[,l] <- C_g%*%nu_psi_mc
+#     }
+#
+#     Zeta_mc <- matrix(NA, N, L)
+#     for(i in 1:N) {
+#
+#       Zeta_mc[i,] <- mvrnorm(1, mu_q_zeta[[i]], Sigma_q_zeta[[i]])
+#     }
+#
+#     svd_list <- svd(Psi_mc)
+#     U_orth <- svd_list$u
+#     D_diag <- diag(svd_list$d)
+#     V_orth <- svd_list$v
+#
+#     Psi_star_mc <- U_orth
+#     Zeta_star_mc <- Zeta_mc%*%V_orth%*%D_diag
+#     for(l in 1:L) {
+#
+#       norm_const <- trapint(time_g, Psi_star_mc[,l]^2)
+#       Psi_star_mc[,l] <- 1/sqrt(norm_const)*Psi_star_mc[,l]
+#       Zeta_star_mc[,l] <- sqrt(norm_const)*Zeta_star_mc[,l]
+#
+#       cprod_test <- cprod(Psi_g[,l], Psi_star_mc[,l])
+#
+#       if(cprod_test < 0) {
+#
+#         Psi_star_mc[,l] <- -Psi_star_mc[,l]
+#         Zeta_star_mc[,l] <- -Zeta_star_mc[,l]
+#       }
+#
+#       psi_star_mc[[l]][j,] <- Psi_star_mc[,l]
+#     }
+#
+#     for(i in 1:N) {
+#
+#       zeta_star_mc[[i]][j,] <- Zeta_star_mc[i,]
+#
+#       zeta_mc <- Zeta_mc[i,]
+#       Y_mc[[i]][j,] <- inv_logit(mu_mc + as.vector(Psi_mc%*%zeta_mc))
+#     }
+#   }
+#
+#   output <- list(Y_mc, psi_star_mc, zeta_star_mc)
+#   names(output) <- c("Y", "psi_star", "zeta_star")
+#
+#   return(output)
+# }
 
 ##########################################
 #
@@ -5255,7 +5175,7 @@ two_level_nat_to_comm_parms <- function(p, q, m, eta_nu_in) {
   return(ans)
 }
 
-two_level_fpc_orthogonalization <- function(eta_in, p, time_g, C_g, Psi_1_g, Psi_2_g) {
+two_level_fpc_orthogonalization <- function(eta_in, p, M, n_g, time_g, C_g, Psi_1_g, Psi_2_g) {
 
   # order of eta_in:
   # 1. p(nu|Sigma_nu) -> nu
@@ -5489,7 +5409,7 @@ two_level_fpc_orthogonalization <- function(eta_in, p, time_g, C_g, Psi_1_g, Psi
   return(output)
 }
 
-two_level_fpc_rotation <- function(eta_in, p, time_g, C_g, Psi_1_g, Psi_2_g) {
+two_level_fpc_rotation <- function(eta_in, p, M, n_g, time_g, C_g, Psi_1_g, Psi_2_g) {
 
   # order of eta_in:
   # 1. p(nu|Sigma_nu) -> nu
@@ -5733,47 +5653,3 @@ two_level_fpc_rotation <- function(eta_in, p, time_g, C_g, Psi_1_g, Psi_2_g) {
   names(output) <- c("Y_summary", "gbl_mat", "zeta_1_summary", "zeta_2_summary")
   return(output)
 }
-
-##########################################
-#
-#  MISCELLANEOUS  FUNCTIONS
-#
-##########################################
-
-is_int <- function(x, tol = .Machine$double.eps^0.5) {
-
-  abs(x - round(x)) < tol
-}
-
-tr <- function(X) {
-
-  if(nrow(X)!=ncol(X)) stop("X must be a square matrix.")
-
-  ans <- sum(diag(X))
-  return(ans)
-}
-
-cprod <- function(x, y) {
-
-  if(missing(y)) {
-
-    if(!is.vector(x)) {
-
-      stop("Use the crossprod function for matrix inner products")
-    }
-
-    y <- x
-  }
-
-  if(!is.vector(y) & !is.vector(x)) {
-
-    stop("Use the crossprod function for matrix inner products")
-  }
-
-  ans <- as.vector(crossprod(x, y))
-  return(ans)
-}
-
-
-
-
