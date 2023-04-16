@@ -3,7 +3,7 @@
 #
 summarise_mcmc_multivariate <- function(stan_obj, C_g, Psi_g) {
 
-  mcmc_samples <- extract(stan_obj, permuted=FALSE)
+  mcmc_samples <- rstan::extract(stan_obj, permuted=FALSE)
   n_mcmc <- dim(mcmc_samples)[1]
   time_g <- C_g[,2]
   n_g <- dim(C_g)[1]
@@ -207,7 +207,7 @@ summarise_mcmc_multivariate <- function(stan_obj, C_g, Psi_g) {
 
 summarise_mcmc <- function(stan_obj, C_g, Psi_g, use_logistic_mod=FALSE) {
 
-  mcmc_samples <- extract(stan_obj, permuted=FALSE)
+  mcmc_samples <- rstan::extract(stan_obj, permuted=FALSE)
   n_mcmc <- dim(mcmc_samples)[1]
   time_g <- C_g[,2]
   n_g <- dim(C_g)[1]

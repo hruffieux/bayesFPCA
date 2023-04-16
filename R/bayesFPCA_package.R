@@ -17,6 +17,5 @@
 #' @importFrom pracma blkdiag
 #' @importFrom splines spline.des
 #' @importFrom stats cov dnorm median pnorm qnorm quantile rbinom rnorm runif setNames
-#' @importFrom rstan extract
 #' @importFrom utils read.table
 NULL

@@ -23,6 +23,7 @@ Imports:
     MASS,
     matrixcalc,
     pracma,
-    rstan,
     splines
+Suggests: 
+    rstan
 RoxygenNote: 7.2.3
