@@ -72,10 +72,10 @@ run_vmp_fpca <- function(time_obs, Y, L, K = NULL,
   }
 
   if (is.null(K)) {  # Ruppert (2002) sets a simple default value for K as min(nobs/4,40), where nobs is the number of observations.
-                     # here since nobs differs for each i, we take the nobs / 4 = round(mean(obs_i)/4), and do this for each variable j = 1, ..., p
+                     # here since nobs differs for each i, we take the nobs / 4 = round(median(obs_i)/4), and do this for each variable j = 1, ..., p
                      # and we enforce that K>=2
 
-    K <- sapply(1:p, function(j) max(2, min(round(mean(sapply(time_obs, function(time_obs_i) length(time_obs_i[[j]])))/4), 40)))
+    K <- sapply(1:p, function(j) max(round(min(median(sapply(time_obs, function(time_obs_i) length(time_obs_i[[j]]))/4), 40)), 2))
 
     # if supplied K is such that length(K) = 1, then will be set to K <- rep(K, p)
   } else if (!format_univ) {
@@ -1341,10 +1341,10 @@ run_mfvb_fpca <- function(time_obs, Y, L, K = NULL, list_hyper = NULL,
   p <- length(time_obs[[1]])
 
   if (is.null(K)) {  # Ruppert (2002) sets a simple default value for K as min(nobs/4,40), where nobs is the number of observations.
-                     # here since nobs differs for each i, we take the nobs / 4 = round(mean(obs_i)/4), and do this for each variable j = 1, ..., p
+                     # here since nobs differs for each i, we take the nobs / 4 = round(median(obs_i)/4), and do this for each variable j = 1, ..., p
                      # and we enforce that K>=2
 
-    K <- sapply(1:p, function(j) max(2, min(round(mean(sapply(time_obs, function(time_obs_i) length(time_obs_i[[j]])))/4), 40)))
+    K <- sapply(1:p, function(j) max(round(min(median(sapply(time_obs, function(time_obs_i) length(time_obs_i[[j]]))/4), 40)), 2))
 
     # if supplied K is such that length(K) = 1, then will be set to K <- rep(K, p)
   } else {
