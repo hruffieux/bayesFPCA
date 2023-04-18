@@ -1709,6 +1709,6 @@ run_mfvb_fpca <- function(time_obs, Y, L, K = NULL, list_hyper = NULL,
   create_named_list(time_g, K,
                     Y_summary, Y_hat, Y_low, Y_upp,
                     gbl_hat, mu_hat, list_Psi_hat,
-                    Zeta_hat, Cov_Zeta_hat,list_zeta_ellipse)
+                    Zeta_hat, Cov_Zeta_hat, list_zeta_ellipse)
 
 }
