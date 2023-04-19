@@ -63,7 +63,6 @@ run_vmp_fpca <- function(time_obs, Y, L, K = NULL,
                                                              # i.e., special case of multivariate algorithm for p=1 gives the univariate model
                                                              # (produces inference equivalent to vmp_gauss_fpca, the difference is the format of the input)
 
-
   if (!format_univ) {
     p <- length(time_obs[[1]])
     if (!is.null(Psi_g)) {
@@ -73,9 +72,9 @@ run_vmp_fpca <- function(time_obs, Y, L, K = NULL,
 
   if (is.null(K)) {  # Ruppert (2002) sets a simple default value for K as min(nobs/4,40), where nobs is the number of observations.
                      # here since nobs differs for each i, we take the nobs / 4 = round(median(obs_i)/4), and do this for each variable j = 1, ..., p
-                     # and we enforce that K>=2
+                     # and we enforce that K>=7
 
-    K <- sapply(1:p, function(j) max(round(min(median(sapply(time_obs, function(time_obs_i) length(time_obs_i[[j]]))/4), 40)), 2))
+    K <- sapply(1:p, function(j) max(round(min(median(sapply(time_obs, function(time_obs_i) length(time_obs_i[[j]]))/4), 40)), 7))
 
     # if supplied K is such that length(K) = 1, then will be set to K <- rep(K, p)
   } else if (!format_univ) {
@@ -1344,7 +1343,7 @@ run_mfvb_fpca <- function(time_obs, Y, L, K = NULL, list_hyper = NULL,
                      # here since nobs differs for each i, we take the nobs / 4 = round(median(obs_i)/4), and do this for each variable j = 1, ..., p
                      # and we enforce that K>=2
 
-    K <- sapply(1:p, function(j) max(round(min(median(sapply(time_obs, function(time_obs_i) length(time_obs_i[[j]]))/4), 40)), 2))
+    K <- sapply(1:p, function(j) max(round(min(median(sapply(time_obs, function(time_obs_i) length(time_obs_i[[j]]))/4), 40)), 7))
 
     # if supplied K is such that length(K) = 1, then will be set to K <- rep(K, p)
   } else {
