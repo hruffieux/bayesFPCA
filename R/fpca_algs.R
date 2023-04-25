@@ -704,7 +704,7 @@ vmp_gauss_mfpca <- function(n_vmp, N, p, L, K, C, Y, sigma_zeta, mu_beta, Sigma_
   # Establish necessary parameters:
 
   n <- Reduce(rbind, lapply(Y, function(x) sapply(x, length)))
-  d <- (K+2)*(L+1)
+  d <- (K+2)*(L+1) # this is a vector since K is a vector
 
   # Initialise VMP simulation:
 
@@ -1356,10 +1356,7 @@ run_mfvb_fpca <- function(time_obs, Y, L, K = NULL, list_hyper = NULL,
                 function(time_obs_i) sapply(time_obs_i,
                                             function(time_obs_ij) length(time_obs_ij))))
 
-  d <- (K+2)*(L+1) #### <------------
-
-  N <- length(time_obs) # move to vmp_gauss_fpca and vmp_gauss_mfpca
-  p <- length(time_obs[[1]])
+  N <- length(time_obs)
 
   grid_obj <- get_grid_objects(time_obs, K, n_g = n_g, time_g = time_g,
                                format_univ = FALSE)
