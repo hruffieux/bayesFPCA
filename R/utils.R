@@ -101,11 +101,27 @@ get_grid_objects <- function(time_obs, K, n_g = 1000, time_g = NULL,
                              t_min = NULL, t_max = NULL, int_knots = NULL,
                              format_univ = FALSE) {
 
+
   if (is.null(int_knots)) {
   	if(format_univ) {
+
+  	  if (is.null(K)) {  # Ruppert (2002) sets a simple default value for K as min(nobs/4,40), where nobs is the number of observations.
+                    	   # here since nobs differs for each i, we take the nobs / 4 = round(median(obs_i)/4)
+                    	   # and we enforce that K>=7
+  	    K <- max(round(min(median(sapply(time_obs, function(time_obs_i) length(time_obs_i))/4), 40)), 7)
+  	  }
+
   	  unique_time_obs <- sort(unique(Reduce(c, time_obs)))
   	  int_knots <- quantile(unique_time_obs, seq(0, 1, length=K)[-c(1,K)])
   	} else {
+
+  	  p <- length(time_obs[[1]])
+  	  if (is.null(K)) {   # Ruppert (2002) sets a simple default value for K as min(nobs/4,40), where nobs is the number of observations.
+  	                      # here since nobs differs for each i, we take the nobs / 4 = round(median(obs_i)/4)
+  	                      # and we enforce that K>=7
+  	    K <- sapply(1:p, function(j) max(round(min(median(sapply(time_obs, function(time_obs_i) length(time_obs_i[[j]]))/4), 40)), 7))
+  	  }
+
       unique_time_obs <- unname(sort(unlist(time_obs)))
   	  int_knots <- lapply(
         K,
