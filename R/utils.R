@@ -120,6 +120,9 @@ get_grid_objects <- function(time_obs, K, n_g = 1000, time_g = NULL,
   	                      # here since nobs differs for each i, we take the nobs / 4 = round(median(obs_i)/4)
   	                      # and we enforce that K>=7
   	    K <- sapply(1:p, function(j) max(round(min(median(sapply(time_obs, function(time_obs_i) length(time_obs_i[[j]]))/4), 40)), 7))
+  	  } else {
+  	    check_structure(K, "vector", "numeric", c(1, p))
+  	    if (length(K)==1) K <- rep(K, p)
   	  }
 
       unique_time_obs <- unname(sort(unlist(time_obs)))
