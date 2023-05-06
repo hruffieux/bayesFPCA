@@ -1,6 +1,7 @@
 # temporary script - likely to be removed in the released package which will
 # only include variational inference routines.
 #
+#' @export
 summarise_mcmc_multivariate <- function(stan_obj, C_g, Psi_g) {
 
   mcmc_samples <- rstan::extract(stan_obj, permuted=FALSE)
