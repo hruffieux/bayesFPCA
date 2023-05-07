@@ -59,9 +59,9 @@ run_vmp_fpca <- function(time_obs, Y, L, K = NULL,
   names(time_obs) <- subj_names
 
   format_univ <- ifelse(is.list(time_obs[[1]]), FALSE, TRUE) # If TRUE, then p = 1, and vmp_gauss_fpca is used.
-                                                             # Note that if FALSE and p = 1, vmp_gauss_mfpca will be used,
-                                                             # i.e., special case of multivariate algorithm for p=1 gives the univariate model
-                                                             # (produces inference equivalent to vmp_gauss_fpca, the difference is the format of the input)
+  # Note that if FALSE and p = 1, vmp_gauss_mfpca will be used,
+  # i.e., special case of multivariate algorithm for p=1 gives the univariate model
+  # (produces inference equivalent to vmp_gauss_fpca, the difference is the format of the input)
 
   if (!format_univ) {
     p <- length(time_obs[[1]])
@@ -71,8 +71,8 @@ run_vmp_fpca <- function(time_obs, Y, L, K = NULL,
   }
 
   if (is.null(K)) {  # Ruppert (2002) sets a simple default value for K as min(nobs/4,40), where nobs is the number of observations.
-                     # here since nobs differs for each i, we take the nobs / 4 = round(median(obs_i)/4), and do this for each variable j = 1, ..., p
-                     # and we enforce that K>=7
+    # here since nobs differs for each i, we take the nobs / 4 = round(median(obs_i)/4), and do this for each variable j = 1, ..., p
+    # and we enforce that K>=7
 
     K <- sapply(1:p, function(j) max(round(min(median(sapply(time_obs, function(time_obs_i) length(time_obs_i[[j]]))/4), 40)), 7))
 
@@ -1286,12 +1286,13 @@ vmp_gauss_mfpca <- function(n_vmp, N, p, L, K, C, Y, sigma_zeta, mu_beta, Sigma_
 }
 
 
+
 # Mean-field version, ELBO not implemented, no tolerance tol
-#
 #' @export
-run_mfvb_fpca <- function(time_obs, Y, L, K = NULL, list_hyper = NULL,
-                          n_mfvb = 500, n_g = 1000, time_g = NULL, Psi_g = NULL,
-                          verbose = TRUE, seed = NULL) {
+run_mfvb_fpca <- function(time_obs, Y, L, K = NULL,
+                          list_hyper = NULL, n_mfvb = 500,
+                          n_g = 1000, time_g = NULL,
+                          Psi_g = NULL, verbose = TRUE, seed = NULL) {
 
   check_structure(seed, "vector", "numeric", 1, null_ok = TRUE)
   if (!is.null(seed)) {
@@ -1328,43 +1329,98 @@ run_mfvb_fpca <- function(time_obs, Y, L, K = NULL, list_hyper = NULL,
   check_structure(n_mfvb, "vector", "numeric", 1)
   check_natural(n_mfvb)
 
-  if (!is.null(Psi_g)) {
-    stopifnot(is.list(Psi_g))
-  }
+  check_structure(verbose, "vector", "logical", 1)
 
   check_structure(verbose, "vector", "logical", 1)
 
-  stopifnot(is.list(time_obs[[1]])) # function not implemented for format format_univ = TRUE
+  N <- length(time_obs) # move to vmp_gauss_fpca and vmp_gauss_mfpca
 
-  # if supplied K is such that length(K) = 1, then will be set to K <- rep(K, p)
-  p <- length(time_obs[[1]])
+  if (is.null(names(Y))) {
+    stopifnot(is.null(names(time_obs)))
+    subj_names <- paste0("subj_", 1:N)
+    names(Y) <- names(time_obs) <- subj_names
+  } else {
+    subj_names <- names(Y)
+    stopifnot(isTRUE(all.equal(names(time_obs), subj_names)) | is.null(names(time_obs)))
+  }
+  names(time_obs) <- subj_names
+
+  format_univ <- ifelse(is.list(time_obs[[1]]), FALSE, TRUE) # If TRUE, then p = 1, and vmp_gauss_fpca is used.
+  # Note that if FALSE and p = 1, vmp_gauss_mfpca will be used,
+  # i.e., special case of multivariate algorithm for p=1 gives the univariate model
+  # (produces inference equivalent to vmp_gauss_fpca, the difference is the format of the input)
+
+  if (!format_univ) {
+    p <- length(time_obs[[1]])
+    if (!is.null(Psi_g)) {
+      stopifnot(is.list(Psi_g))
+    }
+  }
 
   if (is.null(K)) {  # Ruppert (2002) sets a simple default value for K as min(nobs/4,40), where nobs is the number of observations.
-                     # here since nobs differs for each i, we take the nobs / 4 = round(median(obs_i)/4), and do this for each variable j = 1, ..., p
-                     # and we enforce that K>=2
+    # here since nobs differs for each i, we take the nobs / 4 = round(median(obs_i)/4), and do this for each variable j = 1, ..., p
+    # and we enforce that K>=7
 
     K <- sapply(1:p, function(j) max(round(min(median(sapply(time_obs, function(time_obs_i) length(time_obs_i[[j]]))/4), 40)), 7))
 
     # if supplied K is such that length(K) = 1, then will be set to K <- rep(K, p)
-  } else {
-    check_structure(K, "vector", "numeric", c(1, p))
+  } else if (!format_univ) {
+    check_structure(K, "vector", "numeric", c(1,p))
     if (length(K)==1) K <- rep(K, p)
+  } else {
+    check_structure(K, "vector", "numeric", 1)
   }
   check_natural(K)
 
-  n <- t(sapply(time_obs,
-                function(time_obs_i) sapply(time_obs_i,
-                                            function(time_obs_ij) length(time_obs_ij))))
-
-  N <- length(time_obs)
-
   grid_obj <- get_grid_objects(time_obs, K, n_g = n_g, time_g = time_g,
-                               format_univ = FALSE)
+                               format_univ = format_univ)
 
   C <- grid_obj$C
   n_g <- grid_obj$n_g
   time_g <- grid_obj$time_g
   C_g <- grid_obj$C_g
+
+  if (format_univ) {
+
+    # directly includes the orthnogonalisation step, unlike the vmp_gauss_mfpca function
+    mfvb_gauss_fpca(n_mfvb, N, L, K, C, Y, sigma_zeta, mu_beta, Sigma_beta, A,
+                    time_g, C_g, Psi_g, verbose)
+
+  } else {
+
+    tmp_names <- lapply(Y, function(Y_i) names(Y_i))
+    tmp_names_time <-  lapply(time_obs, function(time_obs_i) names(time_obs_i))
+    if (is.null(unlist(unique(tmp_names)))) {
+      stopifnot(is.null(unlist(unique(tmp_names_time))))
+      var_names <- paste0("variable_", 1:p)
+      Y <- lapply(Y, function(Y_i) { names(Y_i) <- var_names; Y_i})
+    } else if (!all_same(tmp_names)) {
+      stop("Variable names in Y must be the same for all individuals.")
+    } else {
+      var_names <- names(Y[[1]])
+    }
+
+    if (!is.null(unlist(unique(tmp_names_time))) && (!all_same(tmp_names_time) | !isTRUE(all.equal(tmp_names_time[[1]], var_names)))) {
+      stop("Variable names for each individual in time_obs must be the same as in Y.")
+    }
+
+    time_obs <- lapply(time_obs, function(time_obs_i) { names(time_obs_i) <- var_names; time_obs_i}) # we should probably return this as well.
+
+    # directly includes the orthnogonalisation step, unlike the vmp_gauss_mfpca function
+    mfvb_gauss_mfpca(n_mfvb, N, p, L, K, C, Y, sigma_zeta, mu_beta, Sigma_beta, A,
+                     time_g, C_g, Psi_g, verbose)
+
+  }
+
+}
+
+
+mfvb_gauss_mfpca <- function(n_mfvb, N, p, L, K, C, Y, sigma_zeta, mu_beta,
+                            Sigma_beta, A, time_g, C_g, Psi_g, verbose) {
+
+
+  n <- Reduce(rbind, lapply(Y, function(x) sapply(x, length)))
+  n_g <- length(time_g)
 
   CTC <- vector("list", length = N)
   for(i in 1:N) {
@@ -1707,4 +1763,236 @@ run_mfvb_fpca <- function(time_obs, Y, L, K = NULL, list_hyper = NULL,
                     gbl_hat, mu_hat, list_Psi_hat,
                     Zeta_hat, Cov_zeta_hat, list_zeta_ellipse)
 
+
 }
+
+
+
+mfvb_gauss_fpca <- function(n_mfvb, N, L, K, C, Y, sigma_zeta, mu_beta,
+                            Sigma_beta, A, time_g, C_g, Psi_g, verbose) {
+
+  warning("THIS VERSION OF THE UNIVARIATE MFVB FUNCTION DOESN'T ESTIMATE THE MEAN FUNCTION - NEEDS UPDATING.")
+
+  n_g <- length(time_g)
+
+  E_q_zeta <- vector("list", length = N)
+  Cov_q_zeta <- vector("list", length = N)
+  for(i in 1:N) {
+
+    E_q_zeta[[i]] <- rnorm(L, 0, 1)
+    Cov_q_zeta[[i]] <- diag(L)
+  }
+
+  inv_fixed_var <- Sigma_beta
+
+  E_q_inv_Sigma_psi <- vector("list", length = L)
+  for(l in 1:L) {
+
+    E_q_inv_Sigma_psi[[l]] <- adiag(inv_fixed_var, diag(K))
+  }
+  E_q_inv_Sigma_psi <- Reduce(adiag, E_q_inv_Sigma_psi)
+
+  E_q_recip_a <- rep(1, L)
+
+  E_q_recip_sigsq_eps <- 1
+
+  # Iterations:
+  for(i_iter in 1:n_mfvb) {
+
+    cat("starting iteration", i_iter, "of", n_mfvb, "\n")
+
+    # Update q(nu_psi):
+
+    Cov_sum <- 0
+    E_sum <- 0
+    for(i in 1:N) {
+
+      E_q_zeta_zetaT <- Cov_q_zeta[[i]] + tcrossprod(E_q_zeta[[i]])
+
+      sum_val <- kronecker(E_q_zeta_zetaT, crossprod(C[[i]]))
+      Cov_sum <- Cov_sum + sum_val
+
+      sum_val <- cprod(kronecker(t(E_q_zeta[[i]]), C[[i]]), Y[[i]])
+      E_sum <- E_sum + sum_val
+    }
+    Cov_q_nu_psi <- solve(E_q_recip_sigsq_eps*Cov_sum + E_q_inv_Sigma_psi)
+    E_q_nu_psi <- E_q_recip_sigsq_eps*as.vector(Cov_q_nu_psi %*% E_sum)
+    E_q_V_psi <- matrix(E_q_nu_psi, K + 2, L)
+
+    inds <- matrix(1:(L*(K + 2)), K + 2, L)
+    u_inds <- inds[-c(1, 2), ]
+    E_q_u_psi <- vector("list", length = L)
+    Cov_q_u_psi <- vector("list", length = L)
+    for(l in 1:L) {
+
+      E_q_u_psi[[l]] <- E_q_nu_psi[u_inds[,l]]
+      Cov_q_u_psi[[l]] <- Cov_q_nu_psi[u_inds[,l], u_inds[,l]]
+    }
+
+    E_q_H_psi <- vector("list", length=N)
+    for(i in 1:N) {
+
+      E_q_H_psi[[i]] <- matrix(NA, L, L)
+
+      for(l_1 in 1:L) {
+
+        inds_1 <- inds[, l_1]
+        E_q_nu_psi_l_1 <- E_q_nu_psi[inds_1]
+
+        for(l_2 in 1:L) {
+
+          inds_2 <- inds[, l_2]
+          E_q_nu_psi_l_2 <- E_q_nu_psi[inds_2]
+
+          Cov_q_nu_psi_l_21 <- Cov_q_nu_psi[inds_2, inds_1]
+
+          tr_term <- tr(Cov_q_nu_psi_l_21%*%crossprod(C[[i]]))
+          cprod_term <- cprod(E_q_nu_psi_l_1, crossprod(C[[i]])%*%E_q_nu_psi_l_2)
+          E_q_H_psi[[i]][l_1, l_2] <- tr_term + cprod_term
+        }
+      }
+    }
+
+    # For i = 1, ..., N, update q(zeta[[i]]):
+
+    E_q_zeta <- vector("list", length = N)
+    Cov_q_zeta <- vector("list", length = N)
+    for(i in 1:N) {
+
+      E_q_Psi <- C[[i]] %*% E_q_V_psi
+
+      Cov_q_zeta[[i]] <- solve(E_q_recip_sigsq_eps*E_q_H_psi[[i]] + diag(L))
+      E_q_zeta[[i]] <- E_q_recip_sigsq_eps*as.vector(Cov_q_zeta[[i]] %*% cprod(E_q_Psi, Y[[i]]))
+    }
+
+    # For l = 1, ..., L, update q(sigsq_psi[l]):
+
+    lambda_q_sigsq_psi <- rep(NA, L)
+    E_q_recip_sigsq_psi <- rep(NA, L)
+    E_q_inv_Sigma_psi <- vector("list", length = L)
+    for(l in 1:L) {
+
+      tr_term <- tr(Cov_q_u_psi[[l]])
+      cprod_term <- cprod(E_q_u_psi[[l]])
+      lambda_q_sigsq_psi[l] <- tr_term + cprod_term + E_q_recip_a[l]
+
+      E_q_recip_sigsq_psi[l] <- (K + 1)/lambda_q_sigsq_psi[l]
+
+      E_q_inv_Sigma_psi[[l]] <- adiag(inv_fixed_var, E_q_recip_sigsq_psi[l]*diag(K))
+    }
+    E_q_inv_Sigma_psi <- Reduce(adiag, E_q_inv_Sigma_psi)
+
+    # For l = 1, ..., L, updates q(a_psi[l]):
+
+    lambda_q_a_psi <- rep(NA, L)
+    E_q_recip_a_psi <- rep(NA, L)
+    for(l in 1:L) {
+
+      lambda_q_a_psi[l] <- E_q_recip_sigsq_psi[l] + 1/A^2
+
+      E_q_recip_a_psi[l] <- 2/lambda_q_a_psi[l]
+    }
+
+    # Construct orthogonal decomposition:
+
+    E_q_Psi <- C_g %*% E_q_V_psi
+    E_q_Zeta <- Reduce(rbind, E_q_zeta)
+
+    one_N <- rep(1, N)
+
+    E_q_Psi_svd <- svd(E_q_Psi)
+    U_psi <- E_q_Psi_svd$u
+    D_psi <- diag(E_q_Psi_svd$d)
+    V_psi <- E_q_Psi_svd$v
+
+    E_q_Zeta_rotn <- E_q_Zeta %*% V_psi %*% D_psi
+    eigen_E_q_Zeta_shift <- eigen(cov(E_q_Zeta_rotn))
+    Q <- eigen_E_q_Zeta_shift$vectors
+    Lambda <- diag(eigen_E_q_Zeta_shift$values + 1e-10)
+    Lambda_inv <- diag(1/(eigen_E_q_Zeta_shift$values + 1e-10))
+    S <- Q %*% sqrt(Lambda)
+    S_inv <- tcrossprod(sqrt(Lambda_inv), Q)
+
+    Psi_hat <- U_psi %*% S
+    Zeta_hat <- tcrossprod(E_q_Zeta_rotn, S_inv)
+
+    norm_const <- rep(NA, L)
+    for(l in 1:L) {
+
+      norm_const[l] <- sqrt(trapint(time_g, (Psi_hat[,l])^2))
+      if(norm_const[l]!=0) {
+
+        Psi_hat[,l] <- Psi_hat[,l]/norm_const[l]
+        Zeta_hat[,l] <- norm_const[l]*Zeta_hat[,l]
+
+        if(!is.null(Psi_g)) {
+
+          cprod_sign <- sign(cprod(Psi_hat[,l], Psi_g[,l]))
+          if(cprod_sign==-1) {
+
+            Psi_hat[,l] <- -Psi_hat[,l]
+            Zeta_hat[,l] <- -Zeta_hat[,l]
+          }
+        }
+
+      }
+    }
+
+    scale_mat <- diag(norm_const)
+    Cov_zeta_hat <- vector("list", length = N)
+    for(i in 1:N) {
+
+      mat_transform <- S_inv %*% tcrossprod(D_psi, V_psi)
+      Cov_zeta_hat[[i]] <- tcrossprod(mat_transform %*% Cov_q_zeta[[i]], mat_transform)
+      Cov_zeta_hat[[i]] <- tcrossprod(scale_mat %*% Cov_zeta_hat[[i]], scale_mat)
+    }
+
+    zeta_summary <- list_zeta_ellipse <-  vector("list", length=N)
+    for(i in 1:N) {
+
+      zeta_mean <- Zeta_hat[i,][1:2]
+
+      zeta_ellipse <- ellipse(
+        Cov_zeta_hat[[i]][1:2, 1:2],
+        centre = zeta_mean,
+        level = 0.95
+      )
+
+      list_zeta_ellipse[[i]] <- zeta_ellipse
+
+      zeta_summary[[i]] <- list(zeta_mean, zeta_ellipse)
+      names(zeta_summary[[i]]) <- c("mean", "credible boundary")
+    }
+  }
+
+  gbl_hat <- vector("list", length = L + 1)
+  gbl_hat[[1]] <- mu_hat <- rep(0, n_g) # TEMPORARY!!! MEAN FUNCTION NOT ESTIMATED. SHOULD BE REPLACED BY THE LINE BELOW WHEN mu_q_mu IS ESTIMATED
+  # gbl_hat[[1]] <- mu_hat <- mu_q_mu
+  list_Psi_hat <- Psi_hat
+  for(l in 1:L) {
+    gbl_hat[[l+1]] <- list_Psi_hat[[l]]
+  }
+
+  Y_summary <- Y_hat <- Y_low <- Y_upp <- vector("list", length = N)
+  for(i in 1:N) {
+
+    sd_vec_i <- sqrt(diag(tcrossprod(Psi_hat %*% Cov_zeta_hat[[i]], Psi_hat)))
+    Y_hat_i <- as.vector(C_g %*% E_q_V_psi %*% E_q_zeta[[i]])
+
+    Y_summary[[i]] <- matrix(NA, nrow=n_g, ncol=3)
+    Y_summary[[i]][,1] <- Y_hat_i + qnorm(0.025)*sd_vec_i
+    Y_summary[[i]][,2] <- Y_hat_i
+    Y_summary[[i]][,3] <- Y_hat_i + qnorm(0.975)*sd_vec_i
+    Y_hat[[i]] <- Y_hat_i
+    Y_low[[i]] <- Y_hat_i + qnorm(0.025)*sd_vec_i
+    Y_upp[[i]] <- Y_hat_i + qnorm(0.975)*sd_vec_i
+  }
+
+
+  create_named_list(time_g, K,
+                    Y_summary, Y_hat, Y_low, Y_upp,
+                    gbl_hat, mu_hat, list_Psi_hat,
+                    Zeta_hat, Cov_zeta_hat, list_zeta_ellipse)
+
+}
+
