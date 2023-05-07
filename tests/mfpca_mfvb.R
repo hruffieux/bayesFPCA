@@ -14,12 +14,12 @@ n_int_knots <- c(5, 15, 9, 25)                # number of interior knots
 
 p <- 3                                        # number of responses
 N <- 100                                      # number of curves
-n <- Reduce(                                  # number of time observations
+n <- matrix(Reduce(                                  # number of time observations
   cbind, lapply(
     n_obs[1:p], sample,
     size = N, replace = TRUE
   )
-)
+), nrow = N)
 K <- n_int_knots[1:p] + 2                     # number of spline basis functions
 L <- 2                                        # number of FPCA basis functions
 

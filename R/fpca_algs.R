@@ -1345,13 +1345,16 @@ run_mfvb_fpca <- function(time_obs, Y, L, K = NULL,
   }
   names(time_obs) <- subj_names
 
-  format_univ <- ifelse(is.list(time_obs[[1]]), FALSE, TRUE) # If TRUE, then p = 1, and vmp_gauss_fpca is used.
-  # Note that if FALSE and p = 1, vmp_gauss_mfpca will be used,
-  # i.e., special case of multivariate algorithm for p=1 gives the univariate model
-  # (produces inference equivalent to vmp_gauss_fpca, the difference is the format of the input)
+  format_univ <- ifelse(is.list(time_obs[[1]]), FALSE, TRUE)  # If TRUE, then p = 1, and vmp_gauss_fpca is used.
+                                                              # Note that if FALSE and p = 1, vmp_gauss_mfpca will be used,
+                                                              # i.e., special case of multivariate algorithm for p=1 gives the univariate model
+                                                              # (produces inference equivalent to vmp_gauss_fpca, the difference is the format of the input)
 
   if (!format_univ) {
     p <- length(time_obs[[1]])
+    if(p == 1) {
+      stop("The current implementation requires the data to have the same format as the output of generate_fpca_data(..., format_univ = T).")
+    }
     if (!is.null(Psi_g)) {
       stopifnot(is.list(Psi_g))
     }

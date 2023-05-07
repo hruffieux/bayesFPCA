@@ -18,9 +18,11 @@ generate_fpca_data <- function(N, p, n, L, n_g, vec_sd_eps, mu_func, Psi_func,
                                vec_rho_Zeta = NULL) {
 
   if (format_univ & p == 1) { # don't use it, not helpful.
+    check_structure(n, "vector", "numeric", N)
     gauss_fpca_data(N, n, L, n_g, vec_sd_eps, mu_func, Psi_func, time_obs,
                     vec_sd_zeta = vec_sd_zeta)
   } else {
+    check_structure(n, "matrix", "numeric", c(N, p))
     if (p > 1) {
       stopifnot(!format_univ) # multivariate format required as p > 1
     } else {
