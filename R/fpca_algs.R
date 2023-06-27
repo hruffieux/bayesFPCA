@@ -1690,11 +1690,9 @@ mfvb_gauss_mfpca <- function(n_mfvb, N, p, L, K, C, Y, sigma_zeta, mu_beta,
       Psi_g_comb <- Reduce(c, Psi_g_comb)
 
       inner_prod_sign <- sign(cprod(Psi_g_comb, Psi_hat[, l]))
-      if(inner_prod_sign == -1) {
+      Psi_hat[, l] <- inner_prod_sign*Psi_hat[, l]
+      Zeta_hat[, l] <- inner_prod_sign*Zeta_hat[, l]
 
-        Psi_hat[, l] <- -Psi_hat[, l]
-        Zeta_hat[, l] <- -Zeta_hat[, l]
-      }
     }
   }
   Psi_hat <- lapply(split(Psi_hat, rep(1:p, each = n_g)), matrix, nrow = n_g, ncol = L)
@@ -2026,11 +2024,9 @@ mfvb_gauss_fpca <- function(n_mfvb, N, L, K, C, Y, sigma_zeta, mu_beta,
       if(!is.null(Psi_g)) {
 
         cprod_sign <- sign(cprod(Psi_hat[,l], Psi_g[,l]))
-        if(cprod_sign==-1) {
+        Psi_hat[,l] <- cprod_sign*Psi_hat[,l]
+        Zeta_hat[,l] <- cprod_sign*Zeta_hat[,l]
 
-          Psi_hat[,l] <- -Psi_hat[,l]
-          Zeta_hat[,l] <- -Zeta_hat[,l]
-        }
       }
     }
   }

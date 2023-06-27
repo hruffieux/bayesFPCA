@@ -4063,11 +4063,9 @@ fpc_orthgn <- function(subj_names, L, K, eta_in, time_g, C_g, Psi_g = NULL) {
       if(!is.null(Psi_g)) {
 
         cprod_sign <- sign(cprod(Psi_hat[,l], Psi_g[,l]))
-        if(cprod_sign==-1) {
+        Psi_hat[,l] <- cprod_sign*Psi_hat[,l]
+        Zeta_hat[,l] <- cprod_sign*Zeta_hat[,l]
 
-          Psi_hat[,l] <- -Psi_hat[,l]
-          Zeta_hat[,l] <- -Zeta_hat[,l]
-        }
       }
     }
   }
@@ -4209,11 +4207,9 @@ mfpc_orthgn <- function(subj_names, var_names, Y, L, K, eta_in,
       Psi_g_comb <- Reduce(c, Psi_g_comb)
 
       inner_prod_sign <- sign(cprod(Psi_g_comb, Psi_hat[, l]))
-      if(inner_prod_sign == -1) {
+      Psi_hat[, l] <- inner_prod_sign*Psi_hat[, l]
+      Zeta_hat[, l] <- inner_prod_sign*Zeta_hat[, l]
 
-        Psi_hat[, l] <- -Psi_hat[, l]
-        Zeta_hat[, l] <- -Zeta_hat[, l]
-      }
     }
   }
   Psi_hat <- lapply(split(Psi_hat, rep(1:p, each = n_g)), matrix, nrow = n_g, ncol = L)
@@ -4402,11 +4398,8 @@ mlfpc_orthgn <- function(eta_in, time_g, C_g, n_g, L_1, L_2, N, p, Psi_g = NULL)
     if(!is.null(Psi_g)) {
 
       cprod_sign <- sign(cprod(Psi_1_hat[, l], Psi_g[[1]][, l]))
-      if(cprod_sign == -1) {
-
-        Psi_1_hat[, l] <- -Psi_1_hat[, l]
-        Zeta_1_hat[, l] <- -Zeta_1_hat[, l]
-      }
+      Psi_1_hat[, l] <- cprod_sign*Psi_1_hat[, l]
+      Zeta_1_hat[, l] <- cprod_sign*Zeta_1_hat[, l]
     }
   }
   A_1 <- diag(norm_psi_1)
@@ -4425,11 +4418,9 @@ mlfpc_orthgn <- function(eta_in, time_g, C_g, n_g, L_1, L_2, N, p, Psi_g = NULL)
     if(!is.null(Psi_g)) {
 
       cprod_sign <- sign(cprod(Psi_2_hat[, l], Psi_g[[2]][, l]))
-      if(cprod_sign == -1) {
+      Psi_2_hat[, l] <- cprod_sign*Psi_2_hat[, l]
+      Zeta_2_hat[, l] <- cprod_sign*Zeta_2_hat[, l]
 
-        Psi_2_hat[, l] <- -Psi_2_hat[, l]
-        Zeta_2_hat[, l] <- -Zeta_2_hat[, l]
-      }
     }
   }
   Zeta_2_hat <- lapply(
@@ -4811,11 +4802,9 @@ fpc_orthgn_two_lev <- function(eta_in, M, E_q_zeta, Cov_q_zeta, time_g, C_g, Psi
       Zeta_1_hat[,l] <- norm_const_1[l]*Zeta_1_hat[,l]
 
       cprod_sign <- sign(cprod(Psi_1_hat[,l], Psi_1_g[,l]))
-      if(cprod_sign == -1) {
+      Psi_1_hat[,l] <- cprod_sign*Psi_1_hat[,l]
+      Zeta_1_hat[,l] <- cprod_sign*Zeta_1_hat[,l]
 
-        Psi_1_hat[,l] <- -Psi_1_hat[,l]
-        Zeta_1_hat[,l] <- -Zeta_1_hat[,l]
-      }
     }
   }
 
@@ -4829,11 +4818,9 @@ fpc_orthgn_two_lev <- function(eta_in, M, E_q_zeta, Cov_q_zeta, time_g, C_g, Psi
       Zeta_2_hat[,l] <- norm_const_2[l]*Zeta_2_hat[,l]
 
       cprod_sign <- sign(cprod(Psi_2_hat[,l], Psi_2_g[,l]))
-      if(cprod_sign == -1) {
+      Psi_2_hat[,l] <- cprod_sign*Psi_2_hat[,l]
+      Zeta_2_hat[,l] <- cprod_sign*Zeta_2_hat[,l]
 
-        Psi_2_hat[,l] <- -Psi_2_hat[,l]
-        Zeta_2_hat[,l] <- -Zeta_2_hat[,l]
-      }
     }
   }
 
@@ -5283,11 +5270,9 @@ two_level_fpc_orthogonalization <- function(eta_in, p, M, n_g, time_g, C_g, Psi_
       Zeta_1_hat[,l] <- norm_const_1[l]*Zeta_1_hat[,l]
 
       cprod_sign <- sign(cprod(Psi_1_hat[,l], Psi_1_g[,l]))
-      if(cprod_sign == -1) {
+      Psi_1_hat[,l] <- cprod_sign*Psi_1_hat[,l]
+      Zeta_1_hat[,l] <- cprod_sign*Zeta_1_hat[,l]
 
-        Psi_1_hat[,l] <- -Psi_1_hat[,l]
-        Zeta_1_hat[,l] <- -Zeta_1_hat[,l]
-      }
     }
   }
 
@@ -5301,11 +5286,9 @@ two_level_fpc_orthogonalization <- function(eta_in, p, M, n_g, time_g, C_g, Psi_
       Zeta_2_hat[,l] <- norm_const_2[l]*Zeta_2_hat[,l]
 
       cprod_sign <- sign(cprod(Psi_2_hat[,l], Psi_2_g[,l]))
-      if(cprod_sign == -1) {
+      Psi_2_hat[,l] <- cprod_sign*Psi_2_hat[,l]
+      Zeta_2_hat[,l] <- cprod_sign*Zeta_2_hat[,l]
 
-        Psi_2_hat[,l] <- -Psi_2_hat[,l]
-        Zeta_2_hat[,l] <- -Zeta_2_hat[,l]
-      }
     }
   }
   Zeta_2_hat <- lapply(split(Zeta_2_hat, rep(1:N, each = M)), function(x) matrix(x, M, L_2))
@@ -5527,11 +5510,8 @@ two_level_fpc_rotation <- function(eta_in, p, M, n_g, time_g, C_g, Psi_1_g, Psi_
       Zeta_1_hat[,l] <- norm_const_1[l]*Zeta_1_hat[,l]
 
       cprod_sign <- sign(cprod(Psi_1_hat[,l], Psi_1_g[,l]))
-      if(cprod_sign == -1) {
-
-        Psi_1_hat[,l] <- -Psi_1_hat[,l]
-        Zeta_1_hat[,l] <- -Zeta_1_hat[,l]
-      }
+      Psi_1_hat[,l] <- cprod_sign*Psi_1_hat[,l]
+      Zeta_1_hat[,l] <- cprod_sign*Zeta_1_hat[,l]
     }
   }
   Zeta_1_hat <- Zeta_1_hat[unique_lev_1_inds, ]
@@ -5546,11 +5526,9 @@ two_level_fpc_rotation <- function(eta_in, p, M, n_g, time_g, C_g, Psi_1_g, Psi_
       Zeta_2_hat[,l] <- norm_const_2[l]*Zeta_2_hat[,l]
 
       cprod_sign <- sign(cprod(Psi_2_hat[,l], Psi_2_g[,l]))
-      if(cprod_sign == -1) {
+      Psi_2_hat[,l] <- cprod_sign*Psi_2_hat[,l]
+      Zeta_2_hat[,l] <- cprod_sign*Zeta_2_hat[,l]
 
-        Psi_2_hat[,l] <- -Psi_2_hat[,l]
-        Zeta_2_hat[,l] <- -Zeta_2_hat[,l]
-      }
     }
   }
   Zeta_2_hat <- lapply(split(Zeta_2_hat, rep(1:N, each = M)), function(x) matrix(x, M, L_2))

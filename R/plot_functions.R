@@ -1,5 +1,5 @@
 #' @export
-flip_sign <- function(vec_flip, list_Psi_hat, Zeta_hat, zeta_ellipse) {
+flip_sign <- function(vec_flip, list_Psi_hat, Zeta_hat, zeta_ellipse = NULL) {
 
   list_Psi_hat <- lapply(seq_along(vec_flip), function(ll) {
     list_Psi_hat[[ll]] * vec_flip[ll]
@@ -7,7 +7,9 @@ flip_sign <- function(vec_flip, list_Psi_hat, Zeta_hat, zeta_ellipse) {
 
   Zeta_hat[,seq_along(vec_flip)] <- sweep(Zeta_hat[,seq_along(vec_flip)], 2, vec_flip, "*")
 
-  zeta_ellipse <- lapply(zeta_ellipse, function(zeta_ellipse_subj) sweep(zeta_ellipse_subj, 2, vec_flip, "*"))
+  if (!is.null(zeta_ellipse)) {
+    zeta_ellipse <- lapply(zeta_ellipse, function(zeta_ellipse_subj) sweep(zeta_ellipse_subj, 2, vec_flip, "*"))
+  }
 
   create_named_list(list_Psi_hat, Zeta_hat, zeta_ellipse)
 }
