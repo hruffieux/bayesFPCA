@@ -96,9 +96,35 @@ check_structure <- function(x, struct, type, size = NULL,
 }
 
 
+#' Create a temporal-grid objects for use in FPCA algorithms.
+#'
+#' This function is used to create a time grid of desired density and design
+#' matrices based on an observed time grid object.
+#'
+#' @param time_obs Vector or list of vectors containing time of observations for
+#'                 univariate or multivariate curves, respectively.
+#' @param K Number of O'Sulivan spline functions to be used in the FPCA
+#'          algorithms. If set to \code{NULL} will be set according to the rule
+#'          of Ruppert (2002), also enforcing K >=7.
+#' @param n_g Desired size of dense grid.
+#' @param time_g Dense grid provided as a vector of size \code{n_g}. If provided,
+#'               then \code{n_g} must be \code{NULL} as will be taken to be
+#'               \code{length(time_g)}.
+#' @param int_knots Position of interior knots. Default is \code{NULL} for
+#'                  evenly placed.
+#' @param format_univ Boolean indicating whether the univariate format is used
+#'                    in case of univariate curves.
+#' @return C Design matrix C(t) constructed from the set of K spline functions
+#'           based on the observation time grid.
+#' @return n_g Number of time points in the dense grid.
+#' @return time_g Dense time grid constructed.
+#' @return C_g Design matrix C(t) constructed from the set of K spline functions
+#'           based on the dense time grid.
+#'
 #' @export
+#'
 get_grid_objects <- function(time_obs, K, n_g = 1000, time_g = NULL,
-                             t_min = NULL, t_max = NULL, int_knots = NULL,
+                             int_knots = NULL,
                              format_univ = FALSE) {
 
 
@@ -208,7 +234,19 @@ tr <- function(X) {
 }
 
 
+
+#' Cross-product between two vectors.
+#'
+#' Function acting as  a wrapper on the R cross-product t(x) %*% y
+#'
+#' @param x Vector for the left hand side of the cross-product.
+#' @param y Vector for the right hand side of the cross-product. If missing,
+#'          \code{x} is used.
+#'
+#' @return Resulting cross-product.
+#'
 #' @export
+#'
 cprod <- function(x, y) {
 
   if(missing(y)) {
@@ -328,7 +366,14 @@ vecInverse <- function(a) {
   return(A)
 }
 
+#' Function performing trapesoidal integration.
+#'
+#' @param xgrid Grid.
+#' @param fgrid Function on the grid.
+#' @return Integration result.
+#'
 #' @export
+#'
 trapint <- function(xgrid,fgrid) {
   ng <- length(xgrid)
 

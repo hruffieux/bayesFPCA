@@ -1,16 +1,77 @@
+#' Example of mean function: \code{(-1)^j*alpha*sin((2*pi+j)*t)}
+#'
+#' @param t Time vector for which the function is evaluated.
+#' @param j Phase shift and sign swap; see definition of the function above.
+#' @param alpha Amplitude; see definition of the function above.
+#'
+#' @return Function evaluated at \code{t}.
+#'
 #' @export
+#'
 mu_func <- function(t, j = 1, alpha = 3) (-1)^j*alpha*sin((2*pi+j)*t) # default values = 1 for the case format_univ = T
 
 psi_1 <- function(t, j = 1, p = 1) (-1)^j * sqrt(2/p)*cos(2*pi*t)
 psi_2 <- function(t, j = 1, p = 1) (-1)^j * sqrt(2/p)*sin(2*pi*t)
 
+#' Example of two-dimensional latent function:
+#' \code{( (-1)^j * sqrt(2/p)*cos(2*pi*t), (-1)^j * sqrt(2/p)*sin(2*pi*t) )}
+#'
+#' @param t Time vector for which the function is evaluated.
+#' @param j Sign swap; see definition of the function above.
+#' @param p Parameter controlling the amplitude; see definition of the function
+#'          above.
+#' @return Function evaluated at \code{t}.
+#'
 #' @export
-Psi_func <- function(time_obs, j = 1, p = 1) {
-  ans <- cbind(psi_1(time_obs, j, p), psi_2(time_obs, j, p))
+#'
+Psi_func <- function(t, j = 1, p = 1) {
+  ans <- cbind(psi_1(t, j, p), psi_2(t, j, p))
   return(ans)
 }
 
+#' Generate FPCA data.
+#'
+#' Function to generate univariate or multivariate functional curves based on
+#' FPCA expansions.
+#'
+#' @param N Integer for the number of samples.
+#' @param p Integer for the dimension of the curves (i.e., number of variables
+#'          measured longitudinally).
+#' @param n Vector of size N for the number of time observations for each sample
+#'          (if univariate curves or multivariate curves with same number of
+#'          observations per variable) or matrix of size N x p where column j
+#'          contains the number of time observations for each sample for
+#'          variable j = 1, ..., p.
+#' @param L Integer for the number of FPCA eigenfunctions (latent dimensions).
+#' @param n_g Desired size of dense grid.
+#' @param vec_sd_eps Vector of size p whose entry j contains the standard
+#'                   deviation of the residual error for variable j = 1, ..., p.
+#' @param mu_func Mean function, under the format return by
+#'                \code{\link{mu_func}}.
+#' @param Psi_func Eigenfunctions, under the format return by
+#'                \code{\link{Psi_func}}.
+#' @param time_obs Vector or list of vectors containing time of observations for
+#'                 univariate or multivariate curves, respectively.
+#' @param format_univ Boolean indicating whether the univariate format is used
+#'                    in case of univariate curves.
+#' @param generate_from_univ Boolean indicating whether to use the univariate
+#'                           FPCA expansion to generate the curves. If
+#'                           \code{FALSE}, the multivariate expansion is used
+#'                           instead.
+#' @param vec_sd_zeta Vector of size L whose entry l contains the standard
+#'                    deviation of the scores for the latent dimension
+#'                    l = 1, ..., L.
+#' @param vec_rho_Zeta Vector of size p whose entry l contains the correlation
+#'                     coefficient used to simulate correlated scores across
+#'                     variables when the univariate expansion is used to
+#'                     generate multivariate curves. Must be \code{NULL} if
+#'                     \code{generate_from_univ} is \code{FALSE}.
+#' @return Object containing the generated time observations, dense grid,
+#'         scores (Zeta), mean function, eigenfunctions and longitudinal curves
+#'         (Y).
+#'
 #' @export
+#'
 generate_fpca_data <- function(N, p, n, L, n_g, vec_sd_eps, mu_func, Psi_func,
                                time_obs = NULL, format_univ = FALSE,
                                generate_from_univ = FALSE,
