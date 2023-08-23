@@ -106,7 +106,7 @@ check_structure <- function(x, struct, type, size = NULL,
 #' @param K Number of O'Sulivan spline functions to be used in the FPCA
 #'          algorithms. If set to \code{NULL} will be set according to the rule
 #'          of Ruppert (2002), also enforcing K >=7.
-#' @param n_g Desired size of dense grid.
+#' @param n_g Desired size for dense grid.
 #' @param time_g Dense grid provided as a vector of size \code{n_g}. If provided,
 #'               then \code{n_g} must be \code{NULL} as will be taken to be
 #'               \code{length(time_g)}.
@@ -119,7 +119,7 @@ check_structure <- function(x, struct, type, size = NULL,
 #' @return n_g Number of time points in the dense grid.
 #' @return time_g Dense time grid constructed.
 #' @return C_g Design matrix C(t) constructed from the set of K spline functions
-#'           based on the dense time grid.
+#'             based on the dense time grid.
 #'
 #' @export
 #'

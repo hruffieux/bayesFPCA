@@ -1,7 +1,19 @@
-# temporary script - likely to be removed in the released package which will
-# only include variational inference routines.
-#
+#' Post-inference orthonormalisation procedure for MCMC inference [deprecated].
+#'
+#' This function is used to orthonormalise the eigenfunctions and scores
+#' inferred using R Stan - deprecated, will be removed.
+#'
+#' @param stan_obj Object obtained from R Stan code for FPCA inference.
+#' @param C_g Design matrix C(t) constructed from the set of K spline functions
+#'            based on the dense time grid.
+#' @param Psi_g Reference eigenfunctions (if available, e.g., in simulations)
+#'              used to flip the sign of the resulting scores and eigenfunctions.
+#'
+#' @return An object containing the orthnormalised eigenfunctions and
+#'         uncorrelated scores.
+#'
 #' @export
+#'
 summarise_mcmc_multivariate <- function(stan_obj, C_g, Psi_g) {
 
   mcmc_samples <- rstan::extract(stan_obj, permuted=FALSE)

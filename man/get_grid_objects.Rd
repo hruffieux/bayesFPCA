@@ -21,7 +21,7 @@ univariate or multivariate curves, respectively.}
 algorithms. If set to \code{NULL} will be set according to the rule
 of Ruppert (2002), also enforcing K >=7.}
 
-\item{n_g}{Desired size of dense grid.}
+\item{n_g}{Desired size for dense grid.}
 
 \item{time_g}{Dense grid provided as a vector of size \code{n_g}. If provided,
 then \code{n_g} must be \code{NULL} as will be taken to be
@@ -42,7 +42,7 @@ n_g Number of time points in the dense grid.
 time_g Dense time grid constructed.
 
 C_g Design matrix C(t) constructed from the set of K spline functions
-          based on the dense time grid.
+            based on the dense time grid.
 }
 \description{
 This function is used to create a time grid of desired density and design

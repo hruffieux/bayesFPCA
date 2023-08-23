@@ -1,4 +1,42 @@
+#' Variational Message Passing (VMP) inference for univariate or multivariate
+#' functional principal component analysis
+#'
+#' This function is used to perform FPCA or mFPCA using a VMP algorithm.
+#'
+#' @param time_obs  Vector or list of vectors containing time of observations for
+#'                  univariate or multivariate curves, respectively.
+#' @param Y List of vectors (for univariate curves) or list of lists (for
+#'          multivariate curves) with the functional data.
+#' @param L Number of eigenfunctions (or latent dimensions).
+#' @param K Number of O'Sulivan spline functions to be used in the FPCA or mFPCA
+#'          algorithms. If set to \code{NULL} will be set according to the rule
+#'          of Ruppert (2002), also enforcing K >=7.
+#' @param list_hyper Hyperparameter settings constructed using the function
+#'         \code{\link{set_hyper}}. If \code{NULL} default hyperparameters will
+#'         be used.
+#' @param n_g Desired size for dense grid.
+#' @param time_g Dense grid provided as a vector of size \code{n_g}. If provided,
+#'               then \code{n_g} must be \code{NULL} as will be taken to be
+#'               \code{length(time_g)}.
+#' @param tol Tolerance on the relative changes in the ELBO.
+#' @param maxit Maximum number of iterations allowed.
+#' @param plot_elbo Boolean indicating whether the values of the ELBO should be
+#'                  displayed during the run.
+#' @param Psi_g Reference eigenfunctions (if available, e.g., in simulations)
+#'              used to flip the sign of the resulting scores and eigenfunctions.
+#' @param verbose Boolean indicating whether messages should be printed during
+#'                the run.
+#' @param seed User-specified seed for reproducibilty.
+#'
+#' @return An object containing the resulting VMP estimates.
+#'
+#' @seealso  \code{\link{run_mfvb_fpca}}, \code{\link{set_hyper}},
+#'           \code{\link{flip_sign}}, \code{\link{display_fit}},
+#'           \code{\link{display_fit_list}}, \code{\link{display_scores}},
+#'           \code{\link{display_eigenfunctions}}
+#'
 #' @export
+#'
 run_vmp_fpca <- function(time_obs, Y, L, K = NULL,
                          list_hyper = NULL,
                          n_g = 1000, time_g = NULL,
@@ -1287,8 +1325,43 @@ vmp_gauss_mfpca <- function(n_vmp, N, p, L, K, C, Y, sigma_zeta, mu_beta, Sigma_
 
 
 
-# Mean-field version, ELBO not implemented, no tolerance tol
+#' Mean-field variational Bayes (MFVB) inference for univariate or multivariate
+#' functional principal component analysis
+#'
+#' This function is used to perform FPCA or mFPCA using a MFVB algorithm.
+#'
+#' @param time_obs  Vector or list of vectors containing time of observations for
+#'                  univariate or multivariate curves, respectively.
+#' @param Y List of vectors (for univariate curves) or list of lists (for
+#'          multivariate curves) with the functional data.
+#' @param L Number of eigenfunctions (or latent dimensions).
+#' @param K Number of O'Sulivan spline functions to be used in the FPCA or mFPCA
+#'          algorithms. If set to \code{NULL} will be set according to the rule
+#'          of Ruppert (2002), also enforcing K >=7.
+#' @param list_hyper Hyperparameter settings constructed using the function
+#'         \code{\link{set_hyper}}. If \code{NULL} default hyperparameters will
+#'         be used.
+#' @param n_g Desired size for dense grid.
+#' @param time_g Dense grid provided as a vector of size \code{n_g}. If provided,
+#'               then \code{n_g} must be \code{NULL} as will be taken to be
+#'               \code{length(time_g)}.
+#' @param n_mfvb Number of iterations [ELBO and tolerance criterion to be
+#'               implemented soon].
+#' @param Psi_g Reference eigenfunctions (if available, e.g., in simulations)
+#'              used to flip the sign of the resulting scores and eigenfunctions.
+#' @param verbose Boolean indicating whether messages should be printed during
+#'                the run.
+#' @param seed User-specified seed for reproducibilty.
+#'
+#' @return An object containing the resulting MFVB estimates.
+#'
+#' @seealso  \code{\link{run_vmp_fpca}}, \code{\link{set_hyper}},
+#'           \code{\link{flip_sign}}, \code{\link{display_fit}},
+#'           \code{\link{display_fit_list}}, \code{\link{display_scores}},
+#'           \code{\link{display_eigenfunctions}}
+#'
 #' @export
+#'
 run_mfvb_fpca <- function(time_obs, Y, L, K = NULL,
                           list_hyper = NULL, n_mfvb = 500,
                           n_g = 1000, time_g = NULL,

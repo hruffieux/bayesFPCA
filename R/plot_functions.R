@@ -1,4 +1,26 @@
+#' Flip the sign of eigenfunctions and corresponding scores
+#'
+#' This function is used to alter the sign of specified eigenfunctions and
+#' scores. Choosing one eigenfunction over its opposite sign has no effect on
+#' the resulting fits, although one choice of sign may provide more natural
+#' interpretation of the eigenfunction.
+#'
+#' @param vec_flip Vector of size L whose entry l is -1 if sign needs to be
+#'                 flipped for eigenfunction l = 1, ..., L, or 1 if sign is keep
+#'                 the same.
+#' @param list_Psi_hat List or matrix of eigenfunctions as returned by
+#'                     \code{\link{run_mfvb_fpca}} or \code{\link{run_vmp_fpca}}.
+#' @param Zeta_hat Matrix of estimated scores as returned by
+#'                     \code{\link{run_mfvb_fpca}} or \code{\link{run_vmp_fpca}}.
+#' @param zeta_ellipse 95% posterior credible boundaries for the scores as
+#'                     return by \code{\link{run_mfvb_fpca}} or
+#'                     \code{\link{run_vmp_fpca}}.
+#'
+#' @return An object containing the eigenfunctions, scores and credible
+#'         boundaries with altered sign.
+#'
 #' @export
+#'
 flip_sign <- function(vec_flip, list_Psi_hat, Zeta_hat, zeta_ellipse = NULL) {
 
   list_Psi_hat <- lapply(seq_along(vec_flip), function(ll) {
@@ -14,13 +36,49 @@ flip_sign <- function(vec_flip, list_Psi_hat, Zeta_hat, zeta_ellipse = NULL) {
   create_named_list(list_Psi_hat, Zeta_hat, zeta_ellipse)
 }
 
+
+#' Display the latent functions estimated by FPCA or mFPCA.
+#'
+#' This function is used to plot the mean function and eigenfunctions estimated
+#' by \code{\link{run_mfvb_fpca}} or \code{\link{run_vmp_fpca}}, along with
+#' reference functions.
+#'
+#' @param L Number of eigenfunctions (or latent dimensions).
+#' @param time_g Vector for a dense time grid provided.
+#' @param mu_g Reference mean function evaluated on the dense grid \code{time_g}.
+#' @param Psi_g Reference eigenfunctions evaluated on the dense grid \code{time_g}.
+#' @param mu_hat Estimated mean function as returned by
+#'               \code{\link{run_mfvb_fpca}} or \code{\link{run_vmp_fpca}}.
+#' @param list_Psi_hat Estimated eigenfunctions as returned by
+#'                     \code{\link{run_mfvb_fpca}} or \code{\link{run_vmp_fpca}}.
+#' @param mu_hat_add Optional. Additional estimated mean function under the same
+#'                   format as \code{mu_hat}.
+#' @param list_Psi_hat_add Optional. Additional estimated mean function under the same
+#'                         format as \code{list_Psi_hat_add}.
+#' @param mu_hat_ci Optional. Credible boundaries for \code{mu_hat}.
+#' @param list_Psi_hat_ci Optional. Credible boundaries for \code{list_Psi_hat}.
+#' @param lwd Line width.
+#' @param data_col Color for \code{mu_g} and \code{Psi_g}.
+#' @param p_sample Indices of variables to display, if mFPCA. If FPCA, then will
+#'                 be set to 1.
+#' @param vec_col_add Vector of size 1 (if \code{mu_hat_add} and
+#'                    \code{list_Psi_hat_add} are \code{NULL}) or 2 (if
+#'                    \code{mu_hat_add} and \code{list_Psi_hat_add} are provided)
+#'                    with the color(s) for \code{mu_hat} and
+#'                    \code{list_Psi_hat} (first entry) and \code{mu_hat_add}
+#'                    and \code{list_Psi_hat_add} (second entry).
+#' @param vec_lwd Same as for \code{vec_col_add} but entries are line widths.
+#'
+#' @seealso  \code{\link{flip_sign}} to flip the sign of eigenfunctions.
+#'
 #' @export
+#'
 display_eigenfunctions <- function(L, time_g, mu_g, Psi_g,
                                    mu_hat, list_Psi_hat,
                                    mu_hat_add = NULL, list_Psi_hat_add = NULL,
                                    mu_hat_ci = NULL, list_Psi_hat_ci = NULL,
                                    lwd = 2, data_col = "red", p_sample = NULL,
-                                   vec_col_add = NULL, vec_lwd = NULL) { # perso
+                                   vec_col_add = NULL, vec_lwd = NULL) {
 
   ylim <- c(min(c(unlist(mu_g),
                   as.vector(unlist(mu_hat)),
@@ -198,8 +256,32 @@ display_function <- function(time_g, fct, add_fct1 = NULL, add_fct2 = NULL,
   }
 }
 
+
+#' Display the univariate fits estimated by FPCA.
+#'
+#' This function is used to plot the sample trajectories for univariate FPCA as
+#' estimated by \code{\link{run_mfvb_fpca}} or \code{\link{run_vmp_fpca}}.
+#'
+#' @param N_sample Indices of samples to be displayed.
+#' @param time_obs Vector containing time of observations for univariate curves.
+#' @param time_g Vector for a dense time grid.
+#' @param Y List of vectors with the functional data.
+#' @param Y_hat List of estimated sample trajectories as returned by
+#'              \code{\link{run_mfvb_fpca}} or \code{\link{run_vmp_fpca}}.
+#' @param Y_low List of estimated lower credible boundaries for the estimated
+#'              sample trajectories as returned by \code{\link{run_mfvb_fpca}}
+#'              or \code{\link{run_vmp_fpca}}.
+#' @param Y_upp List of estimated upper credible boundaries for the estimated
+#'              sample trajectories as returned by \code{\link{run_mfvb_fpca}}
+#'              or \code{\link{run_vmp_fpca}}.
+#' @param offset Optional offset to the plot y-axis.
+#'
+#' @seealso  \code{\link{display_fit_list}} for multivariate FPCA (mFPCA).
+#'
 #' @export
-display_fit <- function(N_sample, time_obs, time_g, Y, Y_hat, Y_low, Y_upp, offset = 0.1) {
+#'
+display_fit <- function(N_sample, time_obs, time_g, Y, Y_hat, Y_low, Y_upp,
+                        offset = 0.1) {
 
   N_sample <- sort(N_sample)
 
@@ -244,12 +326,50 @@ display_fit <- function(N_sample, time_obs, time_g, Y, Y_hat, Y_low, Y_upp, offs
 }
 
 
+#' Display the multivariate fits estimated by mFPCA.
+#'
+#' This function is used to plot the sample trajectories for multivariate FPCA as
+#' estimated by \code{\link{run_mfvb_fpca}} or \code{\link{run_vmp_fpca}}.
+#'
+#' @param p_sample Indices of variables to be displayed.
+#' @param N_sample Indices of samples to be displayed.
+#' @param time_obs List of vectors containing time of observations for
+#'                 multivariate curves.
+#' @param time_g Vector for a dense time grid.
+#' @param Y List of lists with the functional data.
+#' @param Y_hat List of estimated sample trajectories as returned by
+#'              \code{\link{run_mfvb_fpca}} or \code{\link{run_vmp_fpca}}.
+#' @param Y_low List of lower credible boundaries for the estimated sample
+#'              trajectories as returned by \code{\link{run_mfvb_fpca}}
+#'              or \code{\link{run_vmp_fpca}}.
+#' @param Y_upp List of upper credible boundaries for the estimated sample
+#'              trajectories as returned by \code{\link{run_mfvb_fpca}}
+#'              or \code{\link{run_vmp_fpca}}.
+#' @param Y_hat_add List of additional estimated sample trajectories under the
+#'                  same format as returned by \code{\link{run_mfvb_fpca}} or
+#'                  \code{\link{run_vmp_fpca}}.
+#' @param Y_low_add List of additional lower credible boundaries for the estimated
+#'                  sample trajectories under the same format as returned by
+#'                  \code{\link{run_mfvb_fpca}} or \code{\link{run_vmp_fpca}}.
+#' @param Y_upp_add List of additional upper credible boundaries for the estimated
+#'                  sample trajectories under the same format as returned by
+#'                  \code{\link{run_mfvb_fpca}} or \code{\link{run_vmp_fpca}}.
+#' @param offset Optional offset to the plot y-axis.
+#' @param col_data Color for the observed data points.
+#' @param col Color for the estimated trajectories \code{Y_hat}.
+#' @param col_add Color for the estimated trajectories \code{Y_hat_add}.
+#' @param lwd Line width for the estimated trajectories \code{Y_hat}.
+#' @param lwd_add Line width for the estimated trajectories \code{Y_hat_add}.
+#'
+#' @seealso  \code{\link{display_fit}} for univariate FPCA.
+#'
 #' @export
+#'
 display_fit_list <- function(p_sample, N_sample, time_obs, time_g, Y,
                              Y_hat, Y_low, Y_upp,
-                             Y_hat_add = NULL, Y_low_add = NULL, Y_upp_add = NULL, offset = 0.1,
-                             col_data = "grey55", col = "black", col_add = "blue",
-                             lwd = 1.2, lwd_add = 1.2) {
+                             Y_hat_add = NULL, Y_low_add = NULL, Y_upp_add = NULL,
+                             offset = 0.1, col_data = "grey55", col = "black",
+                             col_add = "blue", lwd = 1.2, lwd_add = 1.2) {
 
   p_sample <- sort(p_sample)
   N_sample <- sort(N_sample)
@@ -316,7 +436,35 @@ display_fit_list <- function(p_sample, N_sample, time_obs, time_g, Y,
 
 
 
+#' Display the scores estimated by FPCA or mFPCA.
+#'
+#' This function is used to plot the scores estimated from
+#' \code{\link{run_mfvb_fpca}} or \code{\link{run_vmp_fpca}}.
+#'
+#' @param N_sample Indices of samples to be displayed.
+#' @param Zeta Reference matrix of scores.
+#' @param Zeta_hat Matrix of estimated scores as returned by
+#'                 \code{\link{run_mfvb_fpca}} or \code{\link{run_vmp_fpca}}.
+#' @param zeta_ellipse 95% posterior credible boundaries for the scores
+#'                    \code{Zeta_hat} as returned by \code{\link{run_mfvb_fpca}}
+#'                    or \code{\link{run_vmp_fpca}}.
+#' @param Zeta_hat_add Optional. Additional matrix of estimated scores under the
+#'                     same format as returned by \code{\link{run_mfvb_fpca}} or
+#'                     \code{\link{run_vmp_fpca}}.
+#' @param zeta_ellipse_add Optional. Additional 95% posterior credible
+#'                        boundaries for the scores \code{Zeta_hat} under the
+#'                        same format as returned by \code{\link{run_mfvb_fpca}}
+#'                        or \code{\link{run_vmp_fpca}}.
+#' @param vec_col Vector of size 1 (if \code{Zeta_hat_add} is \code{NULL}) or 2 (if
+#'                \code{Zeta_hat_add} is provided) with the color(s) for
+#'                \code{Zeta_hat} (first entry) and \code{Zeta_hat_add}
+#'                (second entry).
+#' @param data_col Color for \code{Zeta}.
+#' @param mfrow Vector of integers of size two with the layout for plots. First
+#'              entry: number of rows, second entry: number of columns.
+#'
 #' @export
+#'
 display_scores <- function(N_sample, Zeta, Zeta_hat, zeta_ellipse,
                            Zeta_hat_add = NULL, zeta_ellipse_add = NULL,
                            vec_col = c("black", "blue"), data_col = "red",
