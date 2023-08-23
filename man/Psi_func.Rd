@@ -2,8 +2,7 @@
 % Please edit documentation in R/simulation_functions.R
 \name{Psi_func}
 \alias{Psi_func}
-\title{Example of two-dimensional latent function:
-\code{( (-1)^j * sqrt(2/p)*cos(2*pi*t), (-1)^j * sqrt(2/p)*sin(2*pi*t) )}}
+\title{Example of two-dimensional latent function.}
 \usage{
 Psi_func(t, j = 1, p = 1)
 }
@@ -19,6 +18,7 @@ above.}
 Function evaluated at \code{t}.
 }
 \description{
-Example of two-dimensional latent function:
+Function to provide an example of two-dimensional eigenfunction that can be
+used, e.g., for simulations:
 \code{( (-1)^j * sqrt(2/p)*cos(2*pi*t), (-1)^j * sqrt(2/p)*sin(2*pi*t) )}
 }

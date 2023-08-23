@@ -2,7 +2,7 @@
 % Please edit documentation in R/simulation_functions.R
 \name{mu_func}
 \alias{mu_func}
-\title{Example of mean function: \code{(-1)^j*alpha*sin((2*pi+j)*t)}}
+\title{Example of mean function.}
 \usage{
 mu_func(t, j = 1, alpha = 3)
 }
@@ -17,5 +17,6 @@ mu_func(t, j = 1, alpha = 3)
 Function evaluated at \code{t}.
 }
 \description{
-Example of mean function: \code{(-1)^j*alpha*sin((2*pi+j)*t)}
+Function to provide an example of mean function that can be used, e.g., for
+simulations: \code{(-1)^j*alpha*sin((2*pi+j)*t)}
 }

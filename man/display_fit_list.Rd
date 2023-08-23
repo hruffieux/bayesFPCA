@@ -2,7 +2,7 @@
 % Please edit documentation in R/plot_functions.R
 \name{display_fit_list}
 \alias{display_fit_list}
-\title{Display the multivariate fits estimated by mFPCA.}
+\title{Display multivariate fits estimated by mFPCA.}
 \usage{
 display_fit_list(
   p_sample,
@@ -72,8 +72,9 @@ sample trajectories under the same format as returned by
 \item{lwd_add}{Line width for the estimated trajectories \code{Y_hat_add}.}
 }
 \description{
-This function is used to plot the sample trajectories for multivariate FPCA as
-estimated by \code{\link{run_mfvb_fpca}} or \code{\link{run_vmp_fpca}}.
+This function is used to plot the sample trajectories from
+multivariate FPCA (mFPCA) and returned by \code{\link{run_mfvb_fpca}} or
+\code{\link{run_vmp_fpca}}
 }
 \seealso{
 \code{\link{display_fit}} for univariate FPCA.

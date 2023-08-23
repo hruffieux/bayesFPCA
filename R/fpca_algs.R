@@ -1,5 +1,5 @@
 #' Variational Message Passing (VMP) inference for univariate or multivariate
-#' functional principal component analysis
+#' functional principal component analysis.
 #'
 #' This function is used to perform FPCA or mFPCA using a VMP algorithm.
 #'
@@ -34,6 +34,15 @@
 #'           \code{\link{flip_sign}}, \code{\link{display_fit}},
 #'           \code{\link{display_fit_list}}, \code{\link{display_scores}},
 #'           \code{\link{display_eigenfunctions}}
+#'
+#' @references
+#'
+#' Nolan, T. H., Goldsmith, J., & Ruppert, D. (2023). Bayesian Functional
+#' Principal Components Analysis via Variational Message Passing with Multilevel
+#' Extensions. Bayesian Analysis, 1(1), 1-27.
+#'
+#' Ruppert, D. (2002). Selecting the number of knots for penalized splines.
+#' Journal of computational and graphical statistics, 11(4), 735-757.
 #'
 #' @export
 #'
@@ -1326,7 +1335,7 @@ vmp_gauss_mfpca <- function(n_vmp, N, p, L, K, C, Y, sigma_zeta, mu_beta, Sigma_
 
 
 #' Mean-field variational Bayes (MFVB) inference for univariate or multivariate
-#' functional principal component analysis
+#' functional principal component analysis.
 #'
 #' This function is used to perform FPCA or mFPCA using a MFVB algorithm.
 #'
@@ -1359,6 +1368,14 @@ vmp_gauss_mfpca <- function(n_vmp, N, p, L, K, C, Y, sigma_zeta, mu_beta, Sigma_
 #'           \code{\link{flip_sign}}, \code{\link{display_fit}},
 #'           \code{\link{display_fit_list}}, \code{\link{display_scores}},
 #'           \code{\link{display_eigenfunctions}}
+#'
+#' @references
+#' Nolan, T. H., Goldsmith, J., & Ruppert, D. (2023). Bayesian Functional
+#' Principal Components Analysis via Variational Message Passing with Multilevel
+#' Extensions. Bayesian Analysis, 1(1), 1-27.
+#'
+#' Ruppert, D. (2002). Selecting the number of knots for penalized splines.
+#' Journal of computational and graphical statistics, 11(4), 735-757.
 #'
 #' @export
 #'

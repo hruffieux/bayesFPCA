@@ -234,19 +234,6 @@ tr <- function(X) {
 }
 
 
-
-#' Cross-product between two vectors.
-#'
-#' Function acting as  a wrapper on the R cross-product t(x) %*% y
-#'
-#' @param x Vector for the left hand side of the cross-product.
-#' @param y Vector for the right hand side of the cross-product. If missing,
-#'          \code{x} is used.
-#'
-#' @return Resulting cross-product.
-#'
-#' @export
-#'
 cprod <- function(x, y) {
 
   if(missing(y)) {

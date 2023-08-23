@@ -12,7 +12,7 @@
 #'                     \code{\link{run_mfvb_fpca}} or \code{\link{run_vmp_fpca}}.
 #' @param Zeta_hat Matrix of estimated scores as returned by
 #'                     \code{\link{run_mfvb_fpca}} or \code{\link{run_vmp_fpca}}.
-#' @param zeta_ellipse 95% posterior credible boundaries for the scores as
+#' @param zeta_ellipse 95\% posterior credible boundaries for the scores as
 #'                     return by \code{\link{run_mfvb_fpca}} or
 #'                     \code{\link{run_vmp_fpca}}.
 #'
@@ -22,6 +22,8 @@
 #' @export
 #'
 flip_sign <- function(vec_flip, list_Psi_hat, Zeta_hat, zeta_ellipse = NULL) {
+
+  stopifnot(all(vec_flip == 1 | vec_flip == -1))
 
   list_Psi_hat <- lapply(seq_along(vec_flip), function(ll) {
     list_Psi_hat[[ll]] * vec_flip[ll]
@@ -37,7 +39,7 @@ flip_sign <- function(vec_flip, list_Psi_hat, Zeta_hat, zeta_ellipse = NULL) {
 }
 
 
-#' Display the latent functions estimated by FPCA or mFPCA.
+#' Display latent functions estimated by FPCA or mFPCA.
 #'
 #' This function is used to plot the mean function and eigenfunctions estimated
 #' by \code{\link{run_mfvb_fpca}} or \code{\link{run_vmp_fpca}}, along with
@@ -257,10 +259,11 @@ display_function <- function(time_g, fct, add_fct1 = NULL, add_fct2 = NULL,
 }
 
 
-#' Display the univariate fits estimated by FPCA.
+#' Display univariate fits estimated by FPCA.
 #'
-#' This function is used to plot the sample trajectories for univariate FPCA as
-#' estimated by \code{\link{run_mfvb_fpca}} or \code{\link{run_vmp_fpca}}.
+#' This function is used to plot the sample trajectories estimated from
+#' univariate FPCA and returned by \code{\link{run_mfvb_fpca}} or
+#' \code{\link{run_vmp_fpca}}.
 #'
 #' @param N_sample Indices of samples to be displayed.
 #' @param time_obs Vector containing time of observations for univariate curves.
@@ -326,10 +329,11 @@ display_fit <- function(N_sample, time_obs, time_g, Y, Y_hat, Y_low, Y_upp,
 }
 
 
-#' Display the multivariate fits estimated by mFPCA.
+#' Display multivariate fits estimated by mFPCA.
 #'
-#' This function is used to plot the sample trajectories for multivariate FPCA as
-#' estimated by \code{\link{run_mfvb_fpca}} or \code{\link{run_vmp_fpca}}.
+#' This function is used to plot the sample trajectories from
+#' multivariate FPCA (mFPCA) and returned by \code{\link{run_mfvb_fpca}} or
+#' \code{\link{run_vmp_fpca}}
 #'
 #' @param p_sample Indices of variables to be displayed.
 #' @param N_sample Indices of samples to be displayed.
@@ -445,13 +449,13 @@ display_fit_list <- function(p_sample, N_sample, time_obs, time_g, Y,
 #' @param Zeta Reference matrix of scores.
 #' @param Zeta_hat Matrix of estimated scores as returned by
 #'                 \code{\link{run_mfvb_fpca}} or \code{\link{run_vmp_fpca}}.
-#' @param zeta_ellipse 95% posterior credible boundaries for the scores
+#' @param zeta_ellipse 95\% posterior credible boundaries for the scores
 #'                    \code{Zeta_hat} as returned by \code{\link{run_mfvb_fpca}}
 #'                    or \code{\link{run_vmp_fpca}}.
 #' @param Zeta_hat_add Optional. Additional matrix of estimated scores under the
 #'                     same format as returned by \code{\link{run_mfvb_fpca}} or
 #'                     \code{\link{run_vmp_fpca}}.
-#' @param zeta_ellipse_add Optional. Additional 95% posterior credible
+#' @param zeta_ellipse_add Optional. Additional 95\% posterior credible
 #'                        boundaries for the scores \code{Zeta_hat} under the
 #'                        same format as returned by \code{\link{run_mfvb_fpca}}
 #'                        or \code{\link{run_vmp_fpca}}.

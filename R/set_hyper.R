@@ -1,6 +1,7 @@
-#' Gather model hyperparameters provided by the user.
+#' Gather model hyperparameters.
 #'
-#' This function is used to provide hyperparameter values for
+#' This function is used to construct an object with hyperparameter values for
+#' the FPCA or mFPCA model in a format that can then be supplied to
 #' \code{\link{run_mfvb_fpca}} and \code{\link{run_vmp_fpca}}.
 #'
 #' The \code{\link{run_mfvb_fpca}} and \code{\link{run_vmp_fpca}} functions can

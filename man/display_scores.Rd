@@ -24,7 +24,7 @@ display_scores(
 \item{Zeta_hat}{Matrix of estimated scores as returned by
 \code{\link{run_mfvb_fpca}} or \code{\link{run_vmp_fpca}}.}
 
-\item{zeta_ellipse}{95% posterior credible boundaries for the scores
+\item{zeta_ellipse}{95\% posterior credible boundaries for the scores
 \code{Zeta_hat} as returned by \code{\link{run_mfvb_fpca}}
 or \code{\link{run_vmp_fpca}}.}
 
@@ -32,7 +32,7 @@ or \code{\link{run_vmp_fpca}}.}
 same format as returned by \code{\link{run_mfvb_fpca}} or
 \code{\link{run_vmp_fpca}}.}
 
-\item{zeta_ellipse_add}{Optional. Additional 95% posterior credible
+\item{zeta_ellipse_add}{Optional. Additional 95\% posterior credible
 boundaries for the scores \code{Zeta_hat} under the
 same format as returned by \code{\link{run_mfvb_fpca}}
 or \code{\link{run_vmp_fpca}}.}

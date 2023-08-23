@@ -17,7 +17,7 @@ the same.}
 \item{Zeta_hat}{Matrix of estimated scores as returned by
 \code{\link{run_mfvb_fpca}} or \code{\link{run_vmp_fpca}}.}
 
-\item{zeta_ellipse}{95% posterior credible boundaries for the scores as
+\item{zeta_ellipse}{95\% posterior credible boundaries for the scores as
 return by \code{\link{run_mfvb_fpca}} or
 \code{\link{run_vmp_fpca}}.}
 }

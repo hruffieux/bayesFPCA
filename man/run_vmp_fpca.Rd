@@ -3,7 +3,7 @@
 \name{run_vmp_fpca}
 \alias{run_vmp_fpca}
 \title{Variational Message Passing (VMP) inference for univariate or multivariate
-functional principal component analysis}
+functional principal component analysis.}
 \usage{
 run_vmp_fpca(
   time_obs,
@@ -64,6 +64,14 @@ An object containing the resulting VMP estimates.
 }
 \description{
 This function is used to perform FPCA or mFPCA using a VMP algorithm.
+}
+\references{
+Nolan, T. H., Goldsmith, J., & Ruppert, D. (2023). Bayesian Functional
+Principal Components Analysis via Variational Message Passing with Multilevel
+Extensions. Bayesian Analysis, 1(1), 1-27.
+
+Ruppert, D. (2002). Selecting the number of knots for penalized splines.
+Journal of computational and graphical statistics, 11(4), 735-757.
 }
 \seealso{
 \code{\link{run_mfvb_fpca}}, \code{\link{set_hyper}},

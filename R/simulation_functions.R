@@ -1,4 +1,7 @@
-#' Example of mean function: \code{(-1)^j*alpha*sin((2*pi+j)*t)}
+#' Example of mean function.
+#'
+#' Function to provide an example of mean function that can be used, e.g., for
+#' simulations: \code{(-1)^j*alpha*sin((2*pi+j)*t)}
 #'
 #' @param t Time vector for which the function is evaluated.
 #' @param j Phase shift and sign swap; see definition of the function above.
@@ -13,7 +16,10 @@ mu_func <- function(t, j = 1, alpha = 3) (-1)^j*alpha*sin((2*pi+j)*t) # default 
 psi_1 <- function(t, j = 1, p = 1) (-1)^j * sqrt(2/p)*cos(2*pi*t)
 psi_2 <- function(t, j = 1, p = 1) (-1)^j * sqrt(2/p)*sin(2*pi*t)
 
-#' Example of two-dimensional latent function:
+#' Example of two-dimensional latent function.
+#'
+#' Function to provide an example of two-dimensional eigenfunction that can be
+#' used, e.g., for simulations:
 #' \code{( (-1)^j * sqrt(2/p)*cos(2*pi*t), (-1)^j * sqrt(2/p)*sin(2*pi*t) )}
 #'
 #' @param t Time vector for which the function is evaluated.
@@ -29,7 +35,7 @@ Psi_func <- function(t, j = 1, p = 1) {
   return(ans)
 }
 
-#' Generate FPCA data.
+#' Generate FPCA or mFPCA data.
 #'
 #' Function to generate univariate or multivariate functional curves based on
 #' FPCA expansions.

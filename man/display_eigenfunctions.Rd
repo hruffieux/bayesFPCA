@@ -2,7 +2,7 @@
 % Please edit documentation in R/plot_functions.R
 \name{display_eigenfunctions}
 \alias{display_eigenfunctions}
-\title{Display the latent functions estimated by FPCA or mFPCA.}
+\title{Display latent functions estimated by FPCA or mFPCA.}
 \usage{
 display_eigenfunctions(
   L,

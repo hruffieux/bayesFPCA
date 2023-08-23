@@ -2,7 +2,7 @@
 % Please edit documentation in R/plot_functions.R
 \name{display_fit}
 \alias{display_fit}
-\title{Display the univariate fits estimated by FPCA.}
+\title{Display univariate fits estimated by FPCA.}
 \usage{
 display_fit(N_sample, time_obs, time_g, Y, Y_hat, Y_low, Y_upp, offset = 0.1)
 }
@@ -29,8 +29,9 @@ or \code{\link{run_vmp_fpca}}.}
 \item{offset}{Optional offset to the plot y-axis.}
 }
 \description{
-This function is used to plot the sample trajectories for univariate FPCA as
-estimated by \code{\link{run_mfvb_fpca}} or \code{\link{run_vmp_fpca}}.
+This function is used to plot the sample trajectories estimated from
+univariate FPCA and returned by \code{\link{run_mfvb_fpca}} or
+\code{\link{run_vmp_fpca}}.
 }
 \seealso{
 \code{\link{display_fit_list}} for multivariate FPCA (mFPCA).

@@ -17,10 +17,10 @@ v3](https://img.shields.io/badge/license-GPL%20v3-blue.svg)](https://www.gnu.org
 
 ## Overview
 
-**bayesFPCA** is an R package providing tools for functional principal
-component analysis (FPCA) in the Bayesian setting. It implements
-variational message passing inference for univariate and multivariate
-FPCA, as well as functional linear regression.
+**bayesFPCA** is an R package providing tools for univariate and
+multivariate functional principal component analysis (FPCA) in the
+Bayesian setting. It provides efficient variational inference
+implementations (mean-field and variational message passing).
 
 ## Installation
 
@@ -31,6 +31,15 @@ if(!require(remotes)) install.packages("remotes")
 remotes::install_github("hruffieux/bayesFPCA")
 ```
 
+## Main functions
+
+The two main functions to performance univariate and multivariate FPCA
+inference are `run_mfvb_fpca()` for mean-field variational Bayes and
+`run_vmp_fpca()` for variational message passing algorithms.
+
+The package also provides a number of functions to generate and display
+functional data and resulting FPCA estimates.
+
 ## License and authors
 
 This software uses the GPL v3 license, see [LICENSE](LICENSE). Authors
@@ -40,4 +49,3 @@ and copyright are provided in [DESCRIPTION](DESCRIPTION).
 
 To report an issue, please use the [bayesFPCA issue
 tracker](https://github.com/hruffieux/bayesFPCA/issues) at github.com.
-making changes to mfvb-based mfpca

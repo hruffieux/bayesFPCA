@@ -2,7 +2,7 @@
 % Please edit documentation in R/set_hyper.R
 \name{set_hyper}
 \alias{set_hyper}
-\title{Gather model hyperparameters provided by the user.}
+\title{Gather model hyperparameters.}
 \usage{
 set_hyper(sigma_zeta = 1, mu_beta = 0, sigma_beta = 1e+05, A = 1e+05)
 }
@@ -24,7 +24,8 @@ An object containing the hyperparameter settings to be supplied to
         \code{\link{run_mfvb_fpca}} or \code{\link{run_vmp_fpca}}
 }
 \description{
-This function is used to provide hyperparameter values for
+This function is used to construct an object with hyperparameter values for
+the FPCA or mFPCA model in a format that can then be supplied to
 \code{\link{run_mfvb_fpca}} and \code{\link{run_vmp_fpca}}.
 }
 \details{

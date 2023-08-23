@@ -2,7 +2,7 @@
 % Please edit documentation in R/simulation_functions.R
 \name{generate_fpca_data}
 \alias{generate_fpca_data}
-\title{Generate FPCA data.}
+\title{Generate FPCA or mFPCA data.}
 \usage{
 generate_fpca_data(
   N,

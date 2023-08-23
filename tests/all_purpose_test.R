@@ -263,18 +263,3 @@ if (bool_multiple_repl_eigen & !format_univ) {
 
 }
 
-
-# Compare first level scores:
-
-if (!format_univ) {
-  norm_diff <- apply(mfvb_res$Zeta - Zeta, 1, function(x) sqrt(cprod(x)))
-  mfvb_rmse <- sqrt(mean(norm_diff))
-
-  cat("The MFVB-based rmse is:", mfvb_rmse, "\n")
-}
-
-norm_diff <- apply(vmp_res$Zeta - Zeta, 1, function(x) sqrt(cprod(x)))
-vmp_rmse <- sqrt(mean(norm_diff))
-
-cat("The VMP-based rmse is:", vmp_rmse, "\n")
-
