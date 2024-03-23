@@ -20,11 +20,12 @@ run_mfvb_fpca(
 )
 }
 \arguments{
-\item{time_obs}{Vector or list of vectors containing time of observations for
-univariate or multivariate curves, respectively.}
+\item{time_obs}{List of vectors or list of lists of vectors containing time
+of observations for univariate or multivariate curves,
+respectively.}
 
-\item{Y}{List of vectors (for univariate curves) or list of lists (for
-multivariate curves) with the functional data.}
+\item{Y}{List of vectors (for univariate curves) or list of lists of vectors
+(for multivariate curves) with the functional data.}
 
 \item{L}{Number of eigenfunctions (or latent dimensions).}
 

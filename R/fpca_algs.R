@@ -3,11 +3,11 @@
 #'
 #' This function is used to perform FPCA or mFPCA using a VMP algorithm.
 #'
-#' @param time_obs  Vector or list of vectors containing time of observations for
-#'                  univariate or multivariate curves, respectively.
-#' @param Y List of vectors (for univariate curves) or list of lists (for
-#'          multivariate curves) with the functional data.
-#' @param L Number of eigenfunctions (or latent dimensions).
+#' @param time_obs List of vectors or list of lists of vectors containing time
+#'                 of observations for univariate or multivariate curves,
+#'                 respectively.
+#' @param Y List of vectors (for univariate curves) or list of lists of vectors
+#'          (for multivariate curves) with the functional data.
 #' @param K Number of O'Sulivan spline functions to be used in the FPCA or mFPCA
 #'          algorithms. If set to \code{NULL} will be set according to the rule
 #'          of Ruppert (2002), also enforcing K >=7.
@@ -115,6 +115,8 @@ run_vmp_fpca <- function(time_obs, Y, L, K = NULL,
     if (!is.null(Psi_g)) {
       stopifnot(is.list(Psi_g))
     }
+  } else {
+    p <- 1
   }
 
   if (is.null(K)) {  # Ruppert (2002) sets a simple default value for K as min(nobs/4,40), where nobs is the number of observations.
@@ -1339,10 +1341,11 @@ vmp_gauss_mfpca <- function(n_vmp, N, p, L, K, C, Y, sigma_zeta, mu_beta, Sigma_
 #'
 #' This function is used to perform FPCA or mFPCA using a MFVB algorithm.
 #'
-#' @param time_obs  Vector or list of vectors containing time of observations for
-#'                  univariate or multivariate curves, respectively.
-#' @param Y List of vectors (for univariate curves) or list of lists (for
-#'          multivariate curves) with the functional data.
+#' @param time_obs  List of vectors or list of lists of vectors containing time
+#'                  of observations for univariate or multivariate curves,
+#'                  respectively.
+#' @param Y List of vectors (for univariate curves) or list of lists of vectors
+#'          (for multivariate curves) with the functional data.
 #' @param L Number of eigenfunctions (or latent dimensions).
 #' @param K Number of O'Sulivan spline functions to be used in the FPCA or mFPCA
 #'          algorithms. If set to \code{NULL} will be set according to the rule
@@ -2102,6 +2105,9 @@ mfvb_gauss_fpca <- function(n_mfvb, N, L, K, C, Y, sigma_zeta, mu_beta,
   Psi_hat <- U_orth%*%S
   Zeta_hat <- tcrossprod(M_q_Zeta_rotn, S_inv)
 
+  # print(all.equal(tcrossprod(Psi_hat, Zeta_hat),
+  #                 tcrossprod(M_q_Psi, M_q_Zeta)))
+
   norm_const <- rep(NA, L)
   for(l in 1:L) {
 
@@ -2120,8 +2126,6 @@ mfvb_gauss_fpca <- function(n_mfvb, N, L, K, C, Y, sigma_zeta, mu_beta,
       }
     }
   }
-
-  mu_q_zeta <- split(Zeta_hat, row(Zeta_hat))
 
   scale_mat <- diag(norm_const)
   Cov_zeta_hat <- vector("list", length = N)
