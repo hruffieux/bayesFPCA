@@ -8,6 +8,7 @@
 #'                 respectively.
 #' @param Y List of vectors (for univariate curves) or list of lists of vectors
 #'          (for multivariate curves) with the functional data.
+#' @param L Number of eigenfunctions (or latent dimensions).
 #' @param K Number of O'Sulivan spline functions to be used in the FPCA or mFPCA
 #'          algorithms. If set to \code{NULL} will be set according to the rule
 #'          of Ruppert (2002), also enforcing K >=7.
@@ -1832,6 +1833,8 @@ mfvb_gauss_mfpca <- function(n_mfvb, N, p, L, K, C, Y, sigma_zeta, mu_beta,
     }
   }
 
+  E_q_sigsq_eps <- lambda_q_sigsq_eps / (sum(n[, j]) - 1)
+
   Y_summary <- Y_hat <- Y_low <- Y_upp <- vector("list", length = N)
   for(i in 1:N) {
 
@@ -1839,7 +1842,7 @@ mfvb_gauss_mfpca <- function(n_mfvb, N, p, L, K, C, Y, sigma_zeta, mu_beta,
     for(j in 1:p) {
 
       Y_hat_ij <- mu_hat[,j] + Psi_hat[[j]] %*% Zeta_hat[i, ]
-      sd_vec_ij <- sqrt(diag(tcrossprod(Psi_hat[[j]] %*% Cov_zeta_hat[[i]], Psi_hat[[j]])))
+      sd_vec_ij <- sqrt(diag(tcrossprod(Psi_hat[[j]] %*% Cov_zeta_hat[[i]], Psi_hat[[j]])) + E_q_sigsq_eps[j])
 
       Y_summary[[i]][[j]] <- matrix(NA, n_g, 3)
 
@@ -2163,10 +2166,11 @@ mfvb_gauss_fpca <- function(n_mfvb, N, L, K, C, Y, sigma_zeta, mu_beta,
     gbl_hat[[l+1]] <- list_Psi_hat[[l]]
   }
 
+  E_q_sigsq_eps <- lambda_q_sigsq_eps / (kappa_q_sigsq_eps - 2)
   Y_summary <- Y_hat <- Y_low <- Y_upp <- vector("list", length = N)
   for(i in 1:N) {
 
-    sd_vec_i <- sqrt(diag(tcrossprod(Psi_hat%*%Cov_zeta_hat[[i]], Psi_hat)))
+    sd_vec_i <- sqrt(diag(tcrossprod(Psi_hat%*%Cov_zeta_hat[[i]], Psi_hat)) + E_q_sigsq_eps)
 
     Y_summary[[i]] <- matrix(NA, nrow=n_g, ncol=3)
     Y_summary[[i]][,1] <- Y_mat[,i] + qnorm(0.025)*sd_vec_i
