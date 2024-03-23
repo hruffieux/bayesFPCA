@@ -1448,7 +1448,10 @@ run_mfvb_fpca <- function(time_obs, Y, L, K = NULL,
     if (!is.null(Psi_g)) {
       stopifnot(is.list(Psi_g))
     }
+  } else {
+    p <- 1
   }
+
 
   if (is.null(K)) {  # Ruppert (2002) sets a simple default value for K as min(nobs/4,40), where nobs is the number of observations.
     # here since nobs differs for each i, we take the nobs / 4 = round(median(obs_i)/4), and do this for each variable j = 1, ..., p
