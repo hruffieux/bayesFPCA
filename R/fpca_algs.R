@@ -76,7 +76,8 @@ run_vmp_fpca <- function(time_obs, Y, L, K = NULL,
   }
 
   sigma_zeta <- list_hyper$sigma_zeta
-  mu_beta <- list_hyper$mu_beta
+  # mu_beta <- list_hyper$mu_beta # fixed to zero in mfvb anyway
+  mu_beta <- rep(0, 2)
   Sigma_beta <- list_hyper$Sigma_beta
   A <- list_hyper$A
 
@@ -1414,7 +1415,8 @@ run_mfvb_fpca <- function(time_obs, Y, L, K = NULL,
   }
 
   sigma_zeta <- list_hyper$sigma_zeta
-  mu_beta <- list_hyper$mu_beta
+  # mu_beta <- list_hyper$mu_beta # fixed to zero in mfpca MFVB anyway
+  mu_beta <- rep(0, 2)
   Sigma_beta <- list_hyper$Sigma_beta
   A <- list_hyper$A
 
@@ -1509,20 +1511,23 @@ run_mfvb_fpca <- function(time_obs, Y, L, K = NULL,
 
     time_obs <- lapply(time_obs, function(time_obs_i) { names(time_obs_i) <- var_names; time_obs_i}) # we should probably return this as well.
 
-    # directly includes the orthnogonalisation step, unlike the vmp_gauss_mfpca function
-    mfvb_gauss_mfpca(maxit, N, p, L, K, C, Y, sigma_zeta, mu_beta, Sigma_beta, A,
-                     time_g, C_g, Psi_g, verbose)
+    # directly includes the orthogonalisation step, unlike the vmp_gauss_mfpca function
+    mfvb_gauss_mfpca(maxit, N, p, L, K, C, Y, sigma_zeta, Sigma_beta, A,
+                     tol, plot_elbo, time_g, C_g, Psi_g, verbose)
 
   }
 
 }
 
 
-mfvb_gauss_mfpca <- function(maxit, N, p, L, K, C, Y, sigma_zeta, mu_beta,
-                            Sigma_beta, A, time_g, C_g, Psi_g, verbose) {
+mfvb_gauss_mfpca <- function(maxit, N, p, L, K, C, Y, sigma_zeta,
+                             Sigma_beta, A, tol, plot_elbo, time_g, C_g,
+                             Psi_g, verbose, eps = .Machine$double.eps^0.5,
+                             debug = TRUE) {
 
 
-  n <- Reduce(rbind, lapply(Y, function(x) sapply(x, length)))
+  n <- Reduce(rbind, lapply(Y, function(x) sapply(x, length))) # rows = samples, columns = variables
+  sum_n <-  colSums(n)
   n_g <- length(time_g)
 
   CTC <- vector("list", length = N)
@@ -1535,6 +1540,12 @@ mfvb_gauss_mfpca <- function(maxit, N, p, L, K, C, Y, sigma_zeta, mu_beta,
     }
   }
 
+  # inv_fixed_var <- 1/sigsq_beta*diag(2) # or :
+  # inv_fixed_var <- Sigma_beta
+  # diag(inv_fixed_var) <- 1/diag(Sigma_beta)
+  # more generally (since Sigma_beta is a user-specified parameter):
+  inv_Sigma_beta <- solve(Sigma_beta)
+
   # Set fixed parameters:
 
   mu_inds <- vector("list", length = p)
@@ -1544,6 +1555,15 @@ mfvb_gauss_mfpca <- function(maxit, N, p, L, K, C, Y, sigma_zeta, mu_beta,
     mu_inds[[j]] <- 1:(K[j] + 2)
     psi_inds[[j]] <- split((K[j] + 3):((K[j] + 2)*(L + 1)), rep(1:L, each = K[j] + 2))
   }
+
+  kappa_q_sigsq_eps <- sum_n + 1 # vector of length p
+  kappa_q_a_eps <- 2
+
+  kappa_q_sigsq_mu <- K + 1 # vector of length p
+  kappa_q_a_mu <- 2
+
+  kappa_q_sigsq_psi <- matrix(rep(K + 1, each = L), nrow = p, byrow = T) # matrix p x L
+  kappa_q_a_psi <- 2
 
   # Initialisation
 
@@ -1565,13 +1585,20 @@ mfvb_gauss_mfpca <- function(maxit, N, p, L, K, C, Y, sigma_zeta, mu_beta,
 
   # Iterations:
 
-  for(iter in 1:maxit) {
+  elbo_res <- NULL
+  converged <- FALSE
+  iter <- 0
 
-    if (verbose) cat("Iteration", iter,  "of", maxit, "\n")
+  while((!converged) & (iter < maxit)) {
+
+    iter <- iter + 1
+
+    if (verbose) cat("Iteration", iter, "\n")
 
     # Update q(nu):
 
     Cov_q_nu <- vector("list", length = p)
+    inv_Cov_q_nu <- vector("list", length = p)
     E_q_nu <- vector("list", length = p)
     for(j in 1:p) {
 
@@ -1587,19 +1614,16 @@ mfvb_gauss_mfpca <- function(maxit, N, p, L, K, C, Y, sigma_zeta, mu_beta,
         mu_sum <- mu_sum + cprod(kronecker(t(E_q_zeta_tilde), C[[i]][[j]]), Y[[i]][[j]])
       }
 
-      # inv_fixed_var <- 1/sigsq_beta*diag(2)
-      inv_fixed_var <- Sigma_beta
-      diag(inv_fixed_var) <- 1/diag(Sigma_beta)
-
-      E_q_Sigma_mu <- adiag(inv_fixed_var, E_q_recip_sigsq_mu[j]*diag(K[j]))
+      E_q_Sigma_mu <- adiag(inv_Sigma_beta, E_q_recip_sigsq_mu[j]*diag(K[j]))
       E_q_Sigma_psi <- vector("list", length = L)
       for(l in 1:L) {
 
-        E_q_Sigma_psi[[l]] <- adiag(inv_fixed_var, E_q_recip_sigsq_psi[j, l]*diag(K[j]))
+        E_q_Sigma_psi[[l]] <- adiag(inv_Sigma_beta, E_q_recip_sigsq_psi[j, l]*diag(K[j]))
       }
       E_q_inv_Sigma_nu <- adiag(E_q_Sigma_mu, Reduce(adiag, E_q_Sigma_psi))
 
-      Cov_q_nu[[j]] <- solve(E_q_recip_sigsq_eps[j]*Cov_sum + E_q_inv_Sigma_nu)
+      inv_Cov_q_nu[[j]] <- E_q_recip_sigsq_eps[j]*Cov_sum + E_q_inv_Sigma_nu
+      Cov_q_nu[[j]] <- solve(inv_Cov_q_nu[[j]])
       E_q_nu[[j]] <- E_q_recip_sigsq_eps[j]*as.vector(Cov_q_nu[[j]] %*% mu_sum)
     }
 
@@ -1658,6 +1682,7 @@ mfvb_gauss_mfpca <- function(maxit, N, p, L, K, C, Y, sigma_zeta, mu_beta,
     # For i = 1, ..., N, update q(zeta[i]):
 
     Cov_q_zeta <- vector("list", length = N)
+    inv_Cov_q_zeta <- vector("list", length = N)
     E_q_zeta <- vector("list", length = N)
     for(i in 1:N) {
 
@@ -1672,7 +1697,8 @@ mfvb_gauss_mfpca <- function(maxit, N, p, L, K, C, Y, sigma_zeta, mu_beta,
         mu_sum <- mu_sum + E_q_recip_sigsq_eps[j]*freq_scores
       }
 
-      Cov_q_zeta[[i]] <- solve(Cov_sum + 1/sigma_zeta^2*diag(L))
+      inv_Cov_q_zeta[[i]] <- Cov_sum + 1/sigma_zeta^2*diag(L)
+      Cov_q_zeta[[i]] <- solve(inv_Cov_q_zeta[[i]])
       E_q_zeta[[i]] <- as.vector(Cov_q_zeta[[i]] %*% mu_sum)
     }
 
@@ -1696,13 +1722,13 @@ mfvb_gauss_mfpca <- function(maxit, N, p, L, K, C, Y, sigma_zeta, mu_beta,
       }
 
       lambda_q_sigsq_eps[j] <- lambda_q_sigsq_eps[j] + E_q_recip_a_eps[j]
-      E_q_recip_sigsq_eps[j] <- (sum(n[, j]) + 1)/lambda_q_sigsq_eps[j]
+      E_q_recip_sigsq_eps[j] <- kappa_q_sigsq_eps[j] / lambda_q_sigsq_eps[j]
     }
 
     # For j = 1, ..., p, update q(a_eps[j]):
 
     lambda_q_a_eps <- E_q_recip_sigsq_eps + 1/A^2
-    E_q_recip_a_eps <- 2/lambda_q_a_eps
+    E_q_recip_a_eps <- kappa_q_a_eps / lambda_q_a_eps
 
     # For j = 1, ..., p, update q(sigsq_mu[j]):
 
@@ -1714,12 +1740,12 @@ mfvb_gauss_mfpca <- function(maxit, N, p, L, K, C, Y, sigma_zeta, mu_beta,
       cprod_term <- cprod(E_q_nu[[j]][u_inds])
       lambda_q_sigsq_mu[j] <- tr_term + cprod_term + E_q_recip_a_mu[j]
     }
-    E_q_recip_sigsq_mu <- (K[j] + 1)/lambda_q_sigsq_mu
+    E_q_recip_sigsq_mu <- kappa_q_sigsq_mu / lambda_q_sigsq_mu
 
     # Update q(a_mu):
 
     lambda_q_a_mu <- E_q_recip_sigsq_mu + 1/A^2
-    E_q_recip_a_mu <- 2/lambda_q_a_mu
+    E_q_recip_a_mu <- kappa_q_a_mu / lambda_q_a_mu
 
     # For j = 1, ..., p and l = 1, ..., L, update q(sigsq_psi[j, l]):
 
@@ -1734,12 +1760,104 @@ mfvb_gauss_mfpca <- function(maxit, N, p, L, K, C, Y, sigma_zeta, mu_beta,
         lambda_q_sigsq_psi[j, l] <- tr_term + cprod_term + E_q_recip_a_psi[j, l]
       }
     }
-    E_q_recip_sigsq_psi <- (K[j] + 1)/lambda_q_sigsq_psi
+    E_q_recip_sigsq_psi <- kappa_q_sigsq_psi / lambda_q_sigsq_psi
 
     # For j = 1, ..., p and l = 1, ..., L, update q(a_psi[j, l]):
 
     lambda_q_a_psi <- E_q_recip_sigsq_psi + 1/A^2
-    E_q_recip_a_psi <- 2/lambda_q_a_psi
+    E_q_recip_a_psi <- kappa_q_a_psi/lambda_q_a_psi
+
+
+    ###
+    # E_q_log_sigsq objects (for ELBO)
+    #
+
+    E_q_log_sigsq_eps <- compute_mu_q_log(kappa_q_sigsq_eps, lambda_q_sigsq_eps) # length p
+    E_q_log_sigsq_mu <- compute_mu_q_log(kappa_q_sigsq_mu, lambda_q_sigsq_mu) # length p
+    E_q_log_sigsq_psi <- compute_mu_q_log(kappa_q_sigsq_psi, lambda_q_sigsq_psi) # matrix nrow = p, ncol = L
+
+    E_q_log_a_eps <- compute_mu_q_log(kappa_q_a_eps, lambda_q_a_eps) # length p
+    E_q_log_a_mu <- compute_mu_q_log(kappa_q_a_mu, lambda_q_a_mu) # length p
+    E_q_log_a_psi <- compute_mu_q_log(kappa_q_a_psi, lambda_q_a_psi) # matrix nrow = p, ncol = L
+
+
+    # ELBO:
+    #
+    elbo_y <- sum(sapply(1:p, function(j) { e_y(N, sum_n[j],
+                                                lapply(Y, function(Y_i) Y_i[[j]]),
+                                                lapply(C, function(C_i) C_i[[j]]),
+                                                E_q_V[[j]],
+                                                lapply(E_q_H_nu, function(E_q_H_nu_i) E_q_H_nu_i[[j]]),
+                                                E_q_zeta, Cov_q_zeta,
+                                                E_q_log_sigsq_eps[j], E_q_recip_sigsq_eps[j])}))
+
+    elbo_nu <- sum(sapply(1:p, function(j) {e_nu(K[j], L, mu_beta = rep(0, 2), # assumed to be 0 in the mFPCA version of mfvb
+                                                 inv_Sigma_beta, # hyperparameter
+                                                 E_q_nu[[j]], Cov_q_nu[[j]], inv_Cov_q_nu[[j]],
+                                                 E_q_recip_sigsq_mu[j], E_q_recip_sigsq_psi[j,],
+                                                 E_q_log_sigsq_mu[j], E_q_log_sigsq_psi[j,])}))
+
+
+    elbo_zeta <- e_zeta(N, inv_Sigma_zeta =  1/sigma_zeta^2*diag(L), # hyperparameter
+                        E_q_zeta, Cov_q_zeta, inv_Cov_q_zeta)
+
+    elbo_sigsq_eps <- sum(sapply(1:p, function(j) {e_sigsq(E_q_recip_sigsq_eps[j], E_q_log_sigsq_eps[j],
+                                                           E_q_recip_a_eps[j], E_q_log_a_eps[j],
+                                                           kappa_q_sigsq_eps[j], lambda_q_sigsq_eps[j])}))
+
+    elbo_a_eps <- sum(sapply(1:p, function(j) {e_a(E_q_recip_a_eps[j], E_q_log_a_eps[j],
+                                                   A, kappa_q_a_eps, lambda_q_a_eps[j])}))
+
+    elbo_sigsq_mu <- sum(sapply(1:p, function(j) {e_sigsq(E_q_recip_sigsq_mu[j], E_q_log_sigsq_mu[j],
+                                                          E_q_recip_a_mu[j], E_q_log_a_mu[j],
+                                                          kappa_q_sigsq_mu[j], lambda_q_sigsq_mu[j])}))
+
+    elbo_a_mu <- sum(sapply(1:p, function(j) {e_a(E_q_recip_a_mu[j], E_q_log_a_mu[j],
+                                                  A, kappa_q_a_mu, lambda_q_a_mu[j])}))
+
+    elbo_sigsq_psi <- sum(sapply(1:p, function(j) {sum(e_sigsq(E_q_recip_sigsq_psi[j,], E_q_log_sigsq_psi[j,],
+                                                               E_q_recip_a_psi[j,], E_q_log_a_psi[j,],
+                                                               kappa_q_sigsq_psi[j,], lambda_q_sigsq_psi[j,]))})) # sum because vector of length L (L eigenfunctions)
+
+    elbo_a_psi <- sum(sapply(1:p, function(j) {sum(e_a(E_q_recip_a_psi[j,], E_q_log_a_psi[j,],
+                                                       A, kappa_q_a_psi, lambda_q_a_psi[j,]))})) # sum because vector of length L (L eigenfunctions)
+
+    elbo_new <- elbo_y + elbo_nu + elbo_zeta + elbo_sigsq_eps + elbo_a_eps +
+      elbo_sigsq_mu + elbo_a_mu + elbo_sigsq_psi + elbo_a_psi
+
+    elbo_res <- c(elbo_res, elbo_new)
+
+    if(plot_elbo) {
+
+      plot(1:iter, elbo_res, pch=16, cex=0.4, xlab="iterations", ylab="ELBO")
+    }
+
+    if(iter > 1) {
+
+      elbo_old <- elbo_res[iter - 1]
+
+      if (debug && elbo_new + eps < elbo_old)
+        stop("ELBO not increasing monotonically. Exit. ")
+
+      tol_1_satisfied <- (abs(elbo_new/elbo_old - 1) < tol)
+
+      if(iter > 2) {
+
+        elbo_old <- elbo_res[iter - 2]
+        tol_2_satisfied <- (abs(elbo_new/elbo_old - 1) < tol)
+      } else {
+
+        tol_2_satisfied <- FALSE
+      }
+
+      tol_satisfied <- (tol_1_satisfied || tol_2_satisfied)
+
+      if(tol_satisfied) {
+
+        converged <- TRUE
+      }
+    }
+
   }
 
   # Orthogonalisation:
@@ -1878,7 +1996,7 @@ mfvb_gauss_fpca <- function(maxit, N, L, K, C, Y, sigma_zeta, mu_beta,
 
   n_g <- length(time_g)
   T_vec <- sapply(Y, length)
-  sum_T <- sum(T_vec) # <--------------- ADDED
+  sum_T <- sum(T_vec)
 
   inv_Sigma_zeta <- solve(sigma_zeta^2*diag(L))
   inv_Sigma_beta <- solve(Sigma_beta)
@@ -1903,7 +2021,7 @@ mfvb_gauss_fpca <- function(maxit, N, L, K, C, Y, sigma_zeta, mu_beta,
     Sigma_q_zeta[[i]] <- diag(L)
   }
 
-  kappa_q_sigsq_eps <- sum_T + 1 # <-------------- CHANGED
+  kappa_q_sigsq_eps <- sum_T + 1
   mu_q_recip_sigsq_eps <- 1
 
   kappa_q_a_eps <- 2
@@ -2101,7 +2219,6 @@ mfvb_gauss_fpca <- function(maxit, N, L, K, C, Y, sigma_zeta, mu_beta,
 
     # mu_q_log_sigsq objects (for ELBO)
     #
-
     mu_q_log_sigsq_eps <- compute_mu_q_log(kappa_q_sigsq_eps, lambda_q_sigsq_eps)
     mu_q_log_sigsq_mu <- compute_mu_q_log(kappa_q_sigsq_mu, lambda_q_sigsq_mu)
     mu_q_log_sigsq_psi <- compute_mu_q_log(kappa_q_sigsq_psi, lambda_q_sigsq_psi)
@@ -2123,7 +2240,7 @@ mfvb_gauss_fpca <- function(maxit, N, L, K, C, Y, sigma_zeta, mu_beta,
                     mu_q_log_sigsq_mu, mu_q_log_sigsq_psi)
 
 
-    elbo_zeta <- e_zeta(inv_Sigma_zeta, # hyperparameter
+    elbo_zeta <- e_zeta(N, inv_Sigma_zeta, # hyperparameter
                         mu_q_zeta, Sigma_q_zeta, inv_Sigma_q_zeta)
 
     elbo_sigsq_eps <- e_sigsq(mu_q_recip_sigsq_eps, mu_q_log_sigsq_eps,

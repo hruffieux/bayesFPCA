@@ -20,9 +20,8 @@ n_int_knots <- rep(8, p)                      # number of interior knots
 K <- n_int_knots + 2                          # number of spline basis functions # if length(K) = 1, then will be set to K <- rep(K, p) within the run_* functions
 L <- 2                                        # number of FPCA basis functions
 
-tol  <- 1e-5                                  # convergence tolerance # 1e-3 is not enough! (doesn't match the mfvb run)
-maxit_vmp <- 250                               # maximum number of vmp iterations (artificially low for test purpose only)
-n_mfvb <- 25                                  # number of mfvb iterations (no convergence criterion implemented yet for mfvb - artificially low for test purpose only)
+tol  <- 1e-5                                  # convergence tolerance # 1e-3 is not enough!
+maxit <- 250                                  # maximum number of iterations (artificially low for test purpose only)
 
 n_g <- 1000                                   # length of the plotting grid
 
@@ -92,7 +91,7 @@ set.seed(seed)
 # doesn't run successfully at the moment as treatment of K and corrections in fpca_rotation and mfpca_rotation functions need to be implemented
 #
 system.time(vmp_res <- run_vmp_fpca(time_obs, Y, L, K = K, n_g = NULL, time_g = time_g, # here we use the same time grid as that used to simulate the true mean and eigen- functions
-                                    tol = tol, maxit = maxit_vmp, Psi_g = Psi_g))
+                                    tol = tol, maxit = maxit, Psi_g = Psi_g))
 
 Y_hat <- vmp_res$Y_hat
 Y_low <- vmp_res$Y_low
@@ -157,7 +156,7 @@ if (!format_univ) { # not implemented for format univ
 
   set.seed(seed)
 
-  mfvb_res <- run_mfvb_fpca(time_obs, Y, L, n_mfvb = n_mfvb, K = K, n_g = NULL,
+  mfvb_res <- run_mfvb_fpca(time_obs, Y, L, tol = tol, maxit = maxit, K = K, n_g = NULL,
                             time_g = time_g, # here we use the same time grid as that used to simulate the true mean and eigen- functions
                             Psi_g = Psi_g)
 
@@ -237,7 +236,7 @@ if (bool_multiple_repl_eigen & !format_univ) {
 
 
     vmp_res_repl <- run_vmp_fpca(time_obs, Y_repl, K, L, n_g = NULL, time_g = time_g, # here we use the same time grid as that used to simulate the true mean and eigen- functions
-                                 tol = tol, maxit = maxit_vmp, plot_elbo = FALSE,
+                                 tol = tol, maxit = maxit, plot_elbo = FALSE,
                                  Psi_g = Psi_g)
 
     mu_hat <- vmp_res_repl$mu_hat

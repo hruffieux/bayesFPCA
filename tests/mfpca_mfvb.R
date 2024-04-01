@@ -23,7 +23,8 @@ n <- matrix(Reduce(                                  # number of time observatio
 K <- n_int_knots[1:p] + 2                     # number of spline basis functions
 L <- 2                                        # number of FPCA basis functions
 
-n_mfvb <- 25                              # maximum number of vmp iterations (artificially low for test purpose only)
+tol <- 1e-5                         # convergence criterion
+maxit_mfvb <- 250                   # maximum number of iterations
 
 sigma_zeta_vec <- 2/(1:L)                     # sd for first and second scores
 sigma_eps <- rep(1, p)                        # sd of the residuals
@@ -65,8 +66,8 @@ Psi_g <- mfpca_data$Psi_g
 Y <- mfpca_data$Y
 
 
-mfpca_res <- run_mfvb_fpca(time_obs, Y, L, K = K, n_mfvb = n_mfvb, n_g = n_g,
-                           Psi_g = Psi_g)
+mfpca_res <- run_mfvb_fpca(time_obs, Y, L, K = K,  n_g = n_g, tol = tol,
+                           maxit = maxit_mfvb, Psi_g = Psi_g)
 
 time_g <- mfpca_res$time_g
 Y_hat <- mfpca_res$Y_hat

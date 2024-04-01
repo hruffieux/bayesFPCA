@@ -11,7 +11,9 @@ run_mfvb_fpca(
   L,
   K = NULL,
   list_hyper = NULL,
-  n_mfvb = 500,
+  tol = 1e-05,
+  maxit = 10000,
+  plot_elbo = FALSE,
   n_g = 1000,
   time_g = NULL,
   Psi_g = NULL,
@@ -37,8 +39,11 @@ of Ruppert (2002), also enforcing K >=7.}
 \code{\link{set_hyper}}. If \code{NULL} default hyperparameters will
 be used.}
 
-\item{n_mfvb}{Number of iterations [ELBO and tolerance criterion to be
-implemented soon].}
+\item{tol}{Tolerance on the relative changes in the ELBO.}
+
+\item{maxit}{Maximum number of iterations allowed.}
+
+\item{plot_elbo}{Boolean indicating whether the values of the ELBO should be displayed during the run.}
 
 \item{n_g}{Desired size for dense grid.}
 

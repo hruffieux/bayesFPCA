@@ -11,8 +11,6 @@
 #'
 #' @param sigma_zeta Positive real number of the standard deviation of the
 #'                   scores zeta.
-#' @param mu_beta Vector of size 1 or 2 for the mean of the spline coefficients
-#'                for the mean function.
 #' @param sigma_beta Vector of size 1 or 2 for the standard deviation of the
 #'                   spline coefficients for the mean function.
 #' @param A Positive real number for the top-level hyperparameter of the
@@ -23,13 +21,16 @@
 #'
 #' @export
 #'
-set_hyper <- function(sigma_zeta = 1, mu_beta = 0, sigma_beta = 1e5, A = 1e5) {
+set_hyper <- function(sigma_zeta = 1, sigma_beta = 1e5, A = 1e5) {
 
   check_structure(sigma_zeta, "vector", "double", 1)
   check_positive(sigma_zeta)
 
-  check_structure(mu_beta, "vector", "double", c(1, 2))
-  if (length(mu_beta) == 1) mu_beta <- rep(mu_beta, 2)
+  # Now set to zero everywhere (mfpca version MFVB assumed to be zero in the algorithm)
+  # Vector of size 1 or 2 for the mean of the spline coefficients
+  #                for the mean function.
+  # check_structure(mu_beta, "vector", "double", c(1, 2))
+  # if (length(mu_beta) == 1) mu_beta <- rep(mu_beta, 2)
 
   check_structure(sigma_beta, "vector", "double", c(1, 2))
   check_positive(sigma_beta)
@@ -40,7 +41,7 @@ set_hyper <- function(sigma_zeta = 1, mu_beta = 0, sigma_beta = 1e5, A = 1e5) {
   check_structure(A, "vector", "double", 1)
   check_positive(A)
 
-  list_hyper <- create_named_list(sigma_zeta, mu_beta, Sigma_beta, A)
+  list_hyper <- create_named_list(sigma_zeta, Sigma_beta, A)
 
   class(list_hyper) <- "hyper"
 

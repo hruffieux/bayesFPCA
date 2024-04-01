@@ -86,7 +86,7 @@ e_nu <- function(K, L, mu_beta, # hyperparamter
 }
 
 
-e_zeta <- function(inv_Sigma_zeta, # hyperparameter
+e_zeta <- function(N, inv_Sigma_zeta, # hyperparameter
                    mu_q_zeta, Sigma_q_zeta, inv_Sigma_q_zeta) {
 
   # - c_ent_zeta_i
