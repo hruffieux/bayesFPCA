@@ -75,7 +75,8 @@ n_int_knots <- 10                   # number of interior knots
 K <- n_int_knots + 2                # number of spline basis functions
 L <- 4                              # number of FPCA basis functions
 
-n_mfvb <- 25                    # number of MFVB iterations
+tol <- 1e-5                         # convergence criterion
+maxit_mfvb <- 250                   # maximum number of iterations
 
 sigma_zeta_vec <- 2/(1:L)           # sd for first and second scores
 sigma_eps <- 1                      # sd of the residuals
@@ -97,8 +98,8 @@ Psi_g <- fpca_data$Psi_g
 Y <- fpca_data$Y
 
 
-fpca_res <- run_mfvb_fpca(time_obs, Y, L, K = K, n_mfvb = n_mfvb, n_g = n_g,
-                          Psi_g = Psi_g)
+fpca_res <- run_mfvb_fpca(time_obs, Y, L, K = K, n_g = n_g, tol = tol,
+                          maxit = maxit_mfvb, Psi_g = Psi_g)
 
 
 time_g <- fpca_res$time_g
