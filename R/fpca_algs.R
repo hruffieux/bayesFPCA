@@ -1529,7 +1529,7 @@ run_mfvb_fpca <- function(time_obs, Y, L, K = NULL,
 
     # directly includes the orthogonalisation step, unlike the vmp_gauss_mfpca function
     mfvb_gauss_mfpca(maxit, N, p, L, K, C, Y, sigma_zeta, Sigma_beta, A,
-                     tol, plot_elbo, time_g, C_g, Psi_g, verbose)
+                     tol, plot_elbo, var_names, time_g, C_g, Psi_g, verbose)
 
   }
 
@@ -1537,7 +1537,7 @@ run_mfvb_fpca <- function(time_obs, Y, L, K = NULL,
 
 
 mfvb_gauss_mfpca <- function(maxit, N, p, L, K, C, Y, sigma_zeta,
-                             Sigma_beta, A, tol, plot_elbo, time_g, C_g,
+                             Sigma_beta, A, tol, plot_elbo, var_names, time_g, C_g,
                              Psi_g, verbose, eps = .Machine$double.eps^0.5,
                              debug = TRUE) {
 
@@ -1953,6 +1953,7 @@ mfvb_gauss_mfpca <- function(maxit, N, p, L, K, C, Y, sigma_zeta,
   gbl_hat <- vector("list", length = L + 1)
   list_Psi_hat <- vector("list", length = L)
   gbl_hat[[1]] <- mu_hat <- as.matrix(Reduce(cbind, mu_hat)) # now deals with the case p = 1
+  colnames(gbl_hat[[1]]) <- colnames(mu_hat) <- var_names
   for(l in 1:L) {
 
     gbl_hat[[l+1]] <- list_Psi_hat[[l]] <- matrix(NA, n_g, p)
@@ -1960,7 +1961,9 @@ mfvb_gauss_mfpca <- function(maxit, N, p, L, K, C, Y, sigma_zeta,
 
       gbl_hat[[l+1]][, j] <- list_Psi_hat[[l]][,j] <- Psi_hat[[j]][, l]
     }
+    colnames(gbl_hat[[l+1]]) <- colnames(list_Psi_hat[[l]]) <- var_names
   }
+  names(list_Psi_hat) <- paste0("FPC_", 1:L)
 
   E_q_sigsq_eps <- lambda_q_sigsq_eps / (sum(n[, j]) - 1)
 
