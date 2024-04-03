@@ -1839,23 +1839,8 @@ mfvb_gauss_mfpca <- function(maxit, N, p, L, K, C, Y, sigma_zeta,
       if (debug && elbo_new + eps < elbo_old)
         stop("ELBO not increasing monotonically. Exit. ")
 
-      tol_1_satisfied <- (abs(elbo_new/elbo_old - 1) < tol)
+      converged <- (abs(elbo_new/elbo_old - 1) < tol)
 
-      if(iter > 2) {
-
-        elbo_old <- elbo_res[iter - 2]
-        tol_2_satisfied <- (abs(elbo_new/elbo_old - 1) < tol)
-      } else {
-
-        tol_2_satisfied <- FALSE
-      }
-
-      tol_satisfied <- (tol_1_satisfied || tol_2_satisfied)
-
-      if(tol_satisfied) {
-
-        converged <- TRUE
-      }
     }
 
   }
@@ -2281,23 +2266,8 @@ mfvb_gauss_fpca <- function(maxit, N, L, K, C, Y, sigma_zeta, mu_beta,
       if (debug && elbo_new + eps < elbo_old)
         stop("ELBO not increasing monotonically. Exit. ")
 
-      tol_1_satisfied <- (abs(elbo_new/elbo_old - 1) < tol)
+      converged <- (abs(elbo_new/elbo_old - 1) < tol)
 
-      if(iter > 2) {
-
-        elbo_old <- elbo_res[iter - 2]
-        tol_2_satisfied <- (abs(elbo_new/elbo_old - 1) < tol)
-      } else {
-
-        tol_2_satisfied <- FALSE
-      }
-
-      tol_satisfied <- (tol_1_satisfied || tol_2_satisfied)
-
-      if(tol_satisfied) {
-
-        converged <- TRUE
-      }
     }
 
   }
