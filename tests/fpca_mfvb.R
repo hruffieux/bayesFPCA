@@ -75,7 +75,7 @@ n_int_knots <- 10                   # number of interior knots
 K <- n_int_knots + 2                # number of spline basis functions
 L <- 4                              # number of FPCA basis functions
 
-tol <- 1e-5                         # convergence criterion
+tol <- 1e-3                         # convergence criterion
 maxit_mfvb <- 250                   # maximum number of iterations
 
 sigma_zeta_vec <- 2/(1:L)           # sd for first and second scores

@@ -11,7 +11,7 @@ run_mfvb_fpca(
   L,
   K = NULL,
   list_hyper = NULL,
-  tol = 1e-05,
+  tol = 0.001,
   maxit = 10000,
   plot_elbo = FALSE,
   n_g = 1000,

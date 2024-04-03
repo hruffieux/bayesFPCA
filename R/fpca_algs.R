@@ -50,7 +50,7 @@
 run_vmp_fpca <- function(time_obs, Y, L, K = NULL,
                          list_hyper = NULL,
                          n_g = 1000, time_g = NULL,
-                         tol = 1e-5, maxit = 1e4, plot_elbo = FALSE,
+                         tol = 1e-3, maxit = 1e4, plot_elbo = FALSE,
                          Psi_g = NULL, verbose = TRUE, seed = NULL) {
 
   check_structure(seed, "vector", "numeric", 1, null_ok = TRUE)
@@ -724,12 +724,20 @@ vmp_gauss_fpca <- function(n_vmp, N, L, K, C, Y, sigma_zeta, mu_beta,
     if(iter > 1) {
 
       elbo_old <- elbo_res[iter - 1]
-      tol_1_satisfied <- (abs(elbo_new/elbo_old - 1) < tol)
+
+      diff_elbo <- elbo_new - elbo_old
+
+      # converged <- (abs(diff_elbo) / N < tol) # adjust for the sample size (as the magnitude of the elbo changes with N: sum_i^N log(...))
+
+      tol_1_satisfied <- (abs(diff_elbo) / N < tol) # adjust for the sample size (as the magnitude of the elbo changes with N: sum_i^N log(...))# (abs(elbo_new/elbo_old - 1) < tol)
 
       if(iter > 2) {
 
         elbo_old <- elbo_res[iter - 2]
-        tol_2_satisfied <- (abs(elbo_new/elbo_old - 1) < tol)
+
+        diff_elbo <- elbo_new - elbo_old
+
+        tol_2_satisfied <- (abs(diff_elbo) / N < tol) # adjust for the sample size (as the magnitude of the elbo changes with N: sum_i^N log(...)) # (abs(elbo_new/elbo_old - 1) < tol)
       } else {
 
         tol_2_satisfied <- FALSE
@@ -1312,12 +1320,20 @@ vmp_gauss_mfpca <- function(n_vmp, N, p, L, K, C, Y, sigma_zeta, mu_beta, Sigma_
     if(iter > 1) {
 
       elbo_old <- elbo_res[iter - 1]
-      tol_1_satisfied <- (abs(elbo_new/elbo_old - 1) < tol)
+
+      diff_elbo <- elbo_new - elbo_old
+
+      # converged <- (abs(diff_elbo) / N < tol) # adjust for the sample size (as the magnitude of the elbo changes with N: sum_i^N log(...))
+
+      tol_1_satisfied <- (abs(diff_elbo) / N < tol) # adjust for the sample size (as the magnitude of the elbo changes with N: sum_i^N log(...)) # (abs(elbo_new/elbo_old - 1) < tol)
 
       if(iter > 2) {
 
         elbo_old <- elbo_res[iter - 2]
-        tol_2_satisfied <- (abs(elbo_new/elbo_old - 1) < tol)
+
+        diff_elbo <- elbo_new - elbo_old
+
+        tol_2_satisfied <- (abs(diff_elbo) / N < tol) # adjust for the sample size (as the magnitude of the elbo changes with N: sum_i^N log(...)) # (abs(elbo_new/elbo_old - 1) < tol)
       } else {
 
         tol_2_satisfied <- FALSE
@@ -1387,7 +1403,7 @@ vmp_gauss_mfpca <- function(n_vmp, N, p, L, K, C, Y, sigma_zeta, mu_beta, Sigma_
 #' @export
 #'
 run_mfvb_fpca <- function(time_obs, Y, L, K = NULL,
-                          list_hyper = NULL, tol = 1e-5, maxit = 1e4,
+                          list_hyper = NULL, tol = 1e-3, maxit = 1e4,
                           plot_elbo = FALSE,
                           n_g = 1000, time_g = NULL,
                           Psi_g = NULL, verbose = TRUE, seed = NULL) {
@@ -1836,26 +1852,15 @@ mfvb_gauss_mfpca <- function(maxit, N, p, L, K, C, Y, sigma_zeta,
 
       elbo_old <- elbo_res[iter - 1]
 
-      if (debug && elbo_new + eps < elbo_old)
+      diff_elbo <- elbo_new - elbo_old
+
+      if (debug && diff_elbo < -eps)
         stop("ELBO not increasing monotonically. Exit. ")
 
-      tol_1_satisfied <- (abs(elbo_new/elbo_old - 1) < tol)
+      converged <- (abs(diff_elbo) / N < tol) # adjust for the sample size (as the magnitude of the elbo changes with N: sum_i^N log(...))
 
-      if(iter > 2) {
+      # converged <- (abs(elbo_new/elbo_old - 1) < tol)
 
-        elbo_old <- elbo_res[iter - 2]
-        tol_2_satisfied <- (abs(elbo_new/elbo_old - 1) < tol)
-      } else {
-
-        tol_2_satisfied <- FALSE
-      }
-
-      tol_satisfied <- (tol_1_satisfied || tol_2_satisfied)
-
-      if(tol_satisfied) {
-
-        converged <- TRUE
-      }
     }
 
   }
@@ -2278,26 +2283,15 @@ mfvb_gauss_fpca <- function(maxit, N, L, K, C, Y, sigma_zeta, mu_beta,
 
       elbo_old <- elbo_res[iter - 1]
 
-      if (debug && elbo_new + eps < elbo_old)
+      diff_elbo <- elbo_new - elbo_old
+
+      if (debug && diff_elbo < -eps)
         stop("ELBO not increasing monotonically. Exit. ")
 
-      tol_1_satisfied <- (abs(elbo_new/elbo_old - 1) < tol)
+      converged <- (abs(diff_elbo) / N < tol) # adjust for the sample size (as the magnitude of the elbo changes with N: sum_i^N log(...))
 
-      if(iter > 2) {
+      # converged <- (abs(elbo_new/elbo_old - 1) < tol)
 
-        elbo_old <- elbo_res[iter - 2]
-        tol_2_satisfied <- (abs(elbo_new/elbo_old - 1) < tol)
-      } else {
-
-        tol_2_satisfied <- FALSE
-      }
-
-      tol_satisfied <- (tol_1_satisfied || tol_2_satisfied)
-
-      if(tol_satisfied) {
-
-        converged <- TRUE
-      }
     }
 
   }

@@ -20,7 +20,7 @@ n_int_knots <- rep(8, p)                      # number of interior knots
 K <- n_int_knots + 2                          # number of spline basis functions # if length(K) = 1, then will be set to K <- rep(K, p) within the run_* functions
 L <- 2                                        # number of FPCA basis functions
 
-tol  <- 1e-5                                  # convergence tolerance # 1e-3 is not enough!
+tol  <- 1e-3                                  # convergence tolerance
 maxit <- 250                                  # maximum number of iterations (artificially low for test purpose only)
 
 n_g <- 1000                                   # length of the plotting grid

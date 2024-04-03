@@ -13,7 +13,7 @@ run_vmp_fpca(
   list_hyper = NULL,
   n_g = 1000,
   time_g = NULL,
-  tol = 1e-05,
+  tol = 0.001,
   maxit = 10000,
   plot_elbo = FALSE,
   Psi_g = NULL,
