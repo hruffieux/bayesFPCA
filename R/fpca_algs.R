@@ -727,9 +727,7 @@ vmp_gauss_fpca <- function(n_vmp, N, L, K, C, Y, sigma_zeta, mu_beta,
 
       diff_elbo <- elbo_new - elbo_old
 
-      # converged <- (abs(diff_elbo) / N < tol) # adjust for the sample size (as the magnitude of the elbo changes with N: sum_i^N log(...))
-
-      tol_1_satisfied <- (abs(diff_elbo) / N < tol) # adjust for the sample size (as the magnitude of the elbo changes with N: sum_i^N log(...))# (abs(elbo_new/elbo_old - 1) < tol)
+      tol_1_satisfied <- (abs(diff_elbo) < tol)
 
       if(iter > 2) {
 
@@ -737,7 +735,7 @@ vmp_gauss_fpca <- function(n_vmp, N, L, K, C, Y, sigma_zeta, mu_beta,
 
         diff_elbo <- elbo_new - elbo_old
 
-        tol_2_satisfied <- (abs(diff_elbo) / N < tol) # adjust for the sample size (as the magnitude of the elbo changes with N: sum_i^N log(...)) # (abs(elbo_new/elbo_old - 1) < tol)
+        tol_2_satisfied <- (abs(diff_elbo) < tol)
       } else {
 
         tol_2_satisfied <- FALSE
@@ -1323,9 +1321,7 @@ vmp_gauss_mfpca <- function(n_vmp, N, p, L, K, C, Y, sigma_zeta, mu_beta, Sigma_
 
       diff_elbo <- elbo_new - elbo_old
 
-      # converged <- (abs(diff_elbo) / N < tol) # adjust for the sample size (as the magnitude of the elbo changes with N: sum_i^N log(...))
-
-      tol_1_satisfied <- (abs(diff_elbo) / N < tol) # adjust for the sample size (as the magnitude of the elbo changes with N: sum_i^N log(...)) # (abs(elbo_new/elbo_old - 1) < tol)
+      tol_1_satisfied <- (abs(diff_elbo) < tol)
 
       if(iter > 2) {
 
@@ -1333,7 +1329,7 @@ vmp_gauss_mfpca <- function(n_vmp, N, p, L, K, C, Y, sigma_zeta, mu_beta, Sigma_
 
         diff_elbo <- elbo_new - elbo_old
 
-        tol_2_satisfied <- (abs(diff_elbo) / N < tol) # adjust for the sample size (as the magnitude of the elbo changes with N: sum_i^N log(...)) # (abs(elbo_new/elbo_old - 1) < tol)
+        tol_2_satisfied <- (abs(diff_elbo) < tol)
       } else {
 
         tol_2_satisfied <- FALSE
@@ -1857,7 +1853,7 @@ mfvb_gauss_mfpca <- function(maxit, N, p, L, K, C, Y, sigma_zeta,
       if (debug && diff_elbo < -eps)
         stop("ELBO not increasing monotonically. Exit. ")
 
-      converged <- (abs(diff_elbo) / N < tol) # adjust for the sample size (as the magnitude of the elbo changes with N: sum_i^N log(...))
+      converged <- (abs(diff_elbo) < tol)
 
       # converged <- (abs(elbo_new/elbo_old - 1) < tol)
 
@@ -2291,7 +2287,7 @@ mfvb_gauss_fpca <- function(maxit, N, L, K, C, Y, sigma_zeta, mu_beta,
       if (debug && diff_elbo < -eps)
         stop("ELBO not increasing monotonically. Exit. ")
 
-      converged <- (abs(diff_elbo) / N < tol) # adjust for the sample size (as the magnitude of the elbo changes with N: sum_i^N log(...))
+      converged <- (abs(diff_elbo) < tol)
 
       # converged <- (abs(elbo_new/elbo_old - 1) < tol)
 
