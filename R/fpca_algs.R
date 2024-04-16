@@ -1917,6 +1917,9 @@ mfvb_gauss_mfpca <- function(maxit, N, p, L, K, C, Y, sigma_zeta,
 
     }
   }
+  colnames(Zeta_hat) <- paste0("FPC_", 1:L)
+  rownames(Zeta_hat) <- paste0("subj_", 1:N)
+
   Psi_hat <- lapply(split(Psi_hat, rep(1:p, each = n_g)), matrix, nrow = n_g, ncol = L)
 
   Cov_zeta_hat <- vector("list", length = N)
@@ -2346,6 +2349,8 @@ mfvb_gauss_fpca <- function(maxit, N, L, K, C, Y, sigma_zeta, mu_beta,
       }
     }
   }
+  colnames(Zeta_hat) <- paste0("FPC_", 1:L)
+  rownames(Zeta_hat) <- paste0("subj_", 1:N)
 
   scale_mat <- diag(norm_const)
   Cov_zeta_hat <- vector("list", length = N)
