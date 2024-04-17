@@ -13,6 +13,7 @@ run_mfvb_fpca(
   list_hyper = NULL,
   tol = 1e-05,
   maxit = 10000,
+  rel_crit = TRUE,
   plot_elbo = FALSE,
   n_g = 1000,
   time_g = NULL,
@@ -42,6 +43,10 @@ be used.}
 \item{tol}{Tolerance on the relative changes in the ELBO.}
 
 \item{maxit}{Maximum number of iterations allowed.}
+
+\item{rel_crit}{Boolean indicating whether the convergence criterion is
+based on the relative (TRUE) or absolute (FALSE) changes in
+the ELBO.}
 
 \item{plot_elbo}{Boolean indicating whether the values of the ELBO should be displayed during the run.}
 

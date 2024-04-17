@@ -15,6 +15,7 @@ run_vmp_fpca(
   time_g = NULL,
   tol = 1e-05,
   maxit = 10000,
+  rel_crit = TRUE,
   plot_elbo = FALSE,
   Psi_g = NULL,
   verbose = TRUE,
@@ -48,6 +49,10 @@ then \code{n_g} must be \code{NULL} as will be taken to be
 \item{tol}{Tolerance on the relative changes in the ELBO.}
 
 \item{maxit}{Maximum number of iterations allowed.}
+
+\item{rel_crit}{Boolean indicating whether the convergence criterion is
+based on the relative (TRUE) or absolute (FALSE) changes in
+the ELBO.}
 
 \item{plot_elbo}{Boolean indicating whether the values of the ELBO should be
 displayed during the run.}

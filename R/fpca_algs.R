@@ -21,6 +21,9 @@
 #'               \code{length(time_g)}.
 #' @param tol Tolerance on the relative changes in the ELBO.
 #' @param maxit Maximum number of iterations allowed.
+#' @param rel_crit Boolean indicating whether the convergence criterion is
+#'                 based on the relative (TRUE) or absolute (FALSE) changes in
+#'                 the ELBO.
 #' @param plot_elbo Boolean indicating whether the values of the ELBO should be
 #'                  displayed during the run.
 #' @param Psi_g Reference eigenfunctions (if available, e.g., in simulations)
@@ -50,8 +53,9 @@
 run_vmp_fpca <- function(time_obs, Y, L, K = NULL,
                          list_hyper = NULL,
                          n_g = 1000, time_g = NULL,
-                         tol = 1e-5, maxit = 1e4, plot_elbo = FALSE,
-                         Psi_g = NULL, verbose = TRUE, seed = NULL) {
+                         tol = 1e-5, maxit = 1e4, rel_crit = TRUE,
+                         plot_elbo = FALSE, Psi_g = NULL, verbose = TRUE,
+                         seed = NULL) {
 
   check_structure(seed, "vector", "numeric", 1, null_ok = TRUE)
   if (!is.null(seed)) {
@@ -91,6 +95,8 @@ run_vmp_fpca <- function(time_obs, Y, L, K = NULL,
 
   check_structure(maxit, "vector", "numeric", 1)
   check_natural(maxit)
+
+  check_structure(rel_crit, "vector", "logical", 1)
 
   check_structure(plot_elbo, "vector", "logical", 1)
 
@@ -147,8 +153,8 @@ run_vmp_fpca <- function(time_obs, Y, L, K = NULL,
 
   if (format_univ) {
 
-    eta_vec <- vmp_gauss_fpca(n_vmp = maxit, N, L, K, C, Y, sigma_zeta, mu_beta,
-                              Sigma_beta, A, tol, plot_elbo, verbose = verbose)
+    eta_vec <- vmp_gauss_fpca(N, L, K, C, Y, sigma_zeta, mu_beta,
+                              Sigma_beta, A, tol, maxit, rel_crit, plot_elbo, verbose = verbose)
 
     # Orthogonalisation:
 
@@ -181,8 +187,8 @@ run_vmp_fpca <- function(time_obs, Y, L, K = NULL,
 
     time_obs <- lapply(time_obs, function(time_obs_i) { names(time_obs_i) <- var_names; time_obs_i})
 
-    eta_vec <- vmp_gauss_mfpca(n_vmp = maxit, N, p, L, K, C, Y, sigma_zeta, mu_beta,
-                               Sigma_beta, A, tol,
+    eta_vec <- vmp_gauss_mfpca(N, p, L, K, C, Y, sigma_zeta, mu_beta,
+                               Sigma_beta, A, tol, maxit, rel_crit,
                                plot_elbo = plot_elbo, verbose = verbose)
 
     # Orthogonalisation:
@@ -198,8 +204,8 @@ run_vmp_fpca <- function(time_obs, Y, L, K = NULL,
 
 }
 
-vmp_gauss_fpca <- function(n_vmp, N, L, K, C, Y, sigma_zeta, mu_beta,
-                           Sigma_beta, A, tol, plot_elbo = FALSE, verbose = TRUE) {
+vmp_gauss_fpca <- function(N, L, K, C, Y, sigma_zeta, mu_beta,
+                           Sigma_beta, A, tol, maxit, rel_crit, plot_elbo = FALSE, verbose = TRUE) {
 
   # Establish necessary parameters:
 
@@ -328,7 +334,7 @@ vmp_gauss_fpca <- function(n_vmp, N, L, K, C, Y, sigma_zeta, mu_beta,
   converged <- FALSE
   iter <- 0
 
-  while((!converged) & (iter < n_vmp)) {
+  while((!converged) & (iter < maxit)) {
 
     iter <- iter + 1
 
@@ -717,21 +723,32 @@ vmp_gauss_fpca <- function(n_vmp, N, L, K, C, Y, sigma_zeta, mu_beta,
     elbo_res <- c(elbo_res, elbo_new)
 
     if(plot_elbo) {
-
       plot(1:iter, elbo_res, pch=16, cex=0.4, xlab="iterations", ylab="ELBO")
     }
 
     if(iter > 1) {
 
       elbo_old <- elbo_res[iter - 1]
-      tol_1_satisfied <- (abs(elbo_new/elbo_old - 1) < tol)
+
+      if (rel_crit) {
+        tol_1_satisfied <- (abs(elbo_new/elbo_old - 1) < tol)
+      } else {
+        diff_elbo <- elbo_new - elbo_old
+        tol_1_satisfied <- (abs(diff_elbo) < tol)
+      }
 
       if(iter > 2) {
 
         elbo_old <- elbo_res[iter - 2]
-        tol_2_satisfied <- (abs(elbo_new/elbo_old - 1) < tol)
-      } else {
 
+        if (rel_crit) {
+          tol_2_satisfied <- (abs(elbo_new/elbo_old - 1) < tol)
+        } else {
+          diff_elbo <- elbo_new - elbo_old
+          tol_2_satisfied <- (abs(diff_elbo) < tol)
+        }
+
+      } else {
         tol_2_satisfied <- FALSE
       }
 
@@ -750,8 +767,8 @@ vmp_gauss_fpca <- function(n_vmp, N, L, K, C, Y, sigma_zeta, mu_beta,
 }
 
 
-vmp_gauss_mfpca <- function(n_vmp, N, p, L, K, C, Y, sigma_zeta, mu_beta, Sigma_beta,
-                            A, tol, plot_elbo = FALSE, verbose = TRUE) {
+vmp_gauss_mfpca <- function(N, p, L, K, C, Y, sigma_zeta, mu_beta, Sigma_beta,
+                            A, tol, maxit, rel_crit, plot_elbo = FALSE, verbose = TRUE) {
 
   # Establish necessary parameters:
 
@@ -916,7 +933,7 @@ vmp_gauss_mfpca <- function(n_vmp, N, p, L, K, C, Y, sigma_zeta, mu_beta, Sigma_
   elbo_res <- NULL
   converged <- FALSE
   iter <- 0
-  while((!converged) & (iter < n_vmp)) {
+  while((!converged) & (iter < maxit)) {
 
     iter <- iter + 1
 
@@ -1305,21 +1322,32 @@ vmp_gauss_mfpca <- function(n_vmp, N, p, L, K, C, Y, sigma_zeta, mu_beta, Sigma_
     elbo_res <- c(elbo_res, elbo_new)
 
     if(plot_elbo) {
-
       plot(1:iter, elbo_res, pch=16, cex=0.4, xlab = "iterations", ylab = "ELBO")
     }
 
     if(iter > 1) {
 
       elbo_old <- elbo_res[iter - 1]
-      tol_1_satisfied <- (abs(elbo_new/elbo_old - 1) < tol)
+
+      if (rel_crit) {
+        tol_1_satisfied <- (abs(elbo_new/elbo_old - 1) < tol)
+      } else {
+        diff_elbo <- elbo_new - elbo_old
+        tol_1_satisfied <- (abs(diff_elbo) < tol)
+      }
 
       if(iter > 2) {
 
         elbo_old <- elbo_res[iter - 2]
-        tol_2_satisfied <- (abs(elbo_new/elbo_old - 1) < tol)
-      } else {
 
+        if (rel_crit) {
+          tol_2_satisfied <- (abs(elbo_new/elbo_old - 1) < tol)
+        } else {
+          diff_elbo <- elbo_new - elbo_old
+          tol_2_satisfied <- (abs(diff_elbo) < tol)
+        }
+
+      } else {
         tol_2_satisfied <- FALSE
       }
 
@@ -1362,6 +1390,9 @@ vmp_gauss_mfpca <- function(n_vmp, N, p, L, K, C, Y, sigma_zeta, mu_beta, Sigma_
 #'               \code{length(time_g)}.
 #' @param tol	Tolerance on the relative changes in the ELBO.
 #' @param maxit Maximum number of iterations allowed.
+#' @param rel_crit Boolean indicating whether the convergence criterion is
+#'                 based on the relative (TRUE) or absolute (FALSE) changes in
+#'                 the ELBO.
 #' @param plot_elbo	Boolean indicating whether the values of the ELBO should be displayed during the run.
 #' @param Psi_g Reference eigenfunctions (if available, e.g., in simulations)
 #'              used to flip the sign of the resulting scores and eigenfunctions.
@@ -1388,7 +1419,7 @@ vmp_gauss_mfpca <- function(n_vmp, N, p, L, K, C, Y, sigma_zeta, mu_beta, Sigma_
 #'
 run_mfvb_fpca <- function(time_obs, Y, L, K = NULL,
                           list_hyper = NULL, tol = 1e-5, maxit = 1e4,
-                          plot_elbo = FALSE,
+                          rel_crit = TRUE, plot_elbo = FALSE,
                           n_g = 1000, time_g = NULL,
                           Psi_g = NULL, verbose = TRUE, seed = NULL) {
 
@@ -1431,6 +1462,8 @@ run_mfvb_fpca <- function(time_obs, Y, L, K = NULL,
   check_structure(maxit, "vector", "numeric", 1)
   check_natural(maxit)
 
+  check_structure(rel_crit, "vector", "logical", 1)
+
   check_structure(plot_elbo, "vector", "logical", 1)
 
   check_structure(verbose, "vector", "logical", 1)
@@ -1448,9 +1481,9 @@ run_mfvb_fpca <- function(time_obs, Y, L, K = NULL,
   names(time_obs) <- subj_names
 
   format_univ <- ifelse(is.list(time_obs[[1]]), FALSE, TRUE)  # If TRUE, then p = 1, and vmp_gauss_fpca is used.
-                                                              # Note that if FALSE and p = 1, vmp_gauss_mfpca will be used,
-                                                              # i.e., special case of multivariate algorithm for p=1 gives the univariate model
-                                                              # (produces inference equivalent to vmp_gauss_fpca, the difference is the format of the input)
+  # Note that if FALSE and p = 1, vmp_gauss_mfpca will be used,
+  # i.e., special case of multivariate algorithm for p=1 gives the univariate model
+  # (produces inference equivalent to vmp_gauss_fpca, the difference is the format of the input)
 
   if (!format_univ) {
     p <- length(time_obs[[1]])
@@ -1488,8 +1521,8 @@ run_mfvb_fpca <- function(time_obs, Y, L, K = NULL,
   if (format_univ) {
 
     # directly includes the orthnogonalisation step, unlike the vmp_gauss_mfpca function
-    mfvb_gauss_fpca(maxit, N, L, K, C, Y, sigma_zeta, mu_beta, Sigma_beta, A,
-                    tol, plot_elbo, time_g, C_g, Psi_g, verbose)
+    mfvb_gauss_fpca(N, L, K, C, Y, sigma_zeta, mu_beta, Sigma_beta, A,
+                    tol, maxit, rel_crit, plot_elbo, time_g, C_g, Psi_g, verbose)
 
   } else {
 
@@ -1512,16 +1545,16 @@ run_mfvb_fpca <- function(time_obs, Y, L, K = NULL,
     time_obs <- lapply(time_obs, function(time_obs_i) { names(time_obs_i) <- var_names; time_obs_i}) # we should probably return this as well.
 
     # directly includes the orthogonalisation step, unlike the vmp_gauss_mfpca function
-    mfvb_gauss_mfpca(maxit, N, p, L, K, C, Y, sigma_zeta, Sigma_beta, A,
-                     tol, plot_elbo, var_names, time_g, C_g, Psi_g, verbose)
+    mfvb_gauss_mfpca(N, p, L, K, C, Y, sigma_zeta, Sigma_beta, A,
+                     tol, maxit, rel_crit, plot_elbo, var_names, time_g, C_g, Psi_g, verbose)
 
   }
 
 }
 
 
-mfvb_gauss_mfpca <- function(maxit, N, p, L, K, C, Y, sigma_zeta,
-                             Sigma_beta, A, tol, plot_elbo, var_names, time_g, C_g,
+mfvb_gauss_mfpca <- function(N, p, L, K, C, Y, sigma_zeta,
+                             Sigma_beta, A, tol, maxit, rel_crit, plot_elbo, var_names, time_g, C_g,
                              Psi_g, verbose, eps = .Machine$double.eps^0.5,
                              debug = TRUE) {
 
@@ -1839,7 +1872,12 @@ mfvb_gauss_mfpca <- function(maxit, N, p, L, K, C, Y, sigma_zeta,
       if (debug && elbo_new + eps < elbo_old)
         stop("ELBO not increasing monotonically. Exit. ")
 
-      converged <- (abs(elbo_new/elbo_old - 1) < tol)
+      if (rel_crit) {
+        converged <- (abs(elbo_new/elbo_old - 1) < tol)
+      } else {
+        diff_elbo <- elbo_new - elbo_old
+        converged <- (abs(diff_elbo) < tol)
+      }
 
     }
 
@@ -1980,8 +2018,8 @@ mfvb_gauss_mfpca <- function(maxit, N, p, L, K, C, Y, sigma_zeta,
 
 
 
-mfvb_gauss_fpca <- function(maxit, N, L, K, C, Y, sigma_zeta, mu_beta,
-                            Sigma_beta, A, tol, plot_elbo, time_g, C_g,
+mfvb_gauss_fpca <- function(N, L, K, C, Y, sigma_zeta, mu_beta,
+                            Sigma_beta, A, tol, maxit, rel_crit, plot_elbo, time_g, C_g,
                             Psi_g, verbose, eps = .Machine$double.eps^0.5,
                             debug = TRUE) {
 
@@ -2272,7 +2310,12 @@ mfvb_gauss_fpca <- function(maxit, N, L, K, C, Y, sigma_zeta, mu_beta,
       if (debug && elbo_new + eps < elbo_old)
         stop("ELBO not increasing monotonically. Exit. ")
 
-      converged <- (abs(elbo_new/elbo_old - 1) < tol)
+      if (rel_crit) {
+        converged <- (abs(elbo_new/elbo_old - 1) < tol)
+      } else {
+        diff_elbo <- elbo_new - elbo_old
+        converged <- (abs(diff_elbo) < tol)
+      }
 
     }
 
