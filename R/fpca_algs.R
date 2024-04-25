@@ -1883,6 +1883,8 @@ mfvb_gauss_mfpca <- function(N, p, L, K, C, Y, sigma_zeta,
 
   }
 
+  elbo <- elbo_new
+
   # Orthogonalisation:
 
   E_q_Zeta <- Reduce(rbind, E_q_zeta)
@@ -2011,8 +2013,8 @@ mfvb_gauss_mfpca <- function(N, p, L, K, C, Y, sigma_zeta,
   create_named_list(time_g, K,
                     Y_summary, Y_hat, Y_low, Y_upp,
                     gbl_hat, mu_hat, list_Psi_hat,
-                    Zeta_hat, Cov_zeta_hat, list_zeta_ellipse)
-
+                    Zeta_hat, Cov_zeta_hat, list_zeta_ellipse,
+                    elbo, diff_elbo)
 
 }
 
@@ -2299,7 +2301,6 @@ mfvb_gauss_fpca <- function(N, L, K, C, Y, sigma_zeta, mu_beta,
     elbo_res <- c(elbo_res, elbo_new)
 
     if(plot_elbo) {
-
       plot(1:iter, elbo_res, pch=16, cex=0.4, xlab="iterations", ylab="ELBO")
     }
 
@@ -2320,6 +2321,8 @@ mfvb_gauss_fpca <- function(N, L, K, C, Y, sigma_zeta, mu_beta,
     }
 
   }
+
+  elbo <- elbo_new
 
   # Orthogonal decomposition:
 
@@ -2427,7 +2430,8 @@ mfvb_gauss_fpca <- function(N, L, K, C, Y, sigma_zeta, mu_beta,
   create_named_list(time_g, K,
                     Y_summary, Y_hat, Y_low, Y_upp,
                     gbl_hat, mu_hat, list_Psi_hat,
-                    Zeta_hat, Cov_zeta_hat, list_zeta_ellipse)
+                    Zeta_hat, Cov_zeta_hat, list_zeta_ellipse,
+                    elbo, diff_elbo)
 
 }
 
