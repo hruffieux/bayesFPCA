@@ -175,7 +175,12 @@ get_Zeta <- function(N, L, vec_sd_zeta = NULL) {
 
   Zeta <- matrix(NA, N, L)
   for(i in 1:N) {
-    Zeta[i,] <- mvrnorm(1, rep(0, L), diag(vec_sd_zeta^2))
+    if (length(vec_sd_zeta) == 1) {
+      S <- vec_sd_zeta^2
+    } else {
+      S <- diag(vec_sd_zeta^2)
+    }
+    Zeta[i,] <- mvrnorm(1, rep(0, L), S)
   }
 
   Zeta
@@ -216,8 +221,9 @@ get_Y <- function(N, n, p, time_obs, Zeta, vec_sd_eps, mu_func, Psi_func) {
     for(j in 1:p) {
 
       resid_vec <- rnorm(n[i, j], 0, vec_sd_eps[j])
+      L <- ncol(Zeta)
       mean_vec <- mu_func(time_obs[[i]][[j]], j = j) +
-        Psi_func(time_obs[[i]][[j]], j = j, p = p) %*% Zeta[i, ]
+        Psi_func(time_obs[[i]][[j]], j = j, p = p)[,1:L, drop = F] %*% Zeta[i,]
       Y[[i]][[j]] <- as.vector(mean_vec + resid_vec)
     }
   }

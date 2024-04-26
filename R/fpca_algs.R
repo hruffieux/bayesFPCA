@@ -69,6 +69,9 @@ run_vmp_fpca <- function(time_obs, Y, L, K = NULL,
 
   check_structure(L, "vector", "numeric", 1)
   check_natural(L)
+  if (L < 2) {
+    stop("VMP algorithm implemented for L > 1 only. Please use the mean-field version (run_mfvb_fpca) instead if L = 1.")
+  }
 
   if (is.null(list_hyper)) {
     list_hyper <- set_hyper()
@@ -1895,21 +1898,29 @@ mfvb_gauss_mfpca <- function(N, p, L, K, C, Y, sigma_zeta,
     E_q_V <- matrix(E_q_nu[[j]], K[j] + 2, L + 1)
     gbl_post <- C_g[[j]] %*% E_q_V
     E_q_mu[[j]] <- gbl_post[, 1]
-    E_q_Psi[[j]] <- gbl_post[, 1:L + 1]
+    E_q_Psi[[j]] <- gbl_post[, 1:L + 1, drop = F]
   }
   E_q_mu <- Reduce(c, E_q_mu)
   E_q_Psi <- Reduce(rbind, E_q_Psi)
 
   svd_Psi <- svd(E_q_Psi)
   U_psi <- svd_Psi$u
-  D_psi <- diag(svd_Psi$d)
+  if (length(svd_Psi$d) == 1) {
+    D_psi <- as.matrix(svd_Psi$d)
+  } else {
+    D_psi <- diag(svd_Psi$d)
+  }
   V_psi <- svd_Psi$v
 
   zeta_rotn <- t(E_q_Zeta %*% V_psi %*% D_psi)
   C_zeta <- cov(t(zeta_rotn))
   eigen_C <- eigen(C_zeta)
   Q <- eigen_C$vectors
-  Lambda <- diag(eigen_C$values + 1e-10)
+  if (length(eigen_C$values) == 1) {
+    Lambda <- as.matrix(eigen_C$values + 1e-10)
+  } else {
+    Lambda <- diag(eigen_C$values + 1e-10)
+  }
 
   Psi_tilde <- U_psi %*% Q %*% sqrt(Lambda)
   Zeta_tilde <- crossprod(zeta_rotn, Q %*% solve(sqrt(Lambda)))
@@ -1955,22 +1966,26 @@ mfvb_gauss_mfpca <- function(N, p, L, K, C, Y, sigma_zeta,
 
   # Store the results:
 
-  zeta_summary <- list_zeta_ellipse <- vector("list", length=N)
+  if (L > 1) { # ellipse for the first two components
+    zeta_summary <- list_zeta_ellipse <- vector("list", length=N)
 
-  for(i in 1:N) {
+    for(i in 1:N) {
 
-    zeta_mean <- Zeta_hat[i,][1:2]
+      zeta_mean <- Zeta_hat[i,][1:2]
 
-    zeta_ellipse <- ellipse(
-      Cov_zeta_hat[[i]][1:2, 1:2],
-      centre=zeta_mean,
-      level=0.95
-    )
+      zeta_ellipse <- ellipse(
+        Cov_zeta_hat[[i]][1:2, 1:2],
+        centre=zeta_mean,
+        level=0.95
+      )
 
-    list_zeta_ellipse[[i]] <- zeta_ellipse
+      list_zeta_ellipse[[i]] <- zeta_ellipse
 
-    zeta_summary[[i]] <- list(zeta_mean, zeta_ellipse)
-    names(zeta_summary[[i]]) <- c("mean", "credible boundary")
+      zeta_summary[[i]] <- list(zeta_mean, zeta_ellipse)
+      names(zeta_summary[[i]]) <- c("mean", "credible boundary")
+    }
+  } else {
+    list_zeta_ellipse <- NULL
   }
 
   gbl_hat <- vector("list", length = L + 1)
@@ -2339,15 +2354,26 @@ mfvb_gauss_fpca <- function(N, L, K, C, Y, sigma_zeta, mu_beta,
 
   M_q_Psi_svd <- svd(M_q_Psi)
   U_orth <- M_q_Psi_svd$u
-  D_diag <- diag(M_q_Psi_svd$d)
+  if (length(M_q_Psi_svd$d) == 1) {
+    D_diag <- as.matrix(M_q_Psi_svd$d)
+  } else {
+    D_diag <- diag(M_q_Psi_svd$d)
+  }
   V_orth <- M_q_Psi_svd$v
 
   M_q_Zeta_rotn <- M_q_Zeta%*%V_orth%*%D_diag
 
   eigen_M_q_Zeta_shift <- eigen(cov(M_q_Zeta_rotn))
   Q <- eigen_M_q_Zeta_shift$vectors
-  Lambda <- diag(eigen_M_q_Zeta_shift$values + 1e-10)
-  Lambda_inv <- diag(1/(eigen_M_q_Zeta_shift$values + 1e-10))
+
+  if (length(eigen_M_q_Zeta_shift$values) == 1) {
+    Lambda <- as.matrix(eigen_M_q_Zeta_shift$values + 1e-10)
+    Lambda_inv <- as.matrix(1/(eigen_M_q_Zeta_shift$values + 1e-10))
+  } else {
+    Lambda <- diag(eigen_M_q_Zeta_shift$values + 1e-10)
+    Lambda_inv <- diag(1/(eigen_M_q_Zeta_shift$values + 1e-10))
+  }
+
   S <- Q%*%sqrt(Lambda)
   S_inv <- tcrossprod(sqrt(Lambda_inv), Q)
 
@@ -2387,22 +2413,27 @@ mfvb_gauss_fpca <- function(N, L, K, C, Y, sigma_zeta, mu_beta,
     Cov_zeta_hat[[i]] <- tcrossprod(scale_mat %*% Cov_zeta_dot_hat, scale_mat)
   }
 
-  zeta_summary <- list_zeta_ellipse <-  vector("list", length=N)
-  for(i in 1:N) {
+  if (L > 1) { # ellipses for the first two components
+    zeta_summary <- list_zeta_ellipse <-  vector("list", length=N)
+    for(i in 1:N) {
 
-    zeta_mean <- Zeta_hat[i,][1:2]
+      zeta_mean <- Zeta_hat[i,][1:2]
 
-    zeta_ellipse <- ellipse(
-      Cov_zeta_hat[[i]][1:2, 1:2],
-      centre = zeta_mean,
-      level = 0.95
-    )
+      zeta_ellipse <- ellipse(
+        Cov_zeta_hat[[i]][1:2, 1:2],
+        centre = zeta_mean,
+        level = 0.95
+      )
 
-    list_zeta_ellipse[[i]] <- zeta_ellipse
+      list_zeta_ellipse[[i]] <- zeta_ellipse
 
-    zeta_summary[[i]] <- list(zeta_mean, zeta_ellipse)
-    names(zeta_summary[[i]]) <- c("mean", "credible boundary")
+      zeta_summary[[i]] <- list(zeta_mean, zeta_ellipse)
+      names(zeta_summary[[i]]) <- c("mean", "credible boundary")
+    }
+  } else {
+    list_zeta_ellipse <- NULL
   }
+
 
   gbl_hat <- vector("list", length = L + 1)
   gbl_hat[[1]] <- mu_hat <- mu_q_mu

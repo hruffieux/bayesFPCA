@@ -56,6 +56,10 @@ Psi_v2_func <- function(time_obs, j, p) {
   return(ans)
 }
 
+if (L > 2) {
+  stop("Data generation not implemented for L > 2 with the above Psi functions.")
+}
+
 mfpca_data <- generate_fpca_data(N, p, n, L, n_g, sigma_eps, mu_v2_func,
                                  Psi_v2_func, vec_sd_zeta = sigma_zeta_vec)
 
@@ -86,5 +90,6 @@ display_fit_list(1:p, N_sample, time_obs, time_g, Y, Y_hat, Y_low, Y_upp)
 
 display_eigenfunctions(L, time_g, mu_g, Psi_g, mu_hat, list_Psi_hat)
 
-display_scores(N_sample, Zeta, Zeta_hat, list_zeta_ellipse)
-
+if (L > 1) { # scores for the first two components
+  display_scores(N_sample, Zeta, Zeta_hat, list_zeta_ellipse)
+}

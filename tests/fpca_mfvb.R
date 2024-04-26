@@ -118,5 +118,6 @@ display_fit(N_sample, time_obs, time_g, Y, Y_hat, Y_low, Y_upp)
 
 display_eigenfunctions(L, time_g, mu_g, Psi_g, mu_hat, Psi_hat)
 
-display_scores(N_sample, Zeta, Zeta_hat, list_zeta_ellipse)
-
+if (L > 1) { # displays the scores for the first two components
+  display_scores(N_sample, Zeta, Zeta_hat, list_zeta_ellipse)
+}
