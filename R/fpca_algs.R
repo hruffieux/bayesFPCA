@@ -145,6 +145,9 @@ run_vmp_fpca <- function(time_obs, Y, L, K = NULL,
     check_structure(K, "vector", "numeric", 1)
   }
   check_natural(K)
+  if (any(K < 2)) {
+    stop("The entries of K must be > 1.")
+  }
 
   grid_obj <- get_grid_objects(time_obs, K, n_g = n_g, time_g = time_g,
                                format_univ = format_univ)
@@ -1512,6 +1515,9 @@ run_mfvb_fpca <- function(time_obs, Y, L, K = NULL,
     check_structure(K, "vector", "numeric", 1)
   }
   check_natural(K)
+  if (any(K < 2)) {
+    stop("The entries of K must be > 1.")
+  }
 
   grid_obj <- get_grid_objects(time_obs, K, n_g = n_g, time_g = time_g,
                                format_univ = format_univ)
@@ -1958,7 +1964,12 @@ mfvb_gauss_mfpca <- function(N, p, L, K, C, Y, sigma_zeta,
   Psi_hat <- lapply(split(Psi_hat, rep(1:p, each = n_g)), matrix, nrow = n_g, ncol = L)
 
   Cov_zeta_hat <- vector("list", length = N)
-  rotn_mat <- V_psi %*% D_psi %*% Q %*% solve(sqrt(Lambda)) %*% diag(norm_vec)
+  if (length(norm_vec) == 1) {
+    D_norm_vec <- as.matrix(norm_vec)
+  } else {
+    D_norm_vec <- diag(norm_vec)
+  }
+  rotn_mat <- V_psi %*% D_psi %*% Q %*% solve(sqrt(Lambda)) %*% D_norm_vec
   for(i in 1:N) {
 
     Cov_zeta_hat[[i]] <- crossprod(rotn_mat, Cov_q_zeta[[i]] %*% rotn_mat)
@@ -2404,7 +2415,12 @@ mfvb_gauss_fpca <- function(N, L, K, C, Y, sigma_zeta, mu_beta,
   colnames(Zeta_hat) <- paste0("FPC_", 1:L)
   rownames(Zeta_hat) <- paste0("subj_", 1:N)
 
-  scale_mat <- diag(norm_const)
+  if (length(norm_const) == 1) {
+    scale_mat <- as.matrix(norm_const)
+  } else {
+    scale_mat <- diag(norm_const)
+  }
+
   Cov_zeta_hat <- vector("list", length = N)
   for(i in 1:N) {
 
