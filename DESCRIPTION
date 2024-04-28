@@ -22,7 +22,8 @@ Imports:
     MASS,
     matrixcalc,
     pracma,
-    splines
+    splines,
+    parallel
 Suggests: 
     rstan
 RoxygenNote: 7.2.3

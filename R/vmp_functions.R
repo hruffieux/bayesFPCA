@@ -3980,6 +3980,7 @@ fpc_orthgn <- function(subj_names, L, K, eta_in, time_g, C_g, Psi_g = NULL) {
   # 3. p(zeta) -> zeta
   # 4. p(Y|nu,zeta,sigsq_eps) -> zeta
 
+  elbo <- eta_in[[5]]
   N <- ncol(eta_in[[3]])
   l_eta_nu <- length(eta_in[[1]])
   d <- (sqrt(4*l_eta_nu + 1) - 1)/2
@@ -4115,12 +4116,15 @@ fpc_orthgn <- function(subj_names, L, K, eta_in, time_g, C_g, Psi_g = NULL) {
   mu_hat <- mu_q_mu
   list_Psi_hat <- Psi_hat
 
+  eigenvalues <- apply(Zeta_hat, 2, function(vv) var(vv))
+  cumulated_pve <- cumsum(eigenvalues / sum(eigenvalues) * 100)
+
   # Establish the outputs:
 
   outputs <- create_named_list(time_g, K, Y_hat, Y_low, Y_upp,
                                mu_hat, list_Psi_hat,
                                Zeta_hat, Cov_zeta_hat,
-                               list_zeta_ellipse)
+                               list_zeta_ellipse, elbo, cumulated_pve)
 }
 
 mfpc_orthgn <- function(subj_names, var_names, Y, L, K, eta_in,
@@ -4132,6 +4136,7 @@ mfpc_orthgn <- function(subj_names, var_names, Y, L, K, eta_in,
   # 3. p(zeta) -> zeta
   # 4. p(Y|nu,zeta,sigsq_eps) -> zeta
 
+  elbo <- eta_in[[5]]
   N <- ncol(eta_in[[3]])
   p <- length(eta_in[[1]])
   l_eta_nu <- length(eta_in[[1]][[1]])
@@ -4274,12 +4279,15 @@ mfpc_orthgn <- function(subj_names, var_names, Y, L, K, eta_in,
   rownames(Zeta_hat) <- names(list_zeta_ellipse) <- names(Y_hat) <- names(Y_low) <- names(Y_upp) <- subj_names
   colnames(Zeta_hat) <- paste0("FPC_", 1:L)
 
+  eigenvalues <- apply(Zeta_hat, 2, function(vv) var(vv))
+  cumulated_pve <- cumsum(eigenvalues / sum(eigenvalues) * 100)
+
   # Establish the outputs:
 
   outputs <- create_named_list(time_g, K, Y_hat, Y_low, Y_upp,
                                mu_hat, list_Psi_hat,
                                Zeta_hat, Cov_zeta_hat,
-                               list_zeta_ellipse)
+                               list_zeta_ellipse, elbo, cumulated_pve)
 
   return(outputs)
 }

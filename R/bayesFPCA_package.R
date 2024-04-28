@@ -16,6 +16,6 @@
 #' @importFrom matrixcalc duplication.matrix
 #' @importFrom pracma blkdiag
 #' @importFrom splines spline.des
-#' @importFrom stats cov dnorm median pnorm qnorm quantile rbinom rnorm runif setNames
+#' @importFrom stats var cov dnorm median pnorm qnorm quantile rbinom rnorm runif setNames
 #' @importFrom utils read.table
 NULL

@@ -115,6 +115,10 @@ display_eigenfunctions <- function(L, time_g, mu_g, Psi_g,
     Psi_g <- list(Psi_g)
     mu_hat <- matrix(mu_hat)
     list_Psi_hat <- lapply(split(list_Psi_hat, col(list_Psi_hat)), matrix)
+    if (!is.null(mu_hat_add)) {
+      mu_hat_add <- matrix(mu_hat_add)
+      list_Psi_hat_add <- lapply(split(list_Psi_hat_add, col(list_Psi_hat_add)), matrix)
+    }
   }
 
   for (j in p_sample) {

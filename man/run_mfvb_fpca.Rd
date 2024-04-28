@@ -79,8 +79,9 @@ Ruppert, D. (2002). Selecting the number of knots for penalized splines.
 Journal of computational and graphical statistics, 11(4), 735-757.
 }
 \seealso{
-\code{\link{run_vmp_fpca}}, \code{\link{set_hyper}},
-          \code{\link{flip_sign}}, \code{\link{display_fit}},
+\code{\link{run_mfvb_fpca_model_choice}},
+          \code{\link{run_vmp_fpca}}, \code{\link{run_vmp_fpca_model_choice}},
+          \code{\link{set_hyper}}, \code{\link{flip_sign}}, \code{\link{display_fit}},
           \code{\link{display_fit_list}}, \code{\link{display_scores}},
           \code{\link{display_eigenfunctions}}
 }

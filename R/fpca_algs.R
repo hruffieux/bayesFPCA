@@ -1,4 +1,200 @@
 #' Variational Message Passing (VMP) inference for univariate or multivariate
+#' functional principal component analysis with model choice procedure for
+#' selection of the number of spline functions K.
+#'
+#' This function is used to perform FPCA or mFPCA using a VMP algorithm.
+#'
+#' @param time_obs List of vectors or list of lists of vectors containing time
+#'                 of observations for univariate or multivariate curves,
+#'                 respectively.
+#' @param Y List of vectors (for univariate curves) or list of lists of vectors
+#'          (for multivariate curves) with the functional data.
+#' @param L Number of eigenfunctions (or latent dimensions). Default L = 10.
+#' @param K_min Minimum number of O'Sulivan spline functions K, which is modelled
+#'              using an uniform prior distribution on the interval
+#'.             [K_min, K_max]. Default K_min = 5.
+#' @param K_max Maximum number of O'Sulivan spline functions K, which is modelled
+#'              using an uniform prior distribution on the interval
+#'.             [K_min, K_max]. Default K_max = 20.
+#' @param list_hyper Hyperparameter settings constructed using the function
+#'         \code{\link{set_hyper}}. If \code{NULL} default hyperparameters will
+#'         be used.
+#' @param n_g Desired size for dense grid.
+#' @param time_g Dense grid provided as a vector of size \code{n_g}. If provided,
+#'               then \code{n_g} must be \code{NULL} as will be taken to be
+#'               \code{length(time_g)}.
+#' @param tol Tolerance on the relative changes in the ELBO.
+#' @param maxit Maximum number of iterations allowed.
+#' @param rel_crit Boolean indicating whether the convergence criterion is
+#'                 based on the relative (TRUE) or absolute (FALSE) changes in
+#'                 the ELBO.
+#' @param Psi_g Reference eigenfunctions (if available, e.g., in simulations)
+#'              used to flip the sign of the resulting scores and eigenfunctions.
+#' @param verbose Boolean indicating whether messages should be printed during
+#'                the run.
+#' @param seed User-specified seed for reproducibilty.
+#' @param n_cpus Number of cores to be used for parallel runs. Set to 1 for serial run.
+#'
+#' @return An object containing the resulting VMP estimates.
+#'
+#' @seealso  \code{\link{run_vmp_fpca}},
+#'           \code{\link{run_mfvb_fpca}}, \code{\link{run_mfvb_fpca_model_choice}},
+#'           \code{\link{set_hyper}}, \code{\link{flip_sign}}, \code{\link{display_fit}},
+#'           \code{\link{display_fit_list}}, \code{\link{display_scores}},
+#'           \code{\link{display_eigenfunctions}}
+#'
+#' @references
+#'
+#' Nolan, T. H., Goldsmith, J., & Ruppert, D. (2023). Bayesian Functional
+#' Principal Components Analysis via Variational Message Passing with Multilevel
+#' Extensions. Bayesian Analysis, 1(1), 1-27.
+#'
+#' Ruppert, D. (2002). Selecting the number of knots for penalized splines.
+#' Journal of computational and graphical statistics, 11(4), 735-757.
+#'
+#' @export
+#'
+run_vmp_fpca_model_choice <- function(time_obs, Y, L = 10, K_min = 5, K_max = 20,
+                                      list_hyper = NULL,
+                                      n_g = 1000, time_g = NULL,
+                                      tol = 1e-5, maxit = 1e4, rel_crit = TRUE,
+                                      Psi_g = NULL, verbose = TRUE,
+                                      seed = NULL,
+                                      n_cpus = 1) {
+
+  check_structure(K_min, "vector", "numeric", 1)
+  check_natural(K_min)
+  check_positive(K_min)
+
+  check_structure(K_max, "vector", "numeric", 1)
+  check_natural(K_max)
+
+  stopifnot(K_min < K_max)
+
+  check_structure(n_cpus, "vector", "numeric", 1)
+  check_natural(n_cpus)
+  check_positive(n_cpus)
+
+  vec_K <- K_min:K_max
+
+  out <- parallel::mclapply(vec_K, function(K) {
+
+    run_vmp_fpca(time_obs = time_obs, Y = Y, L = L, K = K,
+                             list_hyper = list_hyper,
+                             n_g = n_g, time_g = time_g,
+                             tol = tol, maxit = maxit, rel_crit = rel_crit,
+                             plot_elbo = FALSE, Psi_g = Psi_g, verbose = verbose,
+                             seed = seed)
+    # unnorm_p_M_given_y <- mfvb_res$elbo - log(length(vec_K)) # Unif(vec_K) constant wrt to K, we can ignore it, just maximise the elbo
+
+  }, mc.cores = n_cpus)
+
+  vec_elbo <- sapply(out, "[[", "elbo")
+  # all_p_M_given_y <- all_unnorm_p_M_given_y / sum(all_unnorm_p_M_given_y) # not needed as prior doesn't change with K (Uniform), so we can directly take the run with largest elbo.
+
+  out[[which.max(vec_elbo)]]
+
+}
+
+
+#' Mean-field variational Bayes (MFVB) inference for univariate or multivariate
+#' functional principal component analysis with model choice procedure for
+#' selection of the number of spline functions K.
+#'
+#' This function is used to perform FPCA or mFPCA using a MFVB algorithm.
+#'
+#' @param time_obs  List of vectors or list of lists of vectors containing time
+#'                  of observations for univariate or multivariate curves,
+#'                  respectively.
+#' @param Y List of vectors (for univariate curves) or list of lists of vectors
+#'          (for multivariate curves) with the functional data.
+#' @param L Number of eigenfunctions (or latent dimensions). Default L = 10.
+#' @param K_min Minimum number of O'Sulivan spline functions K, which is modelled
+#'              using an uniform prior distribution on the interval
+#'.             [K_min, K_max]. Default K_min = 5.
+#' @param K_max Maximum number of O'Sulivan spline functions K, which is modelled
+#'              using an uniform prior distribution on the interval
+#'.             [K_min, K_max]. Default K_max = 20.
+#' @param list_hyper Hyperparameter settings constructed using the function
+#'         \code{\link{set_hyper}}. If \code{NULL} default hyperparameters will
+#'         be used.
+#' @param n_g Desired size for dense grid.
+#' @param time_g Dense grid provided as a vector of size \code{n_g}. If provided,
+#'               then \code{n_g} must be \code{NULL} as will be taken to be
+#'               \code{length(time_g)}.
+#' @param tol	Tolerance on the relative changes in the ELBO.
+#' @param maxit Maximum number of iterations allowed.
+#' @param rel_crit Boolean indicating whether the convergence criterion is
+#'                 based on the relative (TRUE) or absolute (FALSE) changes in
+#'                 the ELBO.
+#' @param Psi_g Reference eigenfunctions (if available, e.g., in simulations)
+#'              used to flip the sign of the resulting scores and eigenfunctions.
+#' @param verbose Boolean indicating whether messages should be printed during
+#'                the run.
+#' @param seed User-specified seed for reproducibilty.
+#' @param n_cpus Number of cores to be used for parallel runs. Set to 1 for serial run.
+#'
+#' @return An object containing the resulting MFVB estimates.
+#'
+#' @seealso  \code{\link{run_mfvb_fpca}},
+#'           \code{\link{run_vmp_fpca}}, \code{\link{run_vmp_fpca_model_choice}},
+#'           \code{\link{set_hyper}}, \code{\link{flip_sign}}, \code{\link{display_fit}},
+#'           \code{\link{display_fit_list}}, \code{\link{display_scores}},
+#'           \code{\link{display_eigenfunctions}}
+#'
+#' @references
+#' Nolan, T. H., Goldsmith, J., & Ruppert, D. (2023). Bayesian Functional
+#' Principal Components Analysis via Variational Message Passing with Multilevel
+#' Extensions. Bayesian Analysis, 1(1), 1-27.
+#'
+#' Ruppert, D. (2002). Selecting the number of knots for penalized splines.
+#' Journal of computational and graphical statistics, 11(4), 735-757.
+#'
+#' @export
+#'
+run_mfvb_fpca_model_choice <- function(time_obs, Y, L = 10, K_min = 5, K_max = 20,
+                                      list_hyper = NULL, tol = 1e-5, maxit = 1e4,
+                                      rel_crit = TRUE,
+                                      n_g = 1000, time_g = NULL,
+                                      Psi_g = NULL, verbose = TRUE, seed = NULL,
+                                      n_cpus = 1) {
+
+  check_structure(K_min, "vector", "numeric", 1)
+  check_natural(K_min)
+  check_positive(K_min)
+
+  check_structure(K_max, "vector", "numeric", 1)
+  check_natural(K_max)
+
+  stopifnot(K_min < K_max)
+
+  check_structure(n_cpus, "vector", "numeric", 1)
+  check_natural(n_cpus)
+  check_positive(n_cpus)
+
+  vec_K <- K_min:K_max
+
+  out <- parallel::mclapply(vec_K, function(K) {
+
+    run_mfvb_fpca(time_obs = time_obs, Y = Y, L = L, K = K,
+                  list_hyper = list_hyper, tol = tol, maxit = maxit,
+                  rel_crit = rel_crit, plot_elbo = FALSE,
+                  n_g = n_g, time_g = time_g,
+                  Psi_g = Psi_g, verbose = verbose, seed = seed)
+
+    # unnorm_p_M_given_y <- mfvb_res$elbo - log(length(vec_K)) # Unif(vec_K) constant wrt to K, we can ignore it, just maximise
+
+  }, mc.cores = n_cpus)
+
+  vec_elbo <- sapply(out, "[[", "elbo")
+  # all_p_M_given_y <- all_unnorm_p_M_given_y / sum(all_unnorm_p_M_given_y) # not needed as prior doesn't change with K (Uniform), so we can directly take the run with largest elbo.
+
+  out[[which.max(vec_elbo)]]
+
+}
+
+
+#' Variational Message Passing (VMP) inference for univariate or multivariate
 #' functional principal component analysis.
 #'
 #' This function is used to perform FPCA or mFPCA using a VMP algorithm.
@@ -34,8 +230,9 @@
 #'
 #' @return An object containing the resulting VMP estimates.
 #'
-#' @seealso  \code{\link{run_mfvb_fpca}}, \code{\link{set_hyper}},
-#'           \code{\link{flip_sign}}, \code{\link{display_fit}},
+#' @seealso  \code{\link{run_vmp_fpca_model_choice}},
+#'           \code{\link{run_mfvb_fpca}}, \code{\link{run_mfvb_fpca_model_choice}},
+#'           \code{\link{set_hyper}}, \code{\link{flip_sign}}, \code{\link{display_fit}},
 #'           \code{\link{display_fit_list}}, \code{\link{display_scores}},
 #'           \code{\link{display_eigenfunctions}}
 #'
@@ -166,7 +363,8 @@ run_vmp_fpca <- function(time_obs, Y, L, K = NULL,
 
     eta_in <- list(
       eta_vec$"p(nu|Sigma_nu)->nu", eta_vec$"p(Y|nu,zeta,sigsq_eps)->nu",
-      eta_vec$"p(zeta)->zeta", eta_vec$"p(Y|nu,zeta,sigsq_eps)->zeta"
+      eta_vec$"p(zeta)->zeta", eta_vec$"p(Y|nu,zeta,sigsq_eps)->zeta",
+      eta_vec$elbo
     )
 
     fpc_orthgn(subj_names, L, K, eta_in, time_g, C_g, Psi_g = Psi_g)
@@ -201,7 +399,8 @@ run_vmp_fpca <- function(time_obs, Y, L, K = NULL,
 
     eta_in <- list(
       eta_vec$"p(nu|Sigma_nu)->nu", eta_vec$"p(Y|nu,zeta,sigsq_eps)->nu",
-      eta_vec$"p(zeta)->zeta", eta_vec$"p(Y|nu,zeta,sigsq_eps)->zeta"
+      eta_vec$"p(zeta)->zeta", eta_vec$"p(Y|nu,zeta,sigsq_eps)->zeta",
+      eta_vec$elbo
     )
 
     mfpc_orthgn(subj_names, var_names, Y, L, K, eta_in, time_g, N, p, C_g, Psi_g)
@@ -766,6 +965,8 @@ vmp_gauss_fpca <- function(N, L, K, C, Y, sigma_zeta, mu_beta,
       }
     }
   }
+
+  eta_vec$elbo <- elbo_new
 
   # Get the list of natural parameter vectors:
 
@@ -1366,6 +1567,8 @@ vmp_gauss_mfpca <- function(N, p, L, K, C, Y, sigma_zeta, mu_beta, Sigma_beta,
     }
   }
 
+  eta_vec$elbo <- elbo_new
+
   # Get the list of natural parameter vectors:
 
   return(eta_vec)
@@ -1408,8 +1611,9 @@ vmp_gauss_mfpca <- function(N, p, L, K, C, Y, sigma_zeta, mu_beta, Sigma_beta,
 #'
 #' @return An object containing the resulting MFVB estimates.
 #'
-#' @seealso  \code{\link{run_vmp_fpca}}, \code{\link{set_hyper}},
-#'           \code{\link{flip_sign}}, \code{\link{display_fit}},
+#' @seealso  \code{\link{run_mfvb_fpca_model_choice}},
+#'           \code{\link{run_vmp_fpca}}, \code{\link{run_vmp_fpca_model_choice}},
+#'           \code{\link{set_hyper}}, \code{\link{flip_sign}}, \code{\link{display_fit}},
 #'           \code{\link{display_fit_list}}, \code{\link{display_scores}},
 #'           \code{\link{display_eigenfunctions}}
 #'
@@ -2036,11 +2240,14 @@ mfvb_gauss_mfpca <- function(N, p, L, K, C, Y, sigma_zeta,
     }
   }
 
+  eigenvalues <- apply(Zeta_hat, 2, function(vv) var(vv))
+  cumulated_pve <- cumsum(eigenvalues / sum(eigenvalues) * 100)
+
   create_named_list(time_g, K,
                     Y_summary, Y_hat, Y_low, Y_upp,
                     gbl_hat, mu_hat, list_Psi_hat,
                     Zeta_hat, Cov_zeta_hat, list_zeta_ellipse,
-                    elbo)
+                    elbo, cumulated_pve)
 
 }
 
@@ -2473,12 +2680,13 @@ mfvb_gauss_fpca <- function(N, L, K, C, Y, sigma_zeta, mu_beta,
     Y_upp[[i]] <- Y_mat[,i] + qnorm(0.975)*sd_vec_i
   }
 
+  eigenvalues <- apply(Zeta_hat, 2, function(vv) var(vv))
+  cumulated_pve <- cumsum(eigenvalues / sum(eigenvalues) * 100)
 
   create_named_list(time_g, K,
                     Y_summary, Y_hat, Y_low, Y_upp,
                     gbl_hat, mu_hat, list_Psi_hat,
                     Zeta_hat, Cov_zeta_hat, list_zeta_ellipse,
-                    elbo)
+                    elbo, cumulated_pve)
 
 }
-

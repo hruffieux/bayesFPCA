@@ -150,5 +150,62 @@ display_fit_list(p_sample = 1, N_sample, time_obs, time_g, Y, Y_hat, Y_low, Y_up
 
 display_eigenfunctions(L, time_g, mu_g, Psi_g, mu_hat, Psi_hat)
 
-display_scores(N_sample, Zeta, Zeta_hat, list_zeta_ellipse)
+if (L > 1) { # displays the scores for the first two components
+  display_scores(N_sample, Zeta, Zeta_hat, list_zeta_ellipse)
+}
 
+
+run_model_choice_version <- T
+if (run_model_choice_version) {
+
+  n_cpus <- 1
+  fpca_res_mc_for_K <- run_vmp_fpca_model_choice(time_obs, Y, L, n_g = n_g,
+                                                 tol = tol, maxit = maxit_vmp,
+                                                 Psi_g = Psi_g, verbose = F,
+                                                 n_cpus = n_cpus)
+
+  # selected K
+  fpca_res_mc_for_K$K
+
+  time_g_mc <- fpca_res_mc_for_K$time_g
+  Y_hat_mc <- fpca_res_mc_for_K$Y_hat
+  Y_low_mc <- fpca_res_mc_for_K$Y_low
+  Y_upp_mc <- fpca_res_mc_for_K$Y_upp
+  mu_hat_mc <- fpca_res_mc_for_K$mu_hat
+  Psi_hat_mc <- fpca_res_mc_for_K$list_Psi_hat
+  Zeta_hat_mc <- fpca_res_mc_for_K$Zeta_hat
+  list_zeta_ellipse_mc <- fpca_res_mc_for_K$list_zeta_ellipse
+
+  display_eigenfunctions(L, time_g, mu_g, Psi_g, mu_hat, Psi_hat,
+                         mu_hat_add = mu_hat_mc, list_Psi_hat_add = Psi_hat_mc)
+
+  if (L > 1) { # displays the scores for the first two components
+    display_scores(N_sample, Zeta, Zeta_hat, list_zeta_ellipse,
+                   Zeta_hat_add = Zeta_hat_mc, zeta_ellipse_add = list_zeta_ellipse_mc)
+  }
+
+  # Compare errors with and without model choice for K
+  #
+  rmse_mfpca <- apply(Zeta - Zeta_hat, 2, function(x) sqrt(mean(x^2)))
+  rmse_mfpca_mc <- apply(Zeta - Zeta_hat_mc, 2, function(x) sqrt(mean(x^2)))
+
+  print(rmse_mfpca)
+  print(rmse_mfpca_mc)
+
+  ise_mfpca <- ise_mfpca_mc <- rep(NA, L+1)
+
+  for (l in 1:(L+1)) {
+
+    if (l == 1) {
+      ise_mfpca[l] <- trapint(time_g, (mu_hat - mu_g[[1]])^2)
+      ise_mfpca_mc[l] <- trapint(time_g, (mu_hat_mc - mu_g[[1]])^2)
+    } else {
+      ise_mfpca[l] <- trapint(time_g, (Psi_hat[[l-1]] - Psi_g[[1]][,l-1])^2)
+      ise_mfpca_mc[l] <- trapint(time_g, (Psi_hat_mc[[l-1]] - Psi_g[[1]][,l-1])^2)
+    }
+
+  }
+
+  print(ise_mfpca)
+  print(ise_mfpca_mc)
+}

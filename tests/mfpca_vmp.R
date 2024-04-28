@@ -33,20 +33,20 @@ n_g <- 1000                                   # length of the plotting grid
 
 mu_v2_func <- function(time_obs, j) {
 
-	ans <- ((-1)^j)*3*sin(pi*j*time_obs) - 3/2
-	return(ans)
+  ans <- ((-1)^j)*3*sin(pi*j*time_obs) - 3/2
+  return(ans)
 }
 
 psi_1_v2 <- function(time_obs, j) {
 
-	ans <- sqrt(2/p)*sin(2*pi*j*time_obs)
-	return(ans)
+  ans <- sqrt(2/p)*sin(2*pi*j*time_obs)
+  return(ans)
 }
 
 psi_2_v2 <- function(time_obs, j) {
 
-	ans <- sqrt(2/p)*cos(2*pi*j*time_obs)
-	return(ans)
+  ans <- sqrt(2/p)*cos(2*pi*j*time_obs)
+  return(ans)
 }
 
 Psi_v2_func <- function(time_obs, j, p) {
@@ -83,5 +83,69 @@ display_fit_list(1:p, N_sample, time_obs, time_g, Y, Y_hat, Y_low, Y_upp)
 
 display_eigenfunctions(L, time_g, mu_g, Psi_g, mu_hat, list_Psi_hat)
 
-display_scores(N_sample, Zeta, Zeta_hat, list_zeta_ellipse)
+if (L > 1) { # displays the scores for the first two components
+  display_scores(N_sample, Zeta, Zeta_hat, list_zeta_ellipse)
+}
 
+
+run_model_choice_version <- T
+if (run_model_choice_version) {
+
+  n_cpus <- 1
+  fpca_res_mc_for_K <- run_vmp_fpca_model_choice(time_obs, Y, L, n_g = n_g,
+                                                 tol = tol, maxit = maxit_vmp,
+                                                 Psi_g = Psi_g, verbose = F,
+                                                 n_cpus = n_cpus)
+
+  # selected K
+  fpca_res_mc_for_K$K
+
+  time_g_mc <- fpca_res_mc_for_K$time_g
+  Y_hat_mc <- fpca_res_mc_for_K$Y_hat
+  Y_low_mc <- fpca_res_mc_for_K$Y_low
+  Y_upp_mc <- fpca_res_mc_for_K$Y_upp
+  mu_hat_mc <- fpca_res_mc_for_K$mu_hat
+  list_Psi_hat_mc <- fpca_res_mc_for_K$list_Psi_hat
+  Zeta_hat_mc <- fpca_res_mc_for_K$Zeta_hat
+  list_zeta_ellipse_mc <- fpca_res_mc_for_K$list_zeta_ellipse
+
+  display_eigenfunctions(L, time_g, mu_g, Psi_g, mu_hat, list_Psi_hat,
+                         mu_hat_add = mu_hat_mc, list_Psi_hat_add = list_Psi_hat_mc)
+
+  if (L > 1) { # displays the scores for the first two components
+    display_scores(N_sample, Zeta, Zeta_hat, list_zeta_ellipse,
+                   Zeta_hat_add = Zeta_hat_mc, zeta_ellipse_add = list_zeta_ellipse_mc)
+  }
+
+
+  # Compare errors with and without model choice for K
+  #
+  rmse_mfpca <- apply(Zeta - Zeta_hat, 2, function(x) sqrt(mean(x^2)))
+  rmse_mfpca_mc <- apply(Zeta - Zeta_hat_mc, 2, function(x) sqrt(mean(x^2)))
+
+  print(rmse_mfpca)
+  print(rmse_mfpca_mc)
+
+  ise_mfpca <- ise_mfpca_mc <- matrix(NA, L+1, p)
+
+  for (l in 1:(L+1)) {
+
+    for(j in 1:p) {
+
+      if (l == 1) {
+        ise_mfpca[l, j] <- trapint(time_g, (mu_hat[,j] - mu_g[[j]])^2)
+        ise_mfpca_mc[l, j] <- trapint(time_g, (mu_hat_mc[,j] - mu_g[[j]])^2)
+      } else {
+        ise_mfpca[l, j] <- trapint(time_g, (list_Psi_hat[[l-1]][,j] - Psi_g[[j]][,l-1])^2)
+        ise_mfpca_mc[l, j] <- trapint(time_g, (list_Psi_hat_mc[[l-1]][,j] - Psi_g[[j]][,l-1])^2)
+      }
+
+    }
+
+  }
+  rownames(ise_mfpca) <- rownames(ise_mfpca_mc) <- c("mu", paste0("Psi_", 1:L))
+  colnames(ise_mfpca) <- colnames(ise_mfpca_mc) <- paste0("Variable_", 1:p)
+
+  print(ise_mfpca)
+  print(ise_mfpca_mc)
+}
