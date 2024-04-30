@@ -2241,13 +2241,13 @@ mfvb_gauss_mfpca <- function(N, p, L, K, C, Y, sigma_zeta,
   }
 
   eigenvalues <- apply(Zeta_hat, 2, function(vv) var(vv))
-  cumulated_pve <- cumsum(eigenvalues / sum(eigenvalues) * 100)
+  cumulated_pve <- cumsum(eigenvalues) / sum(eigenvalues) * 100
 
   create_named_list(time_g, K,
                     Y_summary, Y_hat, Y_low, Y_upp,
                     gbl_hat, mu_hat, list_Psi_hat,
                     Zeta_hat, Cov_zeta_hat, list_zeta_ellipse,
-                    elbo, cumulated_pve)
+                    elbo, eigenvalues, cumulated_pve)
 
 }
 
@@ -2681,12 +2681,12 @@ mfvb_gauss_fpca <- function(N, L, K, C, Y, sigma_zeta, mu_beta,
   }
 
   eigenvalues <- apply(Zeta_hat, 2, function(vv) var(vv))
-  cumulated_pve <- cumsum(eigenvalues / sum(eigenvalues) * 100)
+  cumulated_pve <- cumsum(eigenvalues) / sum(eigenvalues) * 100
 
   create_named_list(time_g, K,
                     Y_summary, Y_hat, Y_low, Y_upp,
                     gbl_hat, mu_hat, list_Psi_hat,
                     Zeta_hat, Cov_zeta_hat, list_zeta_ellipse,
-                    elbo, cumulated_pve)
+                    elbo, eigenvalues, cumulated_pve)
 
 }
