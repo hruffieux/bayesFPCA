@@ -2149,16 +2149,18 @@ mfvb_gauss_mfpca <- function(N, p, L, K, C, Y, sigma_zeta,
 
     if(!is.null(Psi_g)) {
 
-      Psi_g_comb <- vector("list", length = p)
-      for(j in 1:p) {
+      if (l <= ncol(Psi_g[[1]])) {
+        Psi_g_comb <- vector("list", length = p)
+        for(j in 1:p) {
 
-        Psi_g_comb[[j]] <- Psi_g[[j]][, l]
+          Psi_g_comb[[j]] <- Psi_g[[j]][, l]
+        }
+        Psi_g_comb <- Reduce(c, Psi_g_comb)
+
+        inner_prod_sign <- sign(cprod(Psi_g_comb, Psi_hat[, l]))
+        Psi_hat[, l] <- inner_prod_sign*Psi_hat[, l]
+        Zeta_hat[, l] <- inner_prod_sign*Zeta_hat[, l]
       }
-      Psi_g_comb <- Reduce(c, Psi_g_comb)
-
-      inner_prod_sign <- sign(cprod(Psi_g_comb, Psi_hat[, l]))
-      Psi_hat[, l] <- inner_prod_sign*Psi_hat[, l]
-      Zeta_hat[, l] <- inner_prod_sign*Zeta_hat[, l]
 
     }
   }
@@ -2612,10 +2614,11 @@ mfvb_gauss_fpca <- function(N, L, K, C, Y, sigma_zeta, mu_beta,
 
       if(!is.null(Psi_g)) {
 
-        cprod_sign <- sign(cprod(Psi_hat[,l], Psi_g[,l]))
-        Psi_hat[,l] <- cprod_sign*Psi_hat[,l]
-        Zeta_hat[,l] <- cprod_sign*Zeta_hat[,l]
-
+        if (l <= ncol(Psi_g)) {
+          cprod_sign <- sign(cprod(Psi_hat[,l], Psi_g[,l]))
+          Psi_hat[,l] <- cprod_sign*Psi_hat[,l]
+          Zeta_hat[,l] <- cprod_sign*Zeta_hat[,l]
+        }
       }
     }
   }

@@ -4063,9 +4063,11 @@ fpc_orthgn <- function(subj_names, L, K, eta_in, time_g, C_g, Psi_g = NULL) {
 
       if(!is.null(Psi_g)) {
 
-        cprod_sign <- sign(cprod(Psi_hat[,l], Psi_g[,l]))
-        Psi_hat[,l] <- cprod_sign*Psi_hat[,l]
-        Zeta_hat[,l] <- cprod_sign*Zeta_hat[,l]
+        if (l <= ncol(Psi_g)) {
+          cprod_sign <- sign(cprod(Psi_hat[,l], Psi_g[,l]))
+          Psi_hat[,l] <- cprod_sign*Psi_hat[,l]
+          Zeta_hat[,l] <- cprod_sign*Zeta_hat[,l]
+        }
 
       }
     }
@@ -4205,17 +4207,18 @@ mfpc_orthgn <- function(subj_names, var_names, Y, L, K, eta_in,
 
     if(!is.null(Psi_g)) {
 
-      Psi_g_comb <- vector("list", length = p)
-      for(j in 1:p) {
+      if (l <= ncol(Psi_g[[1]])) {
+        Psi_g_comb <- vector("list", length = p)
+        for(j in 1:p) {
 
-        Psi_g_comb[[j]] <- Psi_g[[j]][, l]
+          Psi_g_comb[[j]] <- Psi_g[[j]][, l]
+        }
+        Psi_g_comb <- Reduce(c, Psi_g_comb)
+
+        inner_prod_sign <- sign(cprod(Psi_g_comb, Psi_hat[, l]))
+        Psi_hat[, l] <- inner_prod_sign*Psi_hat[, l]
+        Zeta_hat[, l] <- inner_prod_sign*Zeta_hat[, l]
       }
-      Psi_g_comb <- Reduce(c, Psi_g_comb)
-
-      inner_prod_sign <- sign(cprod(Psi_g_comb, Psi_hat[, l]))
-      Psi_hat[, l] <- inner_prod_sign*Psi_hat[, l]
-      Zeta_hat[, l] <- inner_prod_sign*Zeta_hat[, l]
-
     }
   }
   Psi_hat <- lapply(split(Psi_hat, rep(1:p, each = n_g)), matrix, nrow = n_g, ncol = L)
@@ -4407,9 +4410,11 @@ mlfpc_orthgn <- function(eta_in, time_g, C_g, n_g, L_1, L_2, N, p, Psi_g = NULL)
 
     if(!is.null(Psi_g)) {
 
-      cprod_sign <- sign(cprod(Psi_1_hat[, l], Psi_g[[1]][, l]))
-      Psi_1_hat[, l] <- cprod_sign*Psi_1_hat[, l]
-      Zeta_1_hat[, l] <- cprod_sign*Zeta_1_hat[, l]
+      if (l <= ncol(Psi_g[[1]])) {
+        cprod_sign <- sign(cprod(Psi_1_hat[, l], Psi_g[[1]][, l]))
+        Psi_1_hat[, l] <- cprod_sign*Psi_1_hat[, l]
+        Zeta_1_hat[, l] <- cprod_sign*Zeta_1_hat[, l]
+      }
     }
   }
   A_1 <- diag(norm_psi_1)
@@ -4427,9 +4432,11 @@ mlfpc_orthgn <- function(eta_in, time_g, C_g, n_g, L_1, L_2, N, p, Psi_g = NULL)
 
     if(!is.null(Psi_g)) {
 
-      cprod_sign <- sign(cprod(Psi_2_hat[, l], Psi_g[[2]][, l]))
-      Psi_2_hat[, l] <- cprod_sign*Psi_2_hat[, l]
-      Zeta_2_hat[, l] <- cprod_sign*Zeta_2_hat[, l]
+      if (l <= ncol(Psi_g[[2]])) {
+        cprod_sign <- sign(cprod(Psi_2_hat[, l], Psi_g[[2]][, l]))
+        Psi_2_hat[, l] <- cprod_sign*Psi_2_hat[, l]
+        Zeta_2_hat[, l] <- cprod_sign*Zeta_2_hat[, l]
+      }
 
     }
   }
