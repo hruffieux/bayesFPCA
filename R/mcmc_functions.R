@@ -13,7 +13,7 @@
 #         uncorrelated scores.
 #  [Note: not exported anymore, copied in VMP_FPCA/simulations/fun_utils.R ]
 #
-summarise_mcmc_multivariate <- function(stan_obj, C_g, Psi_g) {
+summarise_mcmc_multivariate <- function(stan_obj, C_g, Psi_g, pred_interval = TRUE) {
 
   mcmc_samples <- rstan::extract(stan_obj, permuted=FALSE)
   n_mcmc <- dim(mcmc_samples)[1]
@@ -26,6 +26,9 @@ summarise_mcmc_multivariate <- function(stan_obj, C_g, Psi_g) {
   N <- length(fpca_params[grep("zeta", fpca_params, fixed=TRUE)])/L
 
   mu_g_mcmc <- Psi_g_mcmc <- vector("list", length=p)
+  if (pred_interval) {
+    sigma_eps_mcmc <- vector("list", length=p)
+  }
   for (j in 1:p) {
 
     beta_mu_cols <- fpca_params[grep(paste0("beta_mu[", j), fpca_params, fixed=TRUE)]
@@ -33,6 +36,11 @@ summarise_mcmc_multivariate <- function(stan_obj, C_g, Psi_g) {
 
     u_mu_cols <- fpca_params[grep(paste0("u_mu[", j), fpca_params, fixed=TRUE)]
     u_mu_mcmc <- mcmc_samples[, 1, u_mu_cols]
+
+    if (pred_interval) {
+      sigma_eps_cols <- fpca_params[grep(paste0("sigma_eps[", j), fpca_params, fixed=TRUE)]
+      sigma_eps_mcmc[[j]] <- mcmc_samples[, 1,  sigma_eps_cols]
+    }
 
     nu_mu_mcmc <- t(cbind(beta_mu_mcmc, u_mu_mcmc))
     mu_g_mcmc[[j]] <- C_g%*%nu_mu_mcmc
@@ -64,6 +72,9 @@ summarise_mcmc_multivariate <- function(stan_obj, C_g, Psi_g) {
   mu_hat <- vector("list", length=n_mcmc)
   Psi_hat <- vector("list", length=n_mcmc)
   Zeta_hat <- vector("list", length=n_mcmc)
+  if (pred_interval) {
+    sigma_eps_hat <- vector("list", length=n_mcmc)
+  }
   for(k in 1:n_mcmc) {
 
     Psi <- vector("list", length=p)
@@ -87,6 +98,9 @@ summarise_mcmc_multivariate <- function(stan_obj, C_g, Psi_g) {
     #
     mu_g_mcmc_k <- Reduce(c, lapply(mu_g_mcmc, function(ll) ll[,k]))
     Psi_k <- Reduce(rbind, Psi)
+    if (pred_interval) {
+      sigma_eps_hat[[k]] <- Reduce(c, lapply(sigma_eps_mcmc, function(ll) ll[k]))
+    }
 
     svd_Psi <- svd(Psi_k)
     U_psi <- svd_Psi$u
@@ -141,11 +155,17 @@ summarise_mcmc_multivariate <- function(stan_obj, C_g, Psi_g) {
 
     for (j in 1:p) {
 
-      Y_g_mcmc <- matrix(NA, n_g, n_mcmc)
+      Y_g_mcmc <- mean_mcmc <- matrix(NA, n_g, n_mcmc)
       for(k in 1:n_mcmc) {
 
-        # Y_g_mcmc[,k] <- mu_g_mcmc[,k] + Psi_hat[[k]]%*%Zeta_hat[[k]][i,]
-        Y_g_mcmc[,k] <- mu_hat[[k]][[j]] + Psi_hat[[k]][[j]]%*%Zeta_hat[[k]][i,]
+        # Y_g_mcmc[,k] <- mu_hat[[k]][[j]] + Psi_hat[[k]][[j]]%*%Zeta_hat[[k]][i,]
+        mean_mcmc[,k] <- mu_hat[[k]][[j]] + Psi_hat[[k]][[j]]%*%Zeta_hat[[k]][i,]
+
+        if (pred_interval) {
+          Y_g_mcmc[,k] <- mean_mcmc[,k] + rnorm(1, mean = 0, sd = sigma_eps_hat[[k]][[j]]) # sapply(1:n_g, function(n_g_i) rnorm(1, mean = mean_mcmc[n_g_i, k], sd = sigma_eps_hat[[k]][[j]]))
+        } else {
+          Y_g_mcmc[,k] <- mean_mcmc[,k]
+        }
 
       }
 
@@ -217,7 +237,8 @@ summarise_mcmc_multivariate <- function(stan_obj, C_g, Psi_g) {
 
 
 
-summarise_mcmc <- function(stan_obj, C_g, Psi_g, use_logistic_mod=FALSE) {
+summarise_mcmc <- function(stan_obj, C_g, Psi_g, use_logistic_mod=FALSE,
+                           pred_interval = TRUE) {
 
   mcmc_samples <- rstan::extract(stan_obj, permuted=FALSE)
   n_mcmc <- dim(mcmc_samples)[1]
@@ -236,6 +257,11 @@ summarise_mcmc <- function(stan_obj, C_g, Psi_g, use_logistic_mod=FALSE) {
 
   nu_mu_mcmc <- t(cbind(beta_mu_mcmc, u_mu_mcmc))
   mu_g_mcmc <- C_g%*%nu_mu_mcmc
+
+  if (pred_interval) {
+    sigma_eps_cols <- fpca_params[grep("sigma_eps", fpca_params, fixed=TRUE)]
+    sigma_eps_mcmc <- mcmc_samples[, 1,sigma_eps_cols]
+  }
 
   Psi_g_mcmc <- vector("list", length=L)
   for(l in 1:L) {
@@ -317,10 +343,17 @@ summarise_mcmc <- function(stan_obj, C_g, Psi_g, use_logistic_mod=FALSE) {
   Y_g_mcmc_summary <- vector("list", length=N)
   for(i in 1:N) {
 
-    Y_g_mcmc <- matrix(NA, n_g, n_mcmc)
+    Y_g_mcmc <- pred_of_mean[,j] <- matrix(NA, n_g, n_mcmc)
     for(j in 1:n_mcmc) {
 
-      Y_g_mcmc[,j] <- mu_g_mcmc[,j] + Psi_hat[[j]]%*%Zeta_hat[[j]][i,]
+      mean_mcmc[,j] <- mu_g_mcmc[,j] + Psi_hat[[j]]%*%Zeta_hat[[j]][i,]
+
+      if (pred_interval) {
+        Y_g_mcmc[,j] <- mean_mcmc[,j] + rnorm(1, mean = 0, sd = sigma_eps_hat[j]) # sapply(1:n_g, function(n_g_i) rnorm(1, mean = mean_mcmc[n_g_i, j], sd = sigma_eps_mcmc[j]))
+      } else {
+        Y_g_mcmc[,j] <- mean_mcmc[,j]
+      }
+
     }
 
     Y_g_mcmc_summary[[i]] <- matrix(NA, nrow=n_g, ncol=3)
