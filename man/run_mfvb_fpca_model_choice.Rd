@@ -32,7 +32,7 @@ respectively.}
 \item{Y}{List of vectors (for univariate curves) or list of lists of vectors
 (for multivariate curves) with the functional data.}
 
-\item{L}{Number of eigenfunctions (or latent dimensions).}
+\item{L}{Number of eigenfunctions (or latent dimensions). Default L = 10.}
 
 \item{K_min}{Minimum number of O'Sulivan spline functions K, which is modelled
              using an uniform prior distribution on the interval

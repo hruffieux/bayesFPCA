@@ -338,6 +338,10 @@ summarise_mcmc <- function(stan_obj, C_g, Psi_g, use_logistic_mod=FALSE,
     }
   }
 
+  if (pred_interval) {
+    sigma_eps_hat <- Reduce(c, lapply(sigma_eps_mcmc, function(ll) ll[j]))
+  }
+
   # Summarise the MCMC outputs:
 
   Y_g_mcmc_summary <- vector("list", length=N)

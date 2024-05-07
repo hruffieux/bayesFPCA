@@ -1735,7 +1735,7 @@ run_mfvb_fpca <- function(time_obs, Y, L, K = NULL,
 
     # directly includes the orthnogonalisation step, unlike the vmp_gauss_mfpca function
     mfvb_gauss_fpca(N, L, K, C, Y, sigma_zeta, mu_beta, Sigma_beta, A,
-                    tol, maxit, rel_crit, plot_elbo, time_g, C_g, Psi_g, verbose)
+                    tol, maxit, rel_crit, plot_elbo, subj_names, time_g, C_g, Psi_g, verbose)
 
   } else {
 
@@ -1759,7 +1759,8 @@ run_mfvb_fpca <- function(time_obs, Y, L, K = NULL,
 
     # directly includes the orthogonalisation step, unlike the vmp_gauss_mfpca function
     mfvb_gauss_mfpca(N, p, L, K, C, Y, sigma_zeta, Sigma_beta, A,
-                     tol, maxit, rel_crit, plot_elbo, var_names, time_g, C_g, Psi_g, verbose)
+                     tol, maxit, rel_crit, plot_elbo, subj_names, var_names,
+                     time_g, C_g, Psi_g, verbose)
 
   }
 
@@ -1767,10 +1768,10 @@ run_mfvb_fpca <- function(time_obs, Y, L, K = NULL,
 
 
 mfvb_gauss_mfpca <- function(N, p, L, K, C, Y, sigma_zeta,
-                             Sigma_beta, A, tol, maxit, rel_crit, plot_elbo, var_names, time_g, C_g,
+                             Sigma_beta, A, tol, maxit, rel_crit, plot_elbo,
+                             subj_names, var_names, time_g, C_g,
                              Psi_g, verbose, eps = .Machine$double.eps^0.5,
                              debug = TRUE) {
-
 
   n <- Reduce(rbind, lapply(Y, function(x) sapply(x, length))) # rows = samples, columns = variables
   sum_n <-  colSums(n)
@@ -2165,7 +2166,7 @@ mfvb_gauss_mfpca <- function(N, p, L, K, C, Y, sigma_zeta,
     }
   }
   colnames(Zeta_hat) <- paste0("FPC_", 1:L)
-  rownames(Zeta_hat) <- paste0("subj_", 1:N)
+  rownames(Zeta_hat) <- subj_names
 
   Psi_hat <- lapply(split(Psi_hat, rep(1:p, each = n_g)), matrix, nrow = n_g, ncol = L)
 
@@ -2240,7 +2241,9 @@ mfvb_gauss_mfpca <- function(N, p, L, K, C, Y, sigma_zeta,
       Y_low[[i]][[j]] <- Y_hat_ij + qnorm(0.025)*sd_vec_ij
       Y_upp[[i]][[j]] <- Y_hat_ij + qnorm(0.975)*sd_vec_ij
     }
+    names(Y_hat[[i]]) <- names(Y_low[[i]]) <- names(Y_upp[[i]]) <- var_names
   }
+  names(Y_summary) <- names(Y_hat) <- names(Y_low) <- names(Y_upp) <- subj_names
 
   eigenvalues <- apply(Zeta_hat, 2, function(vv) var(vv))
   cumulated_pve <- cumsum(eigenvalues) / sum(eigenvalues) * 100
@@ -2256,7 +2259,8 @@ mfvb_gauss_mfpca <- function(N, p, L, K, C, Y, sigma_zeta,
 
 
 mfvb_gauss_fpca <- function(N, L, K, C, Y, sigma_zeta, mu_beta,
-                            Sigma_beta, A, tol, maxit, rel_crit, plot_elbo, time_g, C_g,
+                            Sigma_beta, A, tol, maxit, rel_crit, plot_elbo,
+                            subj_names, time_g, C_g,
                             Psi_g, verbose, eps = .Machine$double.eps^0.5,
                             debug = TRUE) {
 
@@ -2623,7 +2627,7 @@ mfvb_gauss_fpca <- function(N, L, K, C, Y, sigma_zeta, mu_beta,
     }
   }
   colnames(Zeta_hat) <- paste0("FPC_", 1:L)
-  rownames(Zeta_hat) <- paste0("subj_", 1:N)
+  rownames(Zeta_hat) <- subj_names
 
   if (length(norm_const) == 1) {
     scale_mat <- as.matrix(norm_const)
@@ -2682,6 +2686,7 @@ mfvb_gauss_fpca <- function(N, L, K, C, Y, sigma_zeta, mu_beta,
     Y_low[[i]] <- Y_mat[,i] + qnorm(0.025)*sd_vec_i
     Y_upp[[i]] <- Y_mat[,i] + qnorm(0.975)*sd_vec_i
   }
+  names(Y_summary) <- names(Y_hat) <- names(Y_low) <- names(Y_upp) <- subj_names
 
   eigenvalues <- apply(Zeta_hat, 2, function(vv) var(vv))
   cumulated_pve <- cumsum(eigenvalues) / sum(eigenvalues) * 100

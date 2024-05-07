@@ -9,7 +9,7 @@ selection of the number of spline functions K.}
 run_vmp_fpca_model_choice(
   time_obs,
   Y,
-  L,
+  L = 10,
   K_min = 5,
   K_max = 20,
   list_hyper = NULL,
@@ -32,7 +32,7 @@ respectively.}
 \item{Y}{List of vectors (for univariate curves) or list of lists of vectors
 (for multivariate curves) with the functional data.}
 
-\item{L}{Number of eigenfunctions (or latent dimensions).}
+\item{L}{Number of eigenfunctions (or latent dimensions). Default L = 10.}
 
 \item{K_min}{Minimum number of O'Sulivan spline functions K, which is modelled
              using an uniform prior distribution on the interval
