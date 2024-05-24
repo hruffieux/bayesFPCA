@@ -930,6 +930,7 @@ fpc_lik_frag <- function(eta_in, G_in, C, Y, T_vec, L) {
   q_sigsq_eps <- igw_q(eta_in_sigsq_eps, G_in_sigsq_eps)
 
   mu_q_recip_sigsq_eps <- q_sigsq_eps[[3]]
+  mu_q_sigsq_eps <- q_sigsq_eps[[2]] / (q_sigsq_eps[[1]] - 2) # q_sigsq_eps[[1]] # kappa, and q_sigsq_eps[[2]] # lambda
 
   eta_1_sum <- 0
   eta_2_sum <- 0
@@ -1061,8 +1062,8 @@ fpc_lik_frag <- function(eta_in, G_in, C, Y, T_vec, L) {
   G_out <- G_sigsq_eps
   names(G_out) <- "p(Y|nu,zeta,sigsq_eps)->sigsq_eps"
 
-  ans <- list(eta_out, G_out)
-  names(ans) <- c("eta", "G")
+  ans <- list(eta_out, G_out, mu_q_sigsq_eps)
+  names(ans) <- c("eta", "G", "E_q_sigsq_eps")
 
   return(ans)
 }
@@ -1847,13 +1848,14 @@ mfpc_lik_frag <- function(eta_in, G_in, C, Y, L) {
     E_q_tcross_zeta[[i]] <- Cov_q_zeta[[i]] + tcrossprod(E_q_zeta[[i]])
   }
 
-  E_q_recip_sigsq_eps <- rep(NA, p)
+  E_q_recip_sigsq_eps <- E_q_sigsq_eps <- rep(NA, p)
   for(j in 1:p) {
 
     eta_in_sigsq_eps <- list(eta_in[[5]][[j]], eta_in[[6]][[j]])
     G_in_sigsq_eps <- c(G_in[[1]][[j]], G_in[[2]][[j]])
     q_sigsq_eps <- igw_q(eta_in_sigsq_eps, G_in_sigsq_eps)
     E_q_recip_sigsq_eps[j] <- q_sigsq_eps[[3]]
+    E_q_sigsq_eps[j] <- q_sigsq_eps[[2]] / (q_sigsq_eps[[1]] - 2) # q_sigsq_eps[[1]] # kappa, and q_sigsq_eps[[2]] # lambda
   }
 
   eta_nu <- vector("list", length = p)
@@ -1982,8 +1984,8 @@ mfpc_lik_frag <- function(eta_in, G_in, C, Y, L) {
   G_out <- list(G_sigsq_eps)
   names(G_out) <- "p(Y|nu,zeta,sigsq_eps)->sigsq_eps"
 
-  ans <- list(eta_out, G_out)
-  names(ans) <- c("eta", "G")
+  ans <- list(eta_out, G_out, E_q_sigsq_eps)
+  names(ans) <- c("eta", "G", "E_q_sigsq_eps")
 
   return(ans)
 }
@@ -3984,6 +3986,7 @@ fpc_orthgn <- function(subj_names, L, K, eta_in, time_g, C_g, Psi_g = NULL) {
   N <- ncol(eta_in[[3]])
   l_eta_nu <- length(eta_in[[1]])
   d <- (sqrt(4*l_eta_nu + 1) - 1)/2
+  E_q_sigsq_eps <- eta_in[[6]]
 
   # Determine the original q_nu:
 
@@ -4089,7 +4092,8 @@ fpc_orthgn <- function(subj_names, L, K, eta_in, time_g, C_g, Psi_g = NULL) {
   Y_hat <- Y_low <- Y_upp <- vector("list", length = N)
   for(i in 1:N) {
 
-      sd_vec_i <- sqrt(diag(tcrossprod(Psi_hat%*%Cov_zeta_hat[[i]], Psi_hat)))
+      # sd_vec_i <- sqrt(diag(tcrossprod(Psi_hat%*%Cov_zeta_hat[[i]], Psi_hat)))
+      sd_vec_i <- sqrt(diag(tcrossprod(Psi_hat%*%Cov_zeta_hat[[i]], Psi_hat)) + E_q_sigsq_eps)
 
       Y_hat[[i]] <- Y_mat[,i]
       Y_low[[i]] <- Y_mat[,i] + qnorm(0.025)*sd_vec_i
@@ -4148,6 +4152,8 @@ mfpc_orthgn <- function(subj_names, var_names, Y, L, K, eta_in,
   D_L <- duplication.matrix(L)
   n <- Reduce(rbind, lapply(Y, function(x) sapply(x, length)))
   n_g <- length(time_g)
+  E_q_sigsq_eps <- eta_in[[6]]
+
 
   E_q_zeta <- vector("list", length = N)
   Cov_q_zeta <- vector("list", length = N)
@@ -4270,7 +4276,8 @@ mfpc_orthgn <- function(subj_names, var_names, Y, L, K, eta_in,
     for(j in 1:p) {
 
       Y_hat_ij <- mu_hat[, j] + Psi_hat[[j]] %*% Zeta_hat[i, ]
-      sd_vec_ij <- sqrt(diag(tcrossprod(Psi_hat[[j]] %*% Cov_zeta_hat[[i]], Psi_hat[[j]])))
+      # sd_vec_ij <- sqrt(diag(tcrossprod(Psi_hat[[j]] %*% Cov_zeta_hat[[i]], Psi_hat[[j]])))
+      sd_vec_ij <- sqrt(diag(tcrossprod(Psi_hat[[j]] %*% Cov_zeta_hat[[i]], Psi_hat[[j]])) + E_q_sigsq_eps[j])
 
       Y_hat[[i]][[j]] <- Y_hat_ij
       Y_low[[i]][[j]] <- Y_hat_ij + qnorm(0.025)*sd_vec_ij
