@@ -364,8 +364,9 @@ run_vmp_fpca <- function(time_obs, Y, L, K = NULL,
     eta_in <- list(
       eta_vec$"p(nu|Sigma_nu)->nu", eta_vec$"p(Y|nu,zeta,sigsq_eps)->nu",
       eta_vec$"p(zeta)->zeta", eta_vec$"p(Y|nu,zeta,sigsq_eps)->zeta",
-      eta_vec$elbo,
-      eta_vec$E_q_sigsq_eps  # <---- added
+      eta_vec$elbo, # don't change order in this list!
+      eta_vec$E_q_sigsq_eps,  # <---- added /!\ must be 6th element of this list
+      eta_vec$n_iter # don't change order in this list!
     )
 
     fpc_orthgn(subj_names, L, K, eta_in, time_g, C_g, Psi_g = Psi_g)
@@ -401,8 +402,9 @@ run_vmp_fpca <- function(time_obs, Y, L, K = NULL,
     eta_in <- list(
       eta_vec$"p(nu|Sigma_nu)->nu", eta_vec$"p(Y|nu,zeta,sigsq_eps)->nu",
       eta_vec$"p(zeta)->zeta", eta_vec$"p(Y|nu,zeta,sigsq_eps)->zeta",
-      eta_vec$elbo,
-      eta_vec$E_q_sigsq_eps # <---- added
+      eta_vec$elbo, # don't change order in this list!
+      eta_vec$E_q_sigsq_eps, # <---- added /!\ must be 6th element of this list
+      eta_vec$n_iter # don't change order in this list!
     )
 
     mfpc_orthgn(subj_names, var_names, Y, L, K, eta_in, time_g, N, p, C_g, Psi_g)
@@ -969,6 +971,7 @@ vmp_gauss_fpca <- function(N, L, K, C, Y, sigma_zeta, mu_beta,
   }
 
   eta_vec$elbo <- elbo_new
+  eta_vec$n_iter <- iter
   eta_vec$E_q_sigsq_eps <- fpc_lik_fragment$E_q_sigsq_eps
 
   # Get the list of natural parameter vectors:
@@ -1571,6 +1574,7 @@ vmp_gauss_mfpca <- function(N, p, L, K, C, Y, sigma_zeta, mu_beta, Sigma_beta,
   }
 
   eta_vec$elbo <- elbo_new
+  eta_vec$n_iter <- iter
   eta_vec$E_q_sigsq_eps <- mfpc_lik_fragment$E_q_sigsq_eps
 
   # Get the list of natural parameter vectors:
@@ -2102,6 +2106,7 @@ mfvb_gauss_mfpca <- function(N, p, L, K, C, Y, sigma_zeta,
   }
 
   elbo <- elbo_new
+  n_iter <- iter
 
   # Orthogonalisation:
 
@@ -2256,7 +2261,7 @@ mfvb_gauss_mfpca <- function(N, p, L, K, C, Y, sigma_zeta,
                     Y_summary, Y_hat, Y_low, Y_upp,
                     gbl_hat, mu_hat, list_Psi_hat,
                     Zeta_hat, Cov_zeta_hat, list_zeta_ellipse,
-                    elbo, eigenvalues, cumulated_pve)
+                    elbo, n_iter, eigenvalues, cumulated_pve)
 
 }
 
@@ -2566,6 +2571,7 @@ mfvb_gauss_fpca <- function(N, L, K, C, Y, sigma_zeta, mu_beta,
   }
 
   elbo <- elbo_new
+  n_iter <- iter
 
   # Orthogonal decomposition:
 
@@ -2699,6 +2705,6 @@ mfvb_gauss_fpca <- function(N, L, K, C, Y, sigma_zeta, mu_beta,
                     Y_summary, Y_hat, Y_low, Y_upp,
                     gbl_hat, mu_hat, list_Psi_hat,
                     Zeta_hat, Cov_zeta_hat, list_zeta_ellipse,
-                    elbo, eigenvalues, cumulated_pve)
+                    elbo, n_iter, eigenvalues, cumulated_pve)
 
 }
