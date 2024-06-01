@@ -59,8 +59,7 @@ run_vmp_fpca_model_choice <- function(time_obs, Y, L = 10, K_min = 5, K_max = 20
                                       n_g = 1000, time_g = NULL,
                                       tol = 1e-5, maxit = 1e4, rel_crit = TRUE,
                                       Psi_g = NULL, verbose = TRUE,
-                                      seed = NULL,
-                                      n_cpus = 1) {
+                                      seed = NULL, n_cpus = 1) {
 
   check_structure(K_min, "vector", "numeric", 1)
   check_natural(K_min)
@@ -133,6 +132,7 @@ run_vmp_fpca_model_choice <- function(time_obs, Y, L = 10, K_min = 5, K_max = 20
 #'                the run.
 #' @param seed User-specified seed for reproducibilty.
 #' @param n_cpus Number of cores to be used for parallel runs. Set to 1 for serial run.
+#' @param check_elbo If TRUE, checks that the ELBO (objective function) is increasing monotonically.
 #'
 #' @return An object containing the resulting MFVB estimates.
 #'
@@ -157,7 +157,7 @@ run_mfvb_fpca_model_choice <- function(time_obs, Y, L = 10, K_min = 5, K_max = 2
                                       rel_crit = TRUE,
                                       n_g = 1000, time_g = NULL,
                                       Psi_g = NULL, verbose = TRUE, seed = NULL,
-                                      n_cpus = 1) {
+                                      n_cpus = 1, check_elbo = TRUE) {
 
   check_structure(K_min, "vector", "numeric", 1)
   check_natural(K_min)
@@ -180,7 +180,8 @@ run_mfvb_fpca_model_choice <- function(time_obs, Y, L = 10, K_min = 5, K_max = 2
                   list_hyper = list_hyper, tol = tol, maxit = maxit,
                   rel_crit = rel_crit, plot_elbo = FALSE,
                   n_g = n_g, time_g = time_g,
-                  Psi_g = Psi_g, verbose = verbose, seed = seed)
+                  Psi_g = Psi_g, verbose = verbose, seed = seed,
+                  check_elbo = check_elbo)
 
     # unnorm_p_M_given_y <- mfvb_res$elbo - log(length(vec_K)) # Unif(vec_K) constant wrt to K, we can ignore it, just maximise
 
@@ -357,7 +358,8 @@ run_vmp_fpca <- function(time_obs, Y, L, K = NULL,
   if (format_univ) {
 
     eta_vec <- vmp_gauss_fpca(N, L, K, C, Y, sigma_zeta, mu_beta,
-                              Sigma_beta, A, tol, maxit, rel_crit, plot_elbo, verbose = verbose)
+                              Sigma_beta, A, tol, maxit, rel_crit, plot_elbo,
+                              verbose = verbose)
 
     # Orthogonalisation:
 
@@ -414,7 +416,8 @@ run_vmp_fpca <- function(time_obs, Y, L, K = NULL,
 }
 
 vmp_gauss_fpca <- function(N, L, K, C, Y, sigma_zeta, mu_beta,
-                           Sigma_beta, A, tol, maxit, rel_crit, plot_elbo = FALSE, verbose = TRUE) {
+                           Sigma_beta, A, tol, maxit, rel_crit,
+                           plot_elbo = FALSE, verbose = TRUE) {
 
   # Establish necessary parameters:
 
@@ -981,7 +984,8 @@ vmp_gauss_fpca <- function(N, L, K, C, Y, sigma_zeta, mu_beta,
 
 
 vmp_gauss_mfpca <- function(N, p, L, K, C, Y, sigma_zeta, mu_beta, Sigma_beta,
-                            A, tol, maxit, rel_crit, plot_elbo = FALSE, verbose = TRUE) {
+                            A, tol, maxit, rel_crit, plot_elbo = FALSE,
+                            verbose = TRUE) {
 
   # Establish necessary parameters:
 
@@ -1616,6 +1620,7 @@ vmp_gauss_mfpca <- function(N, p, L, K, C, Y, sigma_zeta, mu_beta, Sigma_beta,
 #' @param verbose Boolean indicating whether messages should be printed during
 #'                the run.
 #' @param seed User-specified seed for reproducibilty.
+#' @param check_elbo If TRUE, checks that the ELBO (objective function) is increasing monotonically.
 #'
 #' @return An object containing the resulting MFVB estimates.
 #'
@@ -1639,7 +1644,8 @@ run_mfvb_fpca <- function(time_obs, Y, L, K = NULL,
                           list_hyper = NULL, tol = 1e-5, maxit = 1e4,
                           rel_crit = TRUE, plot_elbo = FALSE,
                           n_g = 1000, time_g = NULL,
-                          Psi_g = NULL, verbose = TRUE, seed = NULL) {
+                          Psi_g = NULL, verbose = TRUE, seed = NULL,
+                          check_elbo = TRUE) {
 
   check_structure(seed, "vector", "numeric", 1, null_ok = TRUE)
   if (!is.null(seed)) {
@@ -1743,7 +1749,8 @@ run_mfvb_fpca <- function(time_obs, Y, L, K = NULL,
 
     # directly includes the orthnogonalisation step, unlike the vmp_gauss_mfpca function
     mfvb_gauss_fpca(N, L, K, C, Y, sigma_zeta, mu_beta, Sigma_beta, A,
-                    tol, maxit, rel_crit, plot_elbo, subj_names, time_g, C_g, Psi_g, verbose)
+                    tol, maxit, rel_crit, plot_elbo, subj_names, time_g, C_g,
+                    Psi_g, verbose, check_elbo = check_elbo)
 
   } else {
 
@@ -1768,7 +1775,7 @@ run_mfvb_fpca <- function(time_obs, Y, L, K = NULL,
     # directly includes the orthogonalisation step, unlike the vmp_gauss_mfpca function
     mfvb_gauss_mfpca(N, p, L, K, C, Y, sigma_zeta, Sigma_beta, A,
                      tol, maxit, rel_crit, plot_elbo, subj_names, var_names,
-                     time_g, C_g, Psi_g, verbose)
+                     time_g, C_g, Psi_g, verbose, check_elbo = check_elbo)
 
   }
 
@@ -1779,7 +1786,7 @@ mfvb_gauss_mfpca <- function(N, p, L, K, C, Y, sigma_zeta,
                              Sigma_beta, A, tol, maxit, rel_crit, plot_elbo,
                              subj_names, var_names, time_g, C_g,
                              Psi_g, verbose, eps = .Machine$double.eps^0.5,
-                             debug = TRUE) {
+                             check_elbo = check_elbo) {
 
   n <- Reduce(rbind, lapply(Y, function(x) sapply(x, length))) # rows = samples, columns = variables
   sum_n <-  colSums(n)
@@ -2091,7 +2098,7 @@ mfvb_gauss_mfpca <- function(N, p, L, K, C, Y, sigma_zeta,
 
       elbo_old <- elbo_res[iter - 1]
 
-      if (debug && elbo_new + eps < elbo_old)
+      if (check_elbo && elbo_new + eps < elbo_old)
         stop("ELBO not increasing monotonically. Exit. ")
 
       if (rel_crit) {
@@ -2271,7 +2278,7 @@ mfvb_gauss_fpca <- function(N, L, K, C, Y, sigma_zeta, mu_beta,
                             Sigma_beta, A, tol, maxit, rel_crit, plot_elbo,
                             subj_names, time_g, C_g,
                             Psi_g, verbose, eps = .Machine$double.eps^0.5,
-                            debug = TRUE) {
+                            check_elbo = check_elbo) {
 
   n_g <- length(time_g)
   T_vec <- sapply(Y, length)
@@ -2556,7 +2563,7 @@ mfvb_gauss_fpca <- function(N, L, K, C, Y, sigma_zeta, mu_beta,
 
       elbo_old <- elbo_res[iter - 1]
 
-      if (debug && elbo_new + eps < elbo_old)
+      if (check_elbo && elbo_new + eps < elbo_old)
         stop("ELBO not increasing monotonically. Exit. ")
 
       if (rel_crit) {

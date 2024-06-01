@@ -19,7 +19,8 @@ run_mfvb_fpca(
   time_g = NULL,
   Psi_g = NULL,
   verbose = TRUE,
-  seed = NULL
+  seed = NULL,
+  check_elbo = TRUE
 )
 }
 \arguments{
@@ -63,6 +64,8 @@ used to flip the sign of the resulting scores and eigenfunctions.}
 the run.}
 
 \item{seed}{User-specified seed for reproducibilty.}
+
+\item{check_elbo}{If TRUE, checks that the ELBO (objective function) is increasing monotonically.}
 }
 \value{
 An object containing the resulting MFVB estimates.

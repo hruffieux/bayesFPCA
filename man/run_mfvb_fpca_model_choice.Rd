@@ -21,7 +21,8 @@ run_mfvb_fpca_model_choice(
   Psi_g = NULL,
   verbose = TRUE,
   seed = NULL,
-  n_cpus = 1
+  n_cpus = 1,
+  check_elbo = TRUE
 )
 }
 \arguments{
@@ -69,6 +70,8 @@ the run.}
 \item{seed}{User-specified seed for reproducibilty.}
 
 \item{n_cpus}{Number of cores to be used for parallel runs. Set to 1 for serial run.}
+
+\item{check_elbo}{If TRUE, checks that the ELBO (objective function) is increasing monotonically.}
 }
 \value{
 An object containing the resulting MFVB estimates.

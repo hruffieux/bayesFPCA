@@ -5,7 +5,7 @@
 #'
 #' @section bayesFPCA functions: gauss_mfpca_data, vmp_gauss_mfpca
 #'
-#' @docType package
+#' "_PACKAGE"
 #' @name bayesFPCA-package
 #' @importFrom ellipse ellipse
 #' @import lattice

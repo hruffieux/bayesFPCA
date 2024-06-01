@@ -26,4 +26,4 @@ Imports:
     parallel
 Suggests: 
     rstan
-RoxygenNote: 7.2.3
+RoxygenNote: 7.3.1

@@ -21,7 +21,7 @@ e_y <- function(N, sum_T, Y, C, M_q_V, M_q_H_tilde, mu_q_zeta, Sigma_q_zeta,
   }
 
   term_1 <- - sum_T/2*log(2*pi)
-  term_2 <- - sum_T/2*mu_q_log_sigsq_eps # mu_q_log_sigsq_eps <-------- TO IMPLEMENT
+  term_2 <- - sum_T/2*mu_q_log_sigsq_eps
   term_3 <- - 1/2*mu_q_recip_sigsq_eps*E_q_resid
 
   term_1 + term_2 + term_3
@@ -62,8 +62,8 @@ e_nu <- function(K, L, mu_beta, # hyperparamter
 
   # term_1 <- - d/2*log(2*pi) will cancel out with term_8
   term_2 <- (L+1)/2*determinant(inv_Sigma_beta, logarithm=TRUE)$modulus[1]
-  term_3 <- - K/2*mu_q_log_sigsq_mu  # mu_q_log_sigsq_mu <-------- TO IMPLEMENT
-  term_4 <- - K/2*sum(mu_q_log_sigsq_psi)  # mu_q_log_sigsq_psi <-------- TO IMPLEMENT
+  term_3 <- - K/2*mu_q_log_sigsq_mu
+  term_4 <- - K/2*sum(mu_q_log_sigsq_psi)
   term_5 <- - tr(M_q_nu_nuT%*%M_q_inv_Sigma_nu)/2
   term_6 <- cprod(mu_q_nu, M_q_inv_Sigma_nu%*%mu_nu)
   term_7 <- - cprod(mu_nu, M_q_inv_Sigma_nu%*%mu_nu)/2
