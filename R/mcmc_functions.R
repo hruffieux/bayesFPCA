@@ -13,7 +13,7 @@
 #         uncorrelated scores.
 #  [Note: not exported anymore, copied in VMP_FPCA/simulations/fun_utils.R ]
 #
-summarise_mcmc_multivariate <- function(stan_obj, C_g, Psi_g, pred_interval = TRUE) {
+summarise_mcmc_multivariate <- function(stan_obj, C_g, Psi_g, L_sim = NULL, pred_interval = TRUE) {
 
   mcmc_samples <- rstan::extract(stan_obj, permuted=FALSE)
   n_mcmc <- dim(mcmc_samples)[1]
@@ -23,6 +23,10 @@ summarise_mcmc_multivariate <- function(stan_obj, C_g, Psi_g, pred_interval = TR
 
   fpca_params <- dimnames(mcmc_samples)$parameters
   L <- length(fpca_params[grep("beta_psi", fpca_params, fixed=TRUE)])/2/p
+
+  if (is.null(L_sim)) {
+    L_sim <- L
+  }
   N <- length(fpca_params[grep("zeta", fpca_params, fixed=TRUE)])/L
 
   mu_g_mcmc <- Psi_g_mcmc <- vector("list", length=p)
@@ -48,10 +52,10 @@ summarise_mcmc_multivariate <- function(stan_obj, C_g, Psi_g, pred_interval = TR
     Psi_g_mcmc[[j]] <- vector("list", length=L)
     for(l in 1:L) {
 
-      beta_psi_l_cols <- fpca_params[grep(paste0("beta_psi[", j, ",", l), fpca_params, fixed=TRUE)]
+      beta_psi_l_cols <- fpca_params[grep(paste0("beta_psi[", j, ",", l, ","), fpca_params, fixed=TRUE)]
       beta_psi_mcmc <- mcmc_samples[, 1, beta_psi_l_cols]
 
-      u_psi_l_cols <- fpca_params[grep(paste0("u_psi[", j, ",", l), fpca_params, fixed=TRUE)]
+      u_psi_l_cols <- fpca_params[grep(paste0("u_psi[", j, ",", l, ","), fpca_params, fixed=TRUE)]
       u_psi_mcmc <- mcmc_samples[, 1, u_psi_l_cols]
 
       nu_psi_mcmc <- t(cbind(beta_psi_mcmc, u_psi_mcmc))
@@ -127,10 +131,12 @@ summarise_mcmc_multivariate <- function(stan_obj, C_g, Psi_g, pred_interval = TR
       norm_vec[l] <- sqrt(trapint(time_int_vec, Psi_tilde[, l]^2))
       Psi_hat[[k]][, l] <- Psi_tilde[, l]/norm_vec[l]
       Zeta_hat[[k]][, l] <- norm_vec[l]*Zeta_tilde[, l]
+    }
+
+    for(l in 1:L_sim) {
 
       Psi_g_comb <- vector("list", length = p)
       for(j in 1:p) {
-
         Psi_g_comb[[j]] <- Psi_g[[j]][, l]
       }
       Psi_g_comb <- Reduce(c, Psi_g_comb)

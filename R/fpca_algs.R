@@ -2152,6 +2152,7 @@ mfvb_gauss_mfpca <- function(N, p, L, K, C, Y, sigma_zeta,
   Psi_tilde <- U_psi %*% Q %*% sqrt(Lambda)
   Zeta_tilde <- crossprod(zeta_rotn, Q %*% solve(sqrt(Lambda)))
 
+  # print(cov(Zeta_tilde)) # scores uncorrelated, and with variance 1, because before normalisation
   mu_hat <- split(E_q_mu, rep(1:p, each = n_g))
 
   Psi_hat <- matrix(NA, p*n_g, L)
@@ -2183,6 +2184,9 @@ mfvb_gauss_mfpca <- function(N, p, L, K, C, Y, sigma_zeta,
   }
   colnames(Zeta_hat) <- paste0("FPC_", 1:L)
   rownames(Zeta_hat) <- subj_names
+  # print(cov(Zeta_hat)) # access variance of the scores
+  # print(apply(Zeta_hat, 2, function(vv) var(vv)))
+  # print(Lambda)
 
   Psi_hat <- lapply(split(Psi_hat, rep(1:p, each = n_g)), matrix, nrow = n_g, ncol = L)
 
@@ -2195,7 +2199,7 @@ mfvb_gauss_mfpca <- function(N, p, L, K, C, Y, sigma_zeta,
   rotn_mat <- V_psi %*% D_psi %*% Q %*% solve(sqrt(Lambda)) %*% D_norm_vec
   for(i in 1:N) {
 
-    Cov_zeta_hat[[i]] <- crossprod(rotn_mat, Cov_q_zeta[[i]] %*% rotn_mat)
+    Cov_zeta_hat[[i]] <- crossprod(rotn_mat, Cov_q_zeta[[i]] %*% rotn_mat) # not the same covariance as above, as subject specific. we just transform the VB covariance estimate according to the newly transformed scores and eigenfunctions.
   }
 
   # Store the results:
@@ -2264,11 +2268,14 @@ mfvb_gauss_mfpca <- function(N, p, L, K, C, Y, sigma_zeta,
   eigenvalues <- apply(Zeta_hat, 2, function(vv) var(vv))
   cumulated_pve <- cumsum(eigenvalues) / sum(eigenvalues) * 100
 
+  # E_q_sigsq_psi <- lambda_q_sigsq_psi / (kappa_q_sigsq_psi - 2) # variational estimates for the variances of the eigenfunctions /!\ before orthonormalisation, so not ordered! after orthogonalisation, would all have the same magnitude, as this decreasing phenomenon is transferred to the scores.
+
   create_named_list(time_g, K,
                     Y_summary, Y_hat, Y_low, Y_upp,
                     gbl_hat, mu_hat, list_Psi_hat,
                     Zeta_hat, Cov_zeta_hat, list_zeta_ellipse,
                     elbo, n_iter, eigenvalues, cumulated_pve)
+                    # E_q_sigsq_psi)
 
 }
 
@@ -2708,10 +2715,13 @@ mfvb_gauss_fpca <- function(N, L, K, C, Y, sigma_zeta, mu_beta,
   eigenvalues <- apply(Zeta_hat, 2, function(vv) var(vv))
   cumulated_pve <- cumsum(eigenvalues) / sum(eigenvalues) * 100
 
+  # E_q_sigsq_psi <- lambda_q_sigsq_psi / (kappa_q_sigsq_psi - 2) # variational estimate for the variance of the eigenfunctions /!\ before orthonormalisation, so not ordered! after orthogonalisation, would all have the same magnitude, as this decreasing phenomenon is transferred to the scores.
+
   create_named_list(time_g, K,
                     Y_summary, Y_hat, Y_low, Y_upp,
                     gbl_hat, mu_hat, list_Psi_hat,
                     Zeta_hat, Cov_zeta_hat, list_zeta_ellipse,
                     elbo, n_iter, eigenvalues, cumulated_pve)
+                    # E_q_sigsq_psi)
 
 }
