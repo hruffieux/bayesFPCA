@@ -2,14 +2,11 @@
 % Please edit documentation in R/bayesFPCA_package.R
 \name{bayesFPCA-package}
 \alias{bayesFPCA-package}
-\title{bayesFPCA: an R package for FPCA by variational message passing inference}
+\title{bayesFPCA: an R package for FPCA by variational inference}
 \description{
 Suite of functions to perform functional principal component analysis (FPCA)
-in the Bayesian setting using variational message passing inference.
+in the Bayesian setting using variational inference.
 }
-\section{bayesFPCA functions}{
- gauss_mfpca_data, vmp_gauss_mfpca
-
+\details{
 "_PACKAGE"
 }
-

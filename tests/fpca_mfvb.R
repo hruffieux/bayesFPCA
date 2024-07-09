@@ -157,8 +157,8 @@ if (run_model_choice_version) {
   rmse_mfpca <- apply(Zeta - Zeta_hat, 2, function(x) sqrt(mean(x^2)))
   rmse_mfpca_mc <- apply(Zeta - Zeta_hat_mc, 2, function(x) sqrt(mean(x^2)))
 
-  print(rmse_mfpca)
-  print(rmse_mfpca_mc)
+  # print(rmse_mfpca)
+  # print(rmse_mfpca_mc)
 
   ise_mfpca <- ise_mfpca_mc <- rep(NA, L+1)
 
@@ -174,7 +174,7 @@ if (run_model_choice_version) {
 
   }
 
-  print(ise_mfpca)
-  print(ise_mfpca_mc)
+  # print(ise_mfpca)
+  # print(ise_mfpca_mc)
 }
 

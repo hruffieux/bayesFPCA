@@ -9,8 +9,6 @@
 #' \code{\link{set_hyper}}) by setting their argument \code{list_hyper} to
 #' \code{NULL}.
 #'
-#' @param sigma_zeta Positive real number of the standard deviation of the
-#'                   scores zeta.
 #' @param sigma_beta Vector of size 1 or 2 for the standard deviation of the
 #'                   spline coefficients for the mean function.
 #' @param A Positive real number for the top-level hyperparameter of the
@@ -21,10 +19,11 @@
 #'
 #' @export
 #'
-set_hyper <- function(sigma_zeta = 1, sigma_beta = 1e5, A = 1e5) {
+set_hyper <- function(sigma_beta = 1e5, A = 1e5) {
 
-  check_structure(sigma_zeta, "vector", "double", 1)
-  check_positive(sigma_zeta)
+  # check_structure(sigma_zeta, "vector", "double", 1)
+  # check_positive(sigma_zeta)
+  sigma_zeta <- 1  # fixed to 1. PVE regained through post-hoc orthonormalisation
 
   # Now set to zero everywhere (mfpca version MFVB assumed to be zero in the algorithm)
   # Vector of size 1 or 2 for the mean of the spline coefficients

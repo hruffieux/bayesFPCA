@@ -39,6 +39,44 @@ flip_sign <- function(vec_flip, list_Psi_hat, Zeta_hat, zeta_ellipse = NULL) {
 }
 
 
+
+#' Select the number of components L from the PVE estimate.
+#'
+#' This function is used to select L from the estimated PVE (proportion of
+#' variance explained) by the components and display the PVE as a function of
+#' the component index l = 1, ..., L_max.
+#'
+#' @param cumulated_pve Vector of size L_max whose entry l contains the
+#'                      PVE as estimated by the function bayesFPCA.
+#' @param thres Optional threshold to be applied to the cumulated PVE to select
+#'              the number of components L (default 95).
+#' @param plot_pve Boolean for whether a scree plot for estimated cumulated PVE
+#'                 needs to be displayed (default TRUE).
+#'
+#' @return An object containing the estimated number of components, based on the
+#'         specified threshold on the cumulated PVE.
+#'
+#' @export
+#'
+select_L <- function(cumulated_pve, thres = 95, plot_pve = TRUE) {
+
+  L_thres <- sum(cumulated_pve < thres) + 1
+
+  if (plot_pve) {
+    plot(cumulated_pve, xlab = "Component index l", ylab = "Cumulated PVE (%)",
+         main = "Scree plot for cumulated PVE across components", ylim = c(0, 100), xaxt="n",
+         type = "b", lwd = 2)
+    points(cumulated_pve, pch = 20)
+    axis(1, at = seq_along(cumulated_pve))
+    abline(v = L_thres, col = "red", lty = 2, lwd = 2)
+    abline(h = thres, col = "grey", lty = 3, lwd = 2)
+  }
+
+  create_named_list(L_thres, thres, cumulated_pve)
+
+}
+
+
 #' Display latent functions estimated by FPCA or mFPCA.
 #'
 #' This function is used to plot the mean function and eigenfunctions estimated
