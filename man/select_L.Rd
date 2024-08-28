@@ -13,8 +13,8 @@ PVE as estimated by the function bayesFPCA.}
 \item{thres}{Optional threshold to be applied to the cumulated PVE to select
 the number of components L (default 95).}
 
-\item{plot_pve}{Boolean for whether the estimated cumulated PVE needs to be
-displayed (default TRUE).}
+\item{plot_pve}{Boolean for whether a scree plot for estimated cumulated PVE
+needs to be displayed (default TRUE).}
 }
 \value{
 An object containing the estimated number of components, based on the

@@ -2015,8 +2015,7 @@ mfvb_gauss_mfpca <- function(N, p, L, K, C, Y, sigma_zeta,
     for(l in 1:L) {
 
       for(j in 1:p) {
-
-        u_inds <- psi_inds[[j]][[l]]
+        u_inds <- psi_inds[[j]][[l]][3:(K[j] + 2)]
         tr_term <- tr(Cov_q_nu[[j]][u_inds, u_inds])
         cprod_term <- cprod(E_q_nu[[j]][u_inds])
         lambda_q_sigsq_psi[j, l] <- tr_term + cprod_term + E_q_recip_a_psi[j, l]
