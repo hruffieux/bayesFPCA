@@ -76,7 +76,8 @@ K <- n_int_knots + 2                # number of spline basis functions
 L <- 4                              # number of FPCA basis functions
 
 tol <- 1e-5                         # convergence criterion
-maxit_mfvb <- 250                   # maximum number of iterations
+# tol <- 1e-3
+maxit_mfvb <- 1000                  # maximum number of iterations
 
 sigma_zeta_vec <- 2/(1:L)           # sd for first and second scores
 sigma_eps <- 1                      # sd of the residuals
@@ -99,7 +100,8 @@ Y <- fpca_data$Y
 
 
 fpca_res <- run_mfvb_fpca(time_obs, Y, L, K = K, n_g = n_g, tol = tol,
-                          maxit = maxit_mfvb, Psi_g = Psi_g)
+                          maxit = maxit_mfvb, Psi_g = Psi_g, fixed_score_variance = F,
+                          rel_crit = T)
 
 
 time_g <- fpca_res$time_g
@@ -123,7 +125,7 @@ if (L > 1) { # displays the scores for the first two components
 }
 
 
-run_model_choice_version <- T
+run_model_choice_version <- F
 if (run_model_choice_version) {
 
   n_cpus <- 1

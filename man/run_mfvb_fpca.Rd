@@ -18,6 +18,7 @@ run_mfvb_fpca(
   n_g = 1000,
   time_g = NULL,
   Psi_g = NULL,
+  fixed_score_variance = TRUE,
   verbose = TRUE,
   seed = NULL,
   check_elbo = TRUE
@@ -59,6 +60,11 @@ then \code{n_g} must be \code{NULL} as will be taken to be
 
 \item{Psi_g}{Reference eigenfunctions (if available, e.g., in simulations)
 used to flip the sign of the resulting scores and eigenfunctions.}
+
+\item{fixed_score_variance}{Boolean indicating whether to fix the variance of
+the scores (to 1, estimating the variances of the latent function
+spline coefficients only), or infer it in a component specific
+way (along with the spline coefficient variances). Default TRUE.}
 
 \item{verbose}{Boolean indicating whether messages should be printed during
 the run.}

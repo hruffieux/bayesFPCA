@@ -58,8 +58,8 @@ run_vmp_fpca_model_choice <- function(time_obs, Y, L = 10, K_min = 5, K_max = 20
                                       list_hyper = NULL,
                                       n_g = 1000, time_g = NULL,
                                       tol = 1e-5, maxit = 1e4, rel_crit = TRUE,
-                                      Psi_g = NULL, verbose = TRUE,
-                                      seed = NULL, n_cpus = 1) {
+                                      Psi_g = NULL, verbose = TRUE, seed = NULL,
+                                      n_cpus = 1) {
 
   check_structure(K_min, "vector", "numeric", 1)
   check_natural(K_min)
@@ -78,12 +78,10 @@ run_vmp_fpca_model_choice <- function(time_obs, Y, L = 10, K_min = 5, K_max = 20
 
   out <- parallel::mclapply(vec_K, function(K) {
 
-    run_vmp_fpca(time_obs = time_obs, Y = Y, L = L, K = K,
-                             list_hyper = list_hyper,
-                             n_g = n_g, time_g = time_g,
-                             tol = tol, maxit = maxit, rel_crit = rel_crit,
-                             plot_elbo = FALSE, Psi_g = Psi_g, verbose = verbose,
-                             seed = seed)
+    run_vmp_fpca(time_obs = time_obs, Y = Y, L = L, K = K, list_hyper = list_hyper,
+                 n_g = n_g, time_g = time_g, tol = tol, maxit = maxit, rel_crit = rel_crit,
+                 plot_elbo = FALSE, Psi_g = Psi_g, verbose = verbose,
+                 seed = seed)
     # unnorm_p_M_given_y <- mfvb_res$elbo - log(length(vec_K)) # Unif(vec_K) constant wrt to K, we can ignore it, just maximise the elbo
 
   }, mc.cores = n_cpus)
@@ -128,6 +126,10 @@ run_vmp_fpca_model_choice <- function(time_obs, Y, L = 10, K_min = 5, K_max = 20
 #'                 the ELBO.
 #' @param Psi_g Reference eigenfunctions (if available, e.g., in simulations)
 #'              used to flip the sign of the resulting scores and eigenfunctions.
+#' @param fixed_score_variance Boolean indicating whether to fix the variance of
+#'              the scores (to 1, estimating the variances of the latent function
+#'              spline coefficients only), or infer it in a component specific
+#'              way (along with the spline coefficient variances). Default TRUE.
 #' @param verbose Boolean indicating whether messages should be printed during
 #'                the run.
 #' @param seed User-specified seed for reproducibilty.
@@ -156,7 +158,8 @@ run_mfvb_fpca_model_choice <- function(time_obs, Y, L = 10, K_min = 5, K_max = 2
                                       list_hyper = NULL, tol = 1e-5, maxit = 1e4,
                                       rel_crit = TRUE,
                                       n_g = 1000, time_g = NULL,
-                                      Psi_g = NULL, verbose = TRUE, seed = NULL,
+                                      Psi_g = NULL, fixed_score_variance = TRUE,
+                                      verbose = TRUE, seed = NULL,
                                       n_cpus = 1, check_elbo = TRUE) {
 
   check_structure(K_min, "vector", "numeric", 1)
@@ -180,7 +183,8 @@ run_mfvb_fpca_model_choice <- function(time_obs, Y, L = 10, K_min = 5, K_max = 2
                   list_hyper = list_hyper, tol = tol, maxit = maxit,
                   rel_crit = rel_crit, plot_elbo = FALSE,
                   n_g = n_g, time_g = time_g,
-                  Psi_g = Psi_g, verbose = verbose, seed = seed,
+                  Psi_g = Psi_g, fixed_score_variance = fixed_score_variance,
+                  verbose = verbose, seed = seed,
                   check_elbo = check_elbo)
 
     # unnorm_p_M_given_y <- mfvb_res$elbo - log(length(vec_K)) # Unif(vec_K) constant wrt to K, we can ignore it, just maximise
@@ -1617,6 +1621,10 @@ vmp_gauss_mfpca <- function(N, p, L, K, C, Y, sigma_zeta, mu_beta, Sigma_beta,
 #' @param plot_elbo	Boolean indicating whether the values of the ELBO should be displayed during the run.
 #' @param Psi_g Reference eigenfunctions (if available, e.g., in simulations)
 #'              used to flip the sign of the resulting scores and eigenfunctions.
+#' @param fixed_score_variance Boolean indicating whether to fix the variance of
+#'              the scores (to 1, estimating the variances of the latent function
+#'              spline coefficients only), or infer it in a component specific
+#'              way (along with the spline coefficient variances). Default TRUE.
 #' @param verbose Boolean indicating whether messages should be printed during
 #'                the run.
 #' @param seed User-specified seed for reproducibilty.
@@ -1644,7 +1652,8 @@ run_mfvb_fpca <- function(time_obs, Y, L, K = NULL,
                           list_hyper = NULL, tol = 1e-5, maxit = 1e4,
                           rel_crit = TRUE, plot_elbo = FALSE,
                           n_g = 1000, time_g = NULL,
-                          Psi_g = NULL, verbose = TRUE, seed = NULL,
+                          Psi_g = NULL, fixed_score_variance = TRUE,
+                          verbose = TRUE, seed = NULL,
                           check_elbo = TRUE) {
 
   check_structure(seed, "vector", "numeric", 1, null_ok = TRUE)
@@ -1687,6 +1696,8 @@ run_mfvb_fpca <- function(time_obs, Y, L, K = NULL,
   check_natural(maxit)
 
   check_structure(rel_crit, "vector", "logical", 1)
+
+  check_structure(fixed_score_variance, "vector", "logical", 1)
 
   check_structure(plot_elbo, "vector", "logical", 1)
 
@@ -1750,7 +1761,7 @@ run_mfvb_fpca <- function(time_obs, Y, L, K = NULL,
     # directly includes the orthnogonalisation step, unlike the vmp_gauss_mfpca function
     mfvb_gauss_fpca(N, L, K, C, Y, sigma_zeta, mu_beta, Sigma_beta, A,
                     tol, maxit, rel_crit, plot_elbo, subj_names, time_g, C_g,
-                    Psi_g, verbose, check_elbo = check_elbo)
+                    Psi_g, fixed_score_variance, verbose, check_elbo = check_elbo)
 
   } else {
 
@@ -1775,7 +1786,7 @@ run_mfvb_fpca <- function(time_obs, Y, L, K = NULL,
     # directly includes the orthogonalisation step, unlike the vmp_gauss_mfpca function
     mfvb_gauss_mfpca(N, p, L, K, C, Y, sigma_zeta, Sigma_beta, A,
                      tol, maxit, rel_crit, plot_elbo, subj_names, var_names,
-                     time_g, C_g, Psi_g, verbose, check_elbo = check_elbo)
+                     time_g, C_g, Psi_g, fixed_score_variance, verbose, check_elbo = check_elbo)
 
   }
 
@@ -1785,7 +1796,8 @@ run_mfvb_fpca <- function(time_obs, Y, L, K = NULL,
 mfvb_gauss_mfpca <- function(N, p, L, K, C, Y, sigma_zeta,
                              Sigma_beta, A, tol, maxit, rel_crit, plot_elbo,
                              subj_names, var_names, time_g, C_g,
-                             Psi_g, verbose, eps = .Machine$double.eps^0.5,
+                             Psi_g, fixed_score_variance, verbose,
+                             eps = .Machine$double.eps^0.5,
                              check_elbo = check_elbo) {
 
   n <- Reduce(rbind, lapply(Y, function(x) sapply(x, length))) # rows = samples, columns = variables
@@ -1827,7 +1839,16 @@ mfvb_gauss_mfpca <- function(N, p, L, K, C, Y, sigma_zeta,
   kappa_q_sigsq_psi <- matrix(rep(K + 1, each = L), nrow = p, byrow = T) # matrix p x L
   kappa_q_a_psi <- 2
 
+  if (!fixed_score_variance) {
+    kappa_q_sigsq_zeta <- N + 1
+    kappa_q_a_zeta <- 2
+
+    # initialisation
+    E_q_recip_a_zeta <- rep(1, L)
+  }
+
   # Initialisation
+  E_q_recip_sigsq_zeta <- 1 / rep(sigma_zeta^2, L)
 
   E_q_recip_sigsq_eps <- rep(1, p)
   E_q_recip_a_eps <- rep(1, p)
@@ -1959,7 +1980,9 @@ mfvb_gauss_mfpca <- function(N, p, L, K, C, Y, sigma_zeta,
         mu_sum <- mu_sum + E_q_recip_sigsq_eps[j]*freq_scores
       }
 
-      inv_Cov_q_zeta[[i]] <- Cov_sum + 1/sigma_zeta^2*diag(L)
+      inv_Cov_q_zeta[[i]] <- Cov_sum + diag(E_q_recip_sigsq_zeta)
+      # inv_Cov_q_zeta[[i]] <- Cov_sum + 1/sigma_zeta^2*diag(L)
+
       Cov_q_zeta[[i]] <- solve(inv_Cov_q_zeta[[i]])
       E_q_zeta[[i]] <- as.vector(Cov_q_zeta[[i]] %*% mu_sum)
     }
@@ -1985,6 +2008,14 @@ mfvb_gauss_mfpca <- function(N, p, L, K, C, Y, sigma_zeta,
 
       lambda_q_sigsq_eps[j] <- lambda_q_sigsq_eps[j] + E_q_recip_a_eps[j]
       E_q_recip_sigsq_eps[j] <- kappa_q_sigsq_eps[j] / lambda_q_sigsq_eps[j]
+    }
+
+    if (!fixed_score_variance) {
+      lambda_q_sigsq_zeta <- Reduce("+", lapply(1:N, function(i) diag(Cov_q_zeta[[i]]) + E_q_zeta[[i]]^2)) + E_q_recip_a_zeta # vector of length L
+      lambda_q_a_zeta <- E_q_recip_sigsq_zeta + 1 / A^2
+
+      E_q_recip_a_zeta <- 2 / lambda_q_a_zeta
+      E_q_recip_sigsq_zeta <- (N + 1) / lambda_q_sigsq_zeta
     }
 
     # For j = 1, ..., p, update q(a_eps[j]):
@@ -2042,6 +2073,11 @@ mfvb_gauss_mfpca <- function(N, p, L, K, C, Y, sigma_zeta,
     E_q_log_a_psi <- compute_mu_q_log(kappa_q_a_psi, lambda_q_a_psi) # matrix nrow = p, ncol = L
 
 
+    if (!fixed_score_variance) {
+      E_q_log_sigsq_zeta <- compute_mu_q_log(kappa_q_sigsq_zeta, lambda_q_sigsq_zeta)
+      E_q_log_a_zeta <- compute_mu_q_log(kappa_q_a_zeta, lambda_q_a_zeta)
+    }
+
     # ELBO:
     #
     elbo_y <- sum(sapply(1:p, function(j) { e_y(N, sum_n[j],
@@ -2059,22 +2095,21 @@ mfvb_gauss_mfpca <- function(N, p, L, K, C, Y, sigma_zeta,
                                                  E_q_log_sigsq_mu[j], E_q_log_sigsq_psi[j,])}))
 
 
-    elbo_zeta <- e_zeta(N, inv_Sigma_zeta =  1/sigma_zeta^2*diag(L), # hyperparameter
+    elbo_zeta <- e_zeta(N, inv_Sigma_zeta = diag(E_q_recip_sigsq_zeta), # 1/sigma_zeta^2*diag(L), # hyperparameter
                         E_q_zeta, Cov_q_zeta, inv_Cov_q_zeta)
 
-    elbo_sigsq_eps <- sum(sapply(1:p, function(j) {e_sigsq(E_q_recip_sigsq_eps[j], E_q_log_sigsq_eps[j],
-                                                           E_q_recip_a_eps[j], E_q_log_a_eps[j],
-                                                           kappa_q_sigsq_eps[j], lambda_q_sigsq_eps[j])}))
+    elbo_sigsq_eps <- sum(e_sigsq(E_q_recip_sigsq_eps, E_q_log_sigsq_eps,
+                                  E_q_recip_a_eps, E_q_log_a_eps,
+                                  kappa_q_sigsq_eps, lambda_q_sigsq_eps))
 
-    elbo_a_eps <- sum(sapply(1:p, function(j) {e_a(E_q_recip_a_eps[j], E_q_log_a_eps[j],
-                                                   A, kappa_q_a_eps, lambda_q_a_eps[j])}))
+    elbo_a_eps <- sum(e_a(E_q_recip_a_eps, E_q_log_a_eps,
+                          A, kappa_q_a_eps, lambda_q_a_eps))
 
-    elbo_sigsq_mu <- sum(sapply(1:p, function(j) {e_sigsq(E_q_recip_sigsq_mu[j], E_q_log_sigsq_mu[j],
-                                                          E_q_recip_a_mu[j], E_q_log_a_mu[j],
-                                                          kappa_q_sigsq_mu[j], lambda_q_sigsq_mu[j])}))
+    elbo_sigsq_mu <- sum(e_sigsq(E_q_recip_sigsq_mu, E_q_log_sigsq_mu,
+                                 E_q_recip_a_mu, E_q_log_a_mu,
+                                 kappa_q_sigsq_mu, lambda_q_sigsq_mu))
 
-    elbo_a_mu <- sum(sapply(1:p, function(j) {e_a(E_q_recip_a_mu[j], E_q_log_a_mu[j],
-                                                  A, kappa_q_a_mu, lambda_q_a_mu[j])}))
+    elbo_a_mu <- sum(e_a(E_q_recip_a_mu, E_q_log_a_mu, A, kappa_q_a_mu, lambda_q_a_mu))
 
     elbo_sigsq_psi <- sum(sapply(1:p, function(j) {sum(e_sigsq(E_q_recip_sigsq_psi[j,], E_q_log_sigsq_psi[j,],
                                                                E_q_recip_a_psi[j,], E_q_log_a_psi[j,],
@@ -2085,6 +2120,22 @@ mfvb_gauss_mfpca <- function(N, p, L, K, C, Y, sigma_zeta,
 
     elbo_new <- elbo_y + elbo_nu + elbo_zeta + elbo_sigsq_eps + elbo_a_eps +
       elbo_sigsq_mu + elbo_a_mu + elbo_sigsq_psi + elbo_a_psi
+
+    if (!fixed_score_variance) {
+
+      elbo_sigsq_zeta <- sum(e_sigsq(E_q_recip_sigsq_zeta, E_q_log_sigsq_zeta,
+                                     E_q_recip_a_zeta, E_q_log_a_zeta,
+                                     kappa_q_sigsq_zeta, lambda_q_sigsq_zeta))
+
+      elbo_a_zeta <- sum(e_a(E_q_recip_a_zeta, E_q_log_a_zeta,
+                             A, kappa_q_a_zeta, lambda_q_a_zeta))
+
+      elbo_new <- elbo_new + elbo_sigsq_zeta + elbo_a_zeta
+    }
+
+    if (verbose) {
+      cat(paste0("ELBO = ", format(elbo_new), "\n\n"))
+    }
 
     elbo_res <- c(elbo_res, elbo_new)
 
@@ -2273,7 +2324,8 @@ mfvb_gauss_mfpca <- function(N, p, L, K, C, Y, sigma_zeta,
                     Y_summary, Y_hat, Y_low, Y_upp,
                     gbl_hat, mu_hat, list_Psi_hat,
                     Zeta_hat, Cov_zeta_hat, list_zeta_ellipse,
-                    elbo, n_iter, eigenvalues, cumulated_pve)
+                    elbo, n_iter, eigenvalues, cumulated_pve,
+                    E_q_recip_sigsq_zeta)
                     # E_q_sigsq_psi)
 
 }
@@ -2283,14 +2335,15 @@ mfvb_gauss_mfpca <- function(N, p, L, K, C, Y, sigma_zeta,
 mfvb_gauss_fpca <- function(N, L, K, C, Y, sigma_zeta, mu_beta,
                             Sigma_beta, A, tol, maxit, rel_crit, plot_elbo,
                             subj_names, time_g, C_g,
-                            Psi_g, verbose, eps = .Machine$double.eps^0.5,
+                            Psi_g, fixed_score_variance, verbose,
+                            eps = .Machine$double.eps^0.5,
                             check_elbo = check_elbo) {
 
   n_g <- length(time_g)
   T_vec <- sapply(Y, length)
   sum_T <- sum(T_vec)
 
-  inv_Sigma_zeta <- solve(sigma_zeta^2*diag(L))
+  # inv_Sigma_zeta <- solve(sigma_zeta^2*diag(L))
   inv_Sigma_beta <- solve(Sigma_beta)
 
   kappa_q_sigsq_mu <- K + 1
@@ -2305,10 +2358,19 @@ mfvb_gauss_fpca <- function(N, L, K, C, Y, sigma_zeta, mu_beta,
   kappa_q_a_psi <- 2
   mu_q_recip_a_psi <- rep(1, L)
 
+  if (!fixed_score_variance) {
+    kappa_q_sigsq_zeta <- N + 1
+    kappa_q_a_zeta <- 2
+
+    # initialisation
+    mu_q_recip_a_zeta <- rep(1, L)
+  }
+
+  mu_q_recip_sigsq_zeta <- 1 / rep(sigma_zeta^2, L)
+
   mu_q_zeta <- vector("list", length=N)
   Sigma_q_zeta <- vector("list", length=N)
   for(i in 1:N) {
-
     mu_q_zeta[[i]] <- rnorm(L, 0, sigma_zeta)
     Sigma_q_zeta[[i]] <- diag(L)
   }
@@ -2435,9 +2497,17 @@ mfvb_gauss_fpca <- function(N, L, K, C, Y, sigma_zeta, mu_beta,
       M_q_Psi <- C[[i]]%*%M_q_V_psi
       centre_vec <- cprod(M_q_Psi, Y[[i]]) - mu_q_h[[i]]
 
-      inv_Sigma_q_zeta[[i]] <- mu_q_recip_sigsq_eps*M_q_H[[i]] + inv_Sigma_zeta
+      inv_Sigma_q_zeta[[i]] <- mu_q_recip_sigsq_eps*M_q_H[[i]] + diag(mu_q_recip_sigsq_zeta) # inv_Sigma_zeta
       Sigma_q_zeta[[i]] <- solve(inv_Sigma_q_zeta[[i]])
       mu_q_zeta[[i]] <- mu_q_recip_sigsq_eps*as.vector(Sigma_q_zeta[[i]]%*%centre_vec)
+    }
+
+    if (!fixed_score_variance) {
+      lambda_q_sigsq_zeta <- Reduce("+", lapply(1:N, function(i) diag(Sigma_q_zeta[[i]]) + mu_q_zeta[[i]]^2)) + mu_q_recip_a_zeta # vector of length L
+      lambda_q_a_zeta <- mu_q_recip_sigsq_zeta + 1 / A^2
+
+      mu_q_recip_a_zeta <- 2 / lambda_q_a_zeta
+      mu_q_recip_sigsq_zeta <- (N + 1) / lambda_q_sigsq_zeta
     }
 
     # Update q(sigsq_eps):
@@ -2519,6 +2589,10 @@ mfvb_gauss_fpca <- function(N, L, K, C, Y, sigma_zeta, mu_beta,
     mu_q_log_a_mu <- compute_mu_q_log(kappa_q_a_mu, lambda_q_a_mu)
     mu_q_log_a_psi <- compute_mu_q_log(kappa_q_a_psi, lambda_q_a_psi)
 
+    if (!fixed_score_variance) {
+      mu_q_log_sigsq_zeta <- compute_mu_q_log(kappa_q_sigsq_zeta, lambda_q_sigsq_zeta)
+      mu_q_log_a_zeta <- compute_mu_q_log(kappa_q_a_zeta, lambda_q_a_zeta)
+    }
 
     # ELBO:
     #
@@ -2532,7 +2606,7 @@ mfvb_gauss_fpca <- function(N, L, K, C, Y, sigma_zeta, mu_beta,
                     mu_q_log_sigsq_mu, mu_q_log_sigsq_psi)
 
 
-    elbo_zeta <- e_zeta(N, inv_Sigma_zeta, # hyperparameter
+    elbo_zeta <- e_zeta(N, diag(mu_q_recip_sigsq_zeta), #inv_Sigma_zeta, # hyperparameter
                         mu_q_zeta, Sigma_q_zeta, inv_Sigma_q_zeta)
 
     elbo_sigsq_eps <- e_sigsq(mu_q_recip_sigsq_eps, mu_q_log_sigsq_eps,
@@ -2558,6 +2632,21 @@ mfvb_gauss_fpca <- function(N, L, K, C, Y, sigma_zeta, mu_beta,
 
     elbo_new <- elbo_y + elbo_nu + elbo_zeta + elbo_sigsq_eps + elbo_a_eps +
       elbo_sigsq_mu + elbo_a_mu + elbo_sigsq_psi + elbo_a_psi
+
+    if (!fixed_score_variance) {
+      elbo_sigsq_zeta <- sum(e_sigsq(mu_q_recip_sigsq_zeta, mu_q_log_sigsq_zeta,
+                                     mu_q_recip_a_zeta, mu_q_log_a_zeta,
+                                     kappa_q_sigsq_zeta, lambda_q_sigsq_zeta))
+
+      elbo_a_zeta <- sum(e_a(mu_q_recip_a_zeta, mu_q_log_a_zeta,
+                             A, kappa_q_a_zeta, lambda_q_a_zeta))
+
+      elbo_new <- elbo_new + elbo_sigsq_zeta + elbo_a_zeta
+    }
+
+    if (verbose) {
+      cat(paste0("ELBO = ", format(elbo_new), "\n\n"))
+    }
 
     elbo_res <- c(elbo_res, elbo_new)
 
@@ -2720,7 +2809,8 @@ mfvb_gauss_fpca <- function(N, L, K, C, Y, sigma_zeta, mu_beta,
                     Y_summary, Y_hat, Y_low, Y_upp,
                     gbl_hat, mu_hat, list_Psi_hat,
                     Zeta_hat, Cov_zeta_hat, list_zeta_ellipse,
-                    elbo, n_iter, eigenvalues, cumulated_pve)
+                    elbo, n_iter, eigenvalues, cumulated_pve,
+                    mu_q_recip_sigsq_zeta)
                     # E_q_sigsq_psi)
 
 }
