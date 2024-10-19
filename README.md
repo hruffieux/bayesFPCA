@@ -1,4 +1,5 @@
 <!-- README.md is generated from README.Rmd. Please edit that file -->
+
 <!-- First time: run usethis::use_readme_rmd() to create a pre-commit hook that 
 prevents from committing if the README.Rmd has changed, but has not been 
 re-knitted to generate an updated README.md -->
@@ -6,7 +7,9 @@ re-knitted to generate an updated README.md -->
 ## bayesFPCA - Bayesian Functional Principal Component Analysis Suite <img src="man/figures/bayesFPCA_logo.png" align="right" height="150"/>
 
 <!-- Run for the R CMD checks, run usethis::use_github_actions() to set up the pipeline, possibly modify the .yaml file and then: -->
+
 <!-- [![R build status](https://github.com/hruffieux/bayesFPCA/workflows/R-CMD-check/badge.svg)](https://github.com/hruffieux/bayesFPCA/actions) -->
+
 <!-- [![](https://travis-ci.org/hruffieux/bayesFPCA.svg?branch=master)](https://travis-ci.org/hruffieux/bayesFPCA) -->
 
 [![License: GPL
@@ -21,13 +24,20 @@ multivariate functional principal component analysis (FPCA) in the
 Bayesian setting. It provides efficient variational inference
 implementations (mean-field and variational message passing).
 
+## Warning
+
+**This is a development branch**, it is not guaranteed to be stable at
+any given time and features are subject to change. Please use the
+[stable version](https://github.com/hruffieux/bayesFPCA), unless you
+want to test and report issues.
+
 ## Installation
 
 Then, to install the package in R, run the following command:
 
 ``` r
 if(!require(remotes)) install.packages("remotes")
-remotes::install_github("hruffieux/bayesFPCA")
+remotes::install_github("hruffieux/bayesFPCA", ref = "devel")
 ```
 
 ## Main functions
