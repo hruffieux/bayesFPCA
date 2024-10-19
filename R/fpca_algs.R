@@ -1,6 +1,7 @@
 #' Variational Message Passing (VMP) inference for univariate or multivariate
 #' functional principal component analysis with model choice procedure for
-#' selection of the number of spline functions K.
+#' selection of either the number of FPCA components, L, or the number of spline
+#' functions for representing the components, K.
 #'
 #' This function is used to perform FPCA or mFPCA using a VMP algorithm.
 #'
@@ -9,13 +10,26 @@
 #'                 respectively.
 #' @param Y List of vectors (for univariate curves) or list of lists of vectors
 #'          (for multivariate curves) with the functional data.
-#' @param L Number of eigenfunctions (or latent dimensions). Default L = 10.
-#' @param K_min Minimum number of O'Sulivan spline functions K, which is modelled
-#'              using an uniform prior distribution on the interval
-#'.             [K_min, K_max]. Default K_min = 5.
-#' @param K_max Maximum number of O'Sulivan spline functions K, which is modelled
-#'              using an uniform prior distribution on the interval
-#'.             [K_min, K_max]. Default K_max = 20.
+#' @param model_choice String indicating whether the model choice is to be
+#'        performed for the number of O'Sullivan spline functions ("K") or for
+#'        the number of components ("L").
+#' @param list_K List containing specifications for the choice of the number of
+#'               O'Sullivan spline functions 'K'. If \code{model_choice = "K"}, then
+#'               must consist of integer named 'K_min' and 'K_max' representing
+#'               the lower, resp. upper bound of the support for the uniform
+#'               prior on K (e.g., K_min = 5 and K_max= 20);
+#'               if \code{model_choice = "L"}, then must consist of
+#'               an integer named 'K' representing the number of O'Sullivan
+#'               spline functions to be used (if \code{K = NULL}, will be set
+#'               according to the rule of Ruppert (2002), also enforcing K >=7).
+#' @param list_L List containing specifications for the choice of the number of
+#'               components 'L'. If \code{model_choice = "L"}, then must consist
+#'               of two parameters, 'lambda_L' and 'L_max', specifying the
+#'               Poisson(lambda_L) prior, truncated to {2, ..., L_max}, on the
+#'               number of components L.(e.g., lambda_L = 3, L_max = 10);
+#'               if \code{model_choice = "K"}, then must consist of an integer
+#'               named 'L' representing the (maximum) number of components to be
+#'               used (e.g., L = 10).
 #' @param list_hyper Hyperparameter settings constructed using the function
 #'         \code{\link{set_hyper}}. If \code{NULL} default hyperparameters will
 #'         be used.
@@ -54,49 +68,119 @@
 #'
 #' @export
 #'
-run_vmp_fpca_model_choice <- function(time_obs, Y, L = 10, K_min = 5, K_max = 20,
-                                      list_hyper = NULL,
-                                      n_g = 1000, time_g = NULL,
-                                      tol = 1e-5, maxit = 1e4, rel_crit = TRUE,
-                                      Psi_g = NULL, verbose = TRUE, seed = NULL,
-                                      n_cpus = 1) {
+run_vmp_fpca_model_choice <- function(time_obs, Y, model_choice, list_K, list_L,
+                                      list_hyper = NULL, n_g = 1000,
+                                      time_g = NULL, tol = 1e-5, maxit = 1e4,
+                                      rel_crit = TRUE, Psi_g = NULL,
+                                      verbose = TRUE, seed = NULL, n_cpus = 1) {
 
-  check_structure(K_min, "vector", "numeric", 1)
-  check_natural(K_min)
-  check_positive(K_min)
+  check_structure(model_choice, "vector", "string", 1)
+  stopifnot(model_choice %in% c("K", "L"))
 
-  check_structure(K_max, "vector", "numeric", 1)
-  check_natural(K_max)
+  stopifnot(is.list(list_K))
+  stopifnot(is.list(list_L))
 
-  stopifnot(K_min < K_max)
+  if (model_choice == "K") {
+
+    if (all(names(list_K) != c("K_min", "K_max"))) {
+      stop("list_K must be a list of two integers named 'K_min' and 'K_max'
+            representing the lower, resp. upper bound of the support for the
+            uniform prior on the number of O'Sullivan spline functions K.")
+    }
+    K_min <- list_K$K_min
+    K_max <- list_K$K_max
+
+    check_structure(K_min, "vector", "numeric", 1)
+    check_natural(K_min)
+    check_positive(K_min)
+
+    check_structure(K_max, "vector", "numeric", 1)
+    check_natural(K_max)
+    stopifnot(K_min < K_max)
+
+    if (names(list_L) != "L") {
+      stop("list_L must be a list containing an integer named 'L' representing
+            the (maximum) number of components to be used")
+    }
+
+    L <- list_L$L
+
+  } else {
+
+    if (all(names(list_L) != c("lambda_L", "L_max"))) {
+      stop("list_L must be a list containing two parameters, named 'lambda_L'
+           and 'L_max' specifying the Poisson(lambda_L) prior, truncated
+           to {2, ..., L_max}, on the number of components L.")
+    }
+    lambda_L <- list_L$lambda_L
+    L_max <- list_L$L_max
+
+    check_structure(lambda_L, "vector", "numeric", 1)
+    check_positive(lambda_L)
+
+    check_structure(L_max, "vector", "numeric", 1)
+    check_natural(L_max)
+    check_positive(L_max > 1)
+
+    if (names(list_K) != "K") {
+      stop("list_K must be a list containing an integer named 'K' representing
+            the number of O'Sullivan spline functions K to be used.")
+    }
+
+    K <- list_K$K
+
+  }
 
   check_structure(n_cpus, "vector", "numeric", 1)
   check_natural(n_cpus)
   check_positive(n_cpus)
 
-  vec_K <- K_min:K_max
+  if (model_choice == "K") {
 
-  out <- parallel::mclapply(vec_K, function(K) {
+    vec_K <- K_min:K_max
 
-    run_vmp_fpca(time_obs = time_obs, Y = Y, L = L, K = K, list_hyper = list_hyper,
-                 n_g = n_g, time_g = time_g, tol = tol, maxit = maxit, rel_crit = rel_crit,
-                 plot_elbo = FALSE, Psi_g = Psi_g, verbose = verbose,
-                 seed = seed)
-    # unnorm_p_M_given_y <- mfvb_res$elbo - log(length(vec_K)) # Unif(vec_K) constant wrt to K, we can ignore it, just maximise the elbo
+    out <- parallel::mclapply(vec_K, function(K) {
 
-  }, mc.cores = n_cpus)
+      run_vmp_fpca(time_obs = time_obs, Y = Y, L = L, K = K, list_hyper = list_hyper,
+                   n_g = n_g, time_g = time_g, tol = tol, maxit = maxit, rel_crit = rel_crit,
+                   plot_elbo = FALSE, Psi_g = Psi_g, verbose = verbose,
+                   seed = seed)
 
-  vec_elbo <- sapply(out, "[[", "elbo")
-  # all_p_M_given_y <- all_unnorm_p_M_given_y / sum(all_unnorm_p_M_given_y) # not needed as prior doesn't change with K (Uniform), so we can directly take the run with largest elbo.
+    }, mc.cores = n_cpus)
 
-  out[[which.max(vec_elbo)]]
+    vec_elbo <- sapply(out, "[[", "elbo")
+
+    out[[which.max(vec_elbo)]]
+
+  } else {
+
+    vec_L <- 2:L_max
+
+    out <- parallel::mclapply(vec_L, function(L) {
+
+      run_vmp_fpca(time_obs = time_obs, Y = Y, L = L, K = K, list_hyper = list_hyper,
+                   n_g = n_g, time_g = time_g, tol = tol, maxit = maxit, rel_crit = rel_crit,
+                   plot_elbo = FALSE, Psi_g = Psi_g, verbose = verbose,
+                   seed = seed)
+
+    }, mc.cores = n_cpus)
+
+    vec_elbo <- sapply(out, "[[", "elbo")
+
+    vec_log_unnorm_p_model_given_y <- vec_elbo + vec_L * log(lambda_L) - lfactorial(vec_L) - lambda_L
+
+    print(vec_log_unnorm_p_model_given_y)
+    out[[which.max(vec_log_unnorm_p_model_given_y)]]
+
+  }
 
 }
 
 
 #' Mean-field variational Bayes (MFVB) inference for univariate or multivariate
 #' functional principal component analysis with model choice procedure for
-#' selection of the number of spline functions K.
+#' selection of either the number of FPCA components, L, or the number of spline
+#' functions for representing the components, K.
 #'
 #' This function is used to perform FPCA or mFPCA using a MFVB algorithm.
 #'
@@ -105,13 +189,26 @@ run_vmp_fpca_model_choice <- function(time_obs, Y, L = 10, K_min = 5, K_max = 20
 #'                  respectively.
 #' @param Y List of vectors (for univariate curves) or list of lists of vectors
 #'          (for multivariate curves) with the functional data.
-#' @param L Number of eigenfunctions (or latent dimensions). Default L = 10.
-#' @param K_min Minimum number of O'Sulivan spline functions K, which is modelled
-#'              using an uniform prior distribution on the interval
-#'.             [K_min, K_max]. Default K_min = 5.
-#' @param K_max Maximum number of O'Sulivan spline functions K, which is modelled
-#'              using an uniform prior distribution on the interval
-#'.             [K_min, K_max]. Default K_max = 20.
+#' @param model_choice String indicating whether the model choice is to be
+#'        performed for the number of O'Sullivan spline functions ("K") or for
+#'        the number of components ("L").
+#' @param list_K List containing specifications for the choice of the number of
+#'               O'Sullivan spline functions 'K'. If \code{model_choice = "K"}, then
+#'               must consist of integer named 'K_min' and 'K_max' representing
+#'               the lower, resp. upper bound of the support for the uniform
+#'               prior on K (e.g., K_min = 5 and K_max= 20);
+#'               if \code{model_choice = "L"}, then must consist of
+#'               an integer named 'K' representing the number of O'Sullivan
+#'               spline functions to be used (if \code{K = NULL}, will be set
+#'               according to the rule of Ruppert (2002), also enforcing K >=7).
+#' @param list_L List containing specifications for the choice of the number of
+#'               components 'L'. If \code{model_choice = "L"}, then must consist
+#'               of two parameters, 'lambda_L' and 'L_max', specifying the
+#'               Poisson(lambda_L) prior, truncated to {1, ..., L_max}, on the
+#'               number of components L.(e.g., lambda_L = 3, L_max = 10);
+#'               if \code{model_choice = "K"}, then must consist of an integer
+#'               named 'L' representing the (maximum) number of components to be
+#'               used (e.g., L = 10).
 #' @param list_hyper Hyperparameter settings constructed using the function
 #'         \code{\link{set_hyper}}. If \code{NULL} default hyperparameters will
 #'         be used.
@@ -154,7 +251,7 @@ run_vmp_fpca_model_choice <- function(time_obs, Y, L = 10, K_min = 5, K_max = 20
 #'
 #' @export
 #'
-run_mfvb_fpca_model_choice <- function(time_obs, Y, L = 10, K_min = 5, K_max = 20,
+run_mfvb_fpca_model_choice <- function(time_obs, Y, model_choice, list_K, list_L,
                                       list_hyper = NULL, tol = 1e-5, maxit = 1e4,
                                       rel_crit = TRUE,
                                       n_g = 1000, time_g = NULL,
@@ -162,39 +259,111 @@ run_mfvb_fpca_model_choice <- function(time_obs, Y, L = 10, K_min = 5, K_max = 2
                                       verbose = TRUE, seed = NULL,
                                       n_cpus = 1, check_elbo = TRUE) {
 
-  check_structure(K_min, "vector", "numeric", 1)
-  check_natural(K_min)
-  check_positive(K_min)
+  check_structure(model_choice, "vector", "string", 1)
+  stopifnot(model_choice %in% c("K", "L"))
 
-  check_structure(K_max, "vector", "numeric", 1)
-  check_natural(K_max)
+  stopifnot(is.list(list_K))
+  stopifnot(is.list(list_L))
 
-  stopifnot(K_min < K_max)
+  if (model_choice == "K") {
+
+    if (all(names(list_K) != c("K_min", "K_max"))) {
+      stop("list_K must be a list of two integers named 'K_min' and 'K_max'
+            representing the lower, resp. upper bound of the support for the
+            uniform prior on the number of O'Sullivan spline functions K.")
+    }
+    K_min <- list_K$K_min
+    K_max <- list_K$K_max
+
+    check_structure(K_min, "vector", "numeric", 1)
+    check_natural(K_min)
+    check_positive(K_min)
+
+    check_structure(K_max, "vector", "numeric", 1)
+    check_natural(K_max)
+    stopifnot(K_min < K_max)
+
+    if (names(list_L) != "L") {
+      stop("list_L must be a list containing an integer named 'L' representing
+            the (maximum) number of components to be used")
+    }
+
+    L <- list_L$L
+
+  } else {
+
+    if (all(names(list_L) != c("lambda_L", "L_max"))) {
+      stop("list_L must be a list containing two parameters, named 'lambda_L'
+           and 'L_max' specifying the Poisson(lambda_L) prior, truncated
+           to {1, ..., L_max}, on the number of components L.")
+    }
+    lambda_L <- list_L$lambda_L
+    L_max <- list_L$L_max
+
+    check_structure(lambda_L, "vector", "numeric", 1)
+    check_positive(lambda_L)
+
+    check_structure(L_max, "vector", "numeric", 1)
+    check_natural(L_max)
+    check_positive(L_max > 1)
+
+    if (names(list_K) != "K") {
+      stop("list_K must be a list containing an integer named 'K' representing
+            the number of O'Sullivan spline functions K to be used.")
+    }
+
+    K <- list_K$K
+
+  }
 
   check_structure(n_cpus, "vector", "numeric", 1)
   check_natural(n_cpus)
   check_positive(n_cpus)
 
-  vec_K <- K_min:K_max
 
-  out <- parallel::mclapply(vec_K, function(K) {
+  if (model_choice == "K") {
 
-    run_mfvb_fpca(time_obs = time_obs, Y = Y, L = L, K = K,
-                  list_hyper = list_hyper, tol = tol, maxit = maxit,
-                  rel_crit = rel_crit, plot_elbo = FALSE,
-                  n_g = n_g, time_g = time_g,
-                  Psi_g = Psi_g, fixed_score_variance = fixed_score_variance,
-                  verbose = verbose, seed = seed,
-                  check_elbo = check_elbo)
+    vec_K <- K_min:K_max
 
-    # unnorm_p_M_given_y <- mfvb_res$elbo - log(length(vec_K)) # Unif(vec_K) constant wrt to K, we can ignore it, just maximise
+    out <- parallel::mclapply(vec_K, function(K) {
 
-  }, mc.cores = n_cpus)
+      run_mfvb_fpca(time_obs = time_obs, Y = Y, L = L, K = K,
+                    list_hyper = list_hyper, tol = tol, maxit = maxit,
+                    rel_crit = rel_crit, plot_elbo = FALSE,
+                    n_g = n_g, time_g = time_g,
+                    Psi_g = Psi_g, fixed_score_variance = fixed_score_variance,
+                    verbose = verbose, seed = seed,
+                    check_elbo = check_elbo)
 
-  vec_elbo <- sapply(out, "[[", "elbo")
-  # all_p_M_given_y <- all_unnorm_p_M_given_y / sum(all_unnorm_p_M_given_y) # not needed as prior doesn't change with K (Uniform), so we can directly take the run with largest elbo.
+    }, mc.cores = n_cpus)
 
-  out[[which.max(vec_elbo)]]
+    vec_elbo <- sapply(out, "[[", "elbo")
+
+    out[[which.max(vec_elbo)]]
+
+  } else {
+
+    vec_L <- 1:L_max
+
+    out <- parallel::mclapply(vec_L, function(L) {
+
+      run_mfvb_fpca(time_obs = time_obs, Y = Y, L = L, K = K,
+                    list_hyper = list_hyper, tol = tol, maxit = maxit,
+                    rel_crit = rel_crit, plot_elbo = FALSE,
+                    n_g = n_g, time_g = time_g,
+                    Psi_g = Psi_g, fixed_score_variance = fixed_score_variance,
+                    verbose = verbose, seed = seed,
+                    check_elbo = check_elbo)
+
+    }, mc.cores = n_cpus)
+
+    vec_elbo <- sapply(out, "[[", "elbo")
+
+    vec_log_unnorm_p_model_given_y <- vec_elbo + vec_L * log(lambda_L) - lfactorial(vec_L) - lambda_L
+
+    out[[which.max(vec_log_unnorm_p_model_given_y)]]
+
+  }
 
 }
 
@@ -210,7 +379,7 @@ run_mfvb_fpca_model_choice <- function(time_obs, Y, L = 10, K_min = 5, K_max = 2
 #' @param Y List of vectors (for univariate curves) or list of lists of vectors
 #'          (for multivariate curves) with the functional data.
 #' @param L Number of eigenfunctions (or latent dimensions).
-#' @param K Number of O'Sulivan spline functions to be used in the FPCA or mFPCA
+#' @param K Number of O'Sullivan spline functions to be used in the FPCA or mFPCA
 #'          algorithms. If set to \code{NULL} will be set according to the rule
 #'          of Ruppert (2002), also enforcing K >=7.
 #' @param list_hyper Hyperparameter settings constructed using the function
@@ -1603,7 +1772,7 @@ vmp_gauss_mfpca <- function(N, p, L, K, C, Y, sigma_zeta, mu_beta, Sigma_beta,
 #' @param Y List of vectors (for univariate curves) or list of lists of vectors
 #'          (for multivariate curves) with the functional data.
 #' @param L Number of eigenfunctions (or latent dimensions).
-#' @param K Number of O'Sulivan spline functions to be used in the FPCA or mFPCA
+#' @param K Number of O'Sullivan spline functions to be used in the FPCA or mFPCA
 #'          algorithms. If set to \code{NULL} will be set according to the rule
 #'          of Ruppert (2002), also enforcing K >=7.
 #' @param list_hyper Hyperparameter settings constructed using the function
@@ -2320,7 +2489,7 @@ mfvb_gauss_mfpca <- function(N, p, L, K, C, Y, sigma_zeta,
 
   # E_q_sigsq_psi <- lambda_q_sigsq_psi / (kappa_q_sigsq_psi - 2) # variational estimates for the variances of the eigenfunctions /!\ before orthonormalisation, so not ordered! after orthogonalisation, would all have the same magnitude, as this decreasing phenomenon is transferred to the scores.
 
-  create_named_list(time_g, K,
+  create_named_list(time_g, K, L,
                     Y_summary, Y_hat, Y_low, Y_upp,
                     gbl_hat, mu_hat, list_Psi_hat,
                     Zeta_hat, Cov_zeta_hat, list_zeta_ellipse,
@@ -2805,7 +2974,7 @@ mfvb_gauss_fpca <- function(N, L, K, C, Y, sigma_zeta, mu_beta,
 
   # E_q_sigsq_psi <- lambda_q_sigsq_psi / (kappa_q_sigsq_psi - 2) # variational estimate for the variance of the eigenfunctions /!\ before orthonormalisation, so not ordered! after orthogonalisation, would all have the same magnitude, as this decreasing phenomenon is transferred to the scores.
 
-  create_named_list(time_g, K,
+  create_named_list(time_g, K, L,
                     Y_summary, Y_hat, Y_low, Y_upp,
                     gbl_hat, mu_hat, list_Psi_hat,
                     Zeta_hat, Cov_zeta_hat, list_zeta_ellipse,

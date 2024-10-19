@@ -88,26 +88,56 @@ if (L > 1) { # displays the scores for the first two components
 }
 
 
-run_model_choice_version <- T
+run_model_choice_version <- F
 if (run_model_choice_version) {
 
+  model_choice <- "L"
   n_cpus <- 1
-  fpca_res_mc_for_K <- run_vmp_fpca_model_choice(time_obs, Y, L, n_g = n_g,
-                                                 tol = tol, maxit = maxit_vmp,
-                                                 Psi_g = Psi_g, verbose = F,
-                                                 n_cpus = n_cpus)
+  if (model_choice == "K") {
 
-  # selected K
-  fpca_res_mc_for_K$K
+    K_min <- 5
+    K_max <- 10
 
-  time_g_mc <- fpca_res_mc_for_K$time_g
-  Y_hat_mc <- fpca_res_mc_for_K$Y_hat
-  Y_low_mc <- fpca_res_mc_for_K$Y_low
-  Y_upp_mc <- fpca_res_mc_for_K$Y_upp
-  mu_hat_mc <- fpca_res_mc_for_K$mu_hat
-  list_Psi_hat_mc <- fpca_res_mc_for_K$list_Psi_hat
-  Zeta_hat_mc <- fpca_res_mc_for_K$Zeta_hat
-  list_zeta_ellipse_mc <- fpca_res_mc_for_K$list_zeta_ellipse
+    fpca_res_mc <- run_vmp_fpca_model_choice(time_obs, Y,
+                                             model_choice = model_choice,
+                                             list_L = list("L" = L),
+                                             list_K = list("K_min" = K_min,
+                                                           "K_max" = K_max),
+                                             n_g = n_g,
+                                             tol = tol, maxit = maxit_vmp,
+                                             Psi_g = Psi_g, verbose = F,
+                                             n_cpus = n_cpus)
+
+    # selected K
+    fpca_res_mc$K
+
+  } else {
+
+    lambda_L <- 3
+    L_max <- 10
+
+    fpca_res_mc <- run_vmp_fpca_model_choice(time_obs, Y,
+                                             model_choice = model_choice,
+                                             list_L = list("lambda_L" = lambda_L, "L_max" = L_max),
+                                             list_K = list("K" = K),
+                                             n_g = n_g,
+                                             tol = tol, maxit = maxit_vmp,
+                                             Psi_g = Psi_g, verbose = F,
+                                             n_cpus = n_cpus)
+
+    # selected L
+    fpca_res_mc$L
+
+  }
+
+  time_g_mc <- fpca_res_mc$time_g
+  Y_hat_mc <- fpca_res_mc$Y_hat
+  Y_low_mc <- fpca_res_mc$Y_low
+  Y_upp_mc <- fpca_res_mc$Y_upp
+  mu_hat_mc <- fpca_res_mc$mu_hat
+  list_Psi_hat_mc <- fpca_res_mc$list_Psi_hat
+  Zeta_hat_mc <- fpca_res_mc$Zeta_hat
+  list_zeta_ellipse_mc <- fpca_res_mc$list_zeta_ellipse
 
   display_eigenfunctions(L, time_g, mu_g, Psi_g, mu_hat, list_Psi_hat,
                          mu_hat_add = mu_hat_mc, list_Psi_hat_add = list_Psi_hat_mc)
@@ -121,7 +151,7 @@ if (run_model_choice_version) {
   # Compare errors with and without model choice for K
   #
   rmse_mfpca <- apply(Zeta - Zeta_hat, 2, function(x) sqrt(mean(x^2)))
-  rmse_mfpca_mc <- apply(Zeta - Zeta_hat_mc, 2, function(x) sqrt(mean(x^2)))
+  rmse_mfpca_mc <- apply(Zeta - Zeta_hat_mc[,1:L, drop = F], 2, function(x) sqrt(mean(x^2)))
 
   print(rmse_mfpca)
   print(rmse_mfpca_mc)

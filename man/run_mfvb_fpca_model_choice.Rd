@@ -4,14 +4,15 @@
 \alias{run_mfvb_fpca_model_choice}
 \title{Mean-field variational Bayes (MFVB) inference for univariate or multivariate
 functional principal component analysis with model choice procedure for
-selection of the number of spline functions K.}
+selection of either the number of FPCA components, L, or the number of spline
+functions for representing the components, K.}
 \usage{
 run_mfvb_fpca_model_choice(
   time_obs,
   Y,
-  L = 10,
-  K_min = 5,
-  K_max = 20,
+  model_choice,
+  list_K,
+  list_L,
   list_hyper = NULL,
   tol = 1e-05,
   maxit = 10000,
@@ -34,15 +35,28 @@ respectively.}
 \item{Y}{List of vectors (for univariate curves) or list of lists of vectors
 (for multivariate curves) with the functional data.}
 
-\item{L}{Number of eigenfunctions (or latent dimensions). Default L = 10.}
+\item{model_choice}{String indicating whether the model choice is to be
+performed for the number of O'Sullivan spline functions ("K") or for
+the number of components ("L").}
 
-\item{K_min}{Minimum number of O'Sulivan spline functions K, which is modelled
-             using an uniform prior distribution on the interval
-.             [K_min, K_max]. Default K_min = 5.}
+\item{list_K}{List containing specifications for the choice of the number of
+O'Sullivan spline functions 'K'. If \code{model_choice = "K"}, then
+must consist of integer named 'K_min' and 'K_max' representing
+the lower, resp. upper bound of the support for the uniform
+prior on K (e.g., K_min = 5 and K_max= 20);
+if \code{model_choice = "L"}, then must consist of
+an integer named 'K' representing the number of O'Sullivan
+spline functions to be used (if \code{K = NULL}, will be set
+according to the rule of Ruppert (2002), also enforcing K >=7).}
 
-\item{K_max}{Maximum number of O'Sulivan spline functions K, which is modelled
-             using an uniform prior distribution on the interval
-.             [K_min, K_max]. Default K_max = 20.}
+\item{list_L}{List containing specifications for the choice of the number of
+components 'L'. If \code{model_choice = "L"}, then must consist
+of two parameters, 'lambda_L' and 'L_max', specifying the
+Poisson(lambda_L) prior, truncated to {1, ..., L_max}, on the
+number of components L.(e.g., lambda_L = 3, L_max = 10);
+if \code{model_choice = "K"}, then must consist of an integer
+named 'L' representing the (maximum) number of components to be
+used (e.g., L = 10).}
 
 \item{list_hyper}{Hyperparameter settings constructed using the function
 \code{\link{set_hyper}}. If \code{NULL} default hyperparameters will

@@ -34,7 +34,7 @@ respectively.}
 
 \item{L}{Number of eigenfunctions (or latent dimensions).}
 
-\item{K}{Number of O'Sulivan spline functions to be used in the FPCA or mFPCA
+\item{K}{Number of O'Sullivan spline functions to be used in the FPCA or mFPCA
 algorithms. If set to \code{NULL} will be set according to the rule
 of Ruppert (2002), also enforcing K >=7.}
 
