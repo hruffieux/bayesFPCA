@@ -2024,7 +2024,7 @@ mfvb_gauss_mfpca <- function(N, p, L, K, C, Y, sigma_zeta,
 
   E_q_recip_sigsq_mu <- rep(1, p)
   E_q_recip_a_mu <- rep(1, p)
-  E_q_recip_sigsq_psi <- matrix(1, nrow = p, ncol = L)
+  E_q_recip_sigsq_psi <- matrix(1:L, nrow = p, ncol = L, byrow = T) # matrix(1, nrow = p, ncol = L)
   E_q_recip_a_psi <- matrix(1, nrow = p, ncol = L)
 
   E_q_zeta <- vector("list", length = N)
@@ -2522,7 +2522,7 @@ mfvb_gauss_fpca <- function(N, L, K, C, Y, sigma_zeta, mu_beta,
   mu_q_recip_a_mu <- 1
 
   kappa_q_sigsq_psi <- K + 1
-  mu_q_recip_sigsq_psi <- rep(1, L)
+  mu_q_recip_sigsq_psi <- 1:L # rep(1, L)
 
   kappa_q_a_psi <- 2
   mu_q_recip_a_psi <- rep(1, L)
