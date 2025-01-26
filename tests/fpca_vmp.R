@@ -62,6 +62,9 @@ fourier_basis <- function(L, p) {
 
 Psi_fourier_func <- function(time_obs, j = 1, p = 1) {
   ans <- sapply(fourier_basis(L, p), function(ff) ff(time_obs))
+  if (is.vector(ans)) {
+    ans <- t(as.matrix(ans))
+  }
   return(ans)
 }
 
